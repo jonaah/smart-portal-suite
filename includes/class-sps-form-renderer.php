@@ -24,6 +24,20 @@ class SPS_Form_Renderer {
 	private static $instance = null;
 
 	/**
+	 * Registered SVG sprites to output in footer.
+	 *
+	 * @var array
+	 */
+	private $enqueued_sprites = array();
+
+	/**
+	 * Flag whether master sprite is registered.
+	 *
+	 * @var bool
+	 */
+	private $master_sprite_enqueued = false;
+
+	/**
 	 * Get singleton instance.
 	 *
 	 * @return SPS_Form_Renderer
@@ -44,6 +58,9 @@ class SPS_Form_Renderer {
 		// Register assets on init to guarantee availability in FSE block themes & Gutenberg
 		add_action( 'init', array( $this, 'register_assets' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_assets' ) );
+
+		// Print SVG sprites in footer
+		add_action( 'wp_footer', array( $this, 'print_svg_sprites' ), 20 );
 	}
 
 	/**
@@ -91,6 +108,34 @@ class SPS_Form_Renderer {
 	}
 
 	/**
+	 * Enqueue an SVG sprite file to be inlined into the page.
+	 *
+	 * @param string $file_path Absolute path to SVG sprite file.
+	 */
+	public function enqueue_sprite( $file_path ) {
+		if ( file_exists( $file_path ) && ! in_array( $file_path, $this->enqueued_sprites, true ) ) {
+			$this->enqueued_sprites[] = $file_path;
+		}
+	}
+
+	/**
+	 * Print all enqueued SVG sprites inside hidden container in footer.
+	 */
+	public function print_svg_sprites() {
+		if ( empty( $this->enqueued_sprites ) ) {
+			return;
+		}
+
+		echo "\n<!-- Smart Portal Suite SVG Sprites -->\n";
+		echo '<div class="sps-svg-sprite-storage" style="display:none !important;" aria-hidden="true">';
+		foreach ( $this->enqueued_sprites as $sprite_file ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			echo file_get_contents( $sprite_file );
+		}
+		echo "</div>\n<!-- /Smart Portal Suite SVG Sprites -->\n";
+	}
+
+	/**
 	 * Render shortcode [sps_form id="..."].
 	 *
 	 * @param array $atts Shortcode attributes.
@@ -120,6 +165,21 @@ class SPS_Form_Renderer {
 		// Enqueue styles & scripts
 		wp_enqueue_style( 'sps-portal-base' );
 		wp_enqueue_script( 'sps-form-engine' );
+
+		// Enqueue master sprite
+		$master_sprite = SPS_PLUGIN_DIR . 'assets/icons/portal-icons.svg';
+		$this->enqueue_sprite( $master_sprite );
+
+		// Check for custom sprite declared in schema or dedicated form sprite file
+		if ( ! empty( $schema['sprite'] ) ) {
+			$custom_sprite_path = SPS_PLUGIN_DIR . ltrim( $schema['sprite'], '/' );
+			$this->enqueue_sprite( $custom_sprite_path );
+		}
+
+		$form_specific_sprite = SPS_PLUGIN_DIR . 'assets/icons/' . $form_id . '.svg';
+		if ( file_exists( $form_specific_sprite ) ) {
+			$this->enqueue_sprite( $form_specific_sprite );
+		}
 
 		// Global shared configuration
 		static $config_localized = false;

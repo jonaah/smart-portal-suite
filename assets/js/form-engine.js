@@ -29,6 +29,19 @@ window.SPS = window.SPS || {};
         return fieldRegistry[camelType] || fieldRegistry['text'];
     }
 
+    /**
+     * Render an SVG icon referencing a symbol in the SVG sprite.
+     * Supports both "#icon-dateiname", "icon-dateiname", and "dateiname".
+     */
+    function renderIcon(iconName, customClass = '') {
+        if (!iconName) return '';
+        const raw = String(iconName).trim().replace(/^#/, '');
+        const iconId = raw.startsWith('icon-') ? raw : 'icon-' + raw;
+        const cleanName = raw.replace(/^icon-/, '');
+
+        return `<svg class="sps-icon ${customClass} sps-icon-${escapeAttr(cleanName)}" aria-hidden="true" focusable="false"><use href="#${escapeAttr(iconId)}"></use></svg>`;
+    }
+
     // --- Core Field Renderers ---
 
     // 1. Radio Cards
@@ -44,7 +57,7 @@ window.SPS = window.SPS || {};
                 <label class="sps-radio-card ${isChecked ? 'is-selected' : ''}" for="${inputId}">
                     <input type="radio" id="${inputId}" name="${form.instanceId}_${step.id}" value="${SPS.escapeAttr(val)}" ${isChecked ? 'checked' : ''} class="sps-radio-input">
                     <div class="sps-radio-content">
-                        ${choice.icon ? `<div class="sps-choice-icon sps-icon-${SPS.escapeAttr(choice.icon)}"></div>` : ''}
+                        ${choice.icon ? `<div class="sps-choice-icon-wrap">${renderIcon(choice.icon, 'sps-choice-icon')}</div>` : ''}
                         <div class="sps-radio-text">${SPS.escapeHtml(choice.text)}</div>
                         ${choice.subtitle ? `<div class="sps-radio-subtitle">${SPS.escapeHtml(choice.subtitle)}</div>` : ''}
                     </div>
@@ -245,6 +258,7 @@ window.SPS = window.SPS || {};
                     <input type="checkbox" id="${inputId}" name="${form.instanceId}_${step.id}[]" value="${SPS.escapeAttr(val)}" ${isChecked ? 'checked' : ''} class="sps-checkbox-input">
                     <div class="sps-radio-content">
                         <div class="sps-checkbox-indicator"></div>
+                        ${choice.icon ? `<div class="sps-choice-icon-wrap">${renderIcon(choice.icon, 'sps-choice-icon')}</div>` : ''}
                         <div class="sps-radio-text">${SPS.escapeHtml(choice.text)}</div>
                         ${choice.subtitle ? `<div class="sps-radio-subtitle">${SPS.escapeHtml(choice.subtitle)}</div>` : ''}
                     </div>
@@ -271,11 +285,7 @@ window.SPS = window.SPS || {};
                            accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
                            aria-label="${SPS.escapeAttr(step.label || 'Dateien hochladen')}">
                     <div class="sps-upload-icon">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="17 8 12 3 7 8"></polyline>
-                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                        </svg>
+                        ${renderIcon('icon-upload', 'sps-upload-svg')}
                     </div>
                     <label for="${form.instanceId}_input_${step.id}" class="sps-btn sps-btn-upload">Dateien auswählen</label>
                     <p class="sps-upload-hint">Oder Dateien hierher ziehen (PDF, JPG, PNG &middot; max. 10 MB pro Datei)</p>
@@ -398,6 +408,7 @@ window.SPS = window.SPS || {};
             return `
                 <div class="sps-step" id="${this.instanceId}_step_${index}" data-step-index="${index}" aria-hidden="true">
                     <div class="sps-step-header">
+                        ${step.icon ? `<div class="sps-step-icon-wrap">${renderIcon(step.icon, 'sps-step-icon')}</div>` : ''}
                         ${step.label ? `<h3 class="sps-question">${SPS.escapeHtml(step.label)}</h3>` : ''}
                         ${step.desc ? `<div class="sps-desc">${step.desc}</div>` : ''}
                         ${step.reason ? `<div class="sps-reason-box"><span class="sps-reason-icon">&#9432;</span> <span class="sps-reason-text">${SPS.escapeHtml(step.reason)}</span></div>` : ''}
@@ -1043,7 +1054,7 @@ window.SPS = window.SPS || {};
         renderSuccess(message) {
             this.container.innerHTML = `
                 <div class="sps-form-wrapper sps-success-box" role="alert">
-                    <div class="sps-success-icon">&#10004;</div>
+                    <div class="sps-success-icon">${renderIcon('icon-check', 'sps-success-svg')}</div>
                     <h3 class="sps-success-title">Vielen Dank!</h3>
                     <p class="sps-success-desc">${SPS.escapeHtml(message)}</p>
                     <p class="sps-success-note">Wir haben Ihre Angaben erhalten und werden uns schnellstmöglich bei Ihnen melden.</p>
@@ -1102,6 +1113,7 @@ window.SPS = window.SPS || {};
     SPS.initAll = initAll;
     SPS.getForm = getForm;
     SPS.registerField = registerField;
+    SPS.renderIcon = renderIcon;
     SPS.escapeHtml = escapeHtml;
     SPS.escapeAttr = escapeAttr;
 

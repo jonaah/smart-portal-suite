@@ -209,6 +209,73 @@
     margin-top: 0.35rem;
 }
 
+/* SVG Sprite Icons */
+.sps-icon {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    stroke: currentColor;
+    fill: none;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+.sps-choice-icon-wrap {
+    margin-bottom: 0.65rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sps-choice-icon {
+    width: 42px;
+    height: 42px;
+    color: var(--sps-accent);
+    transition: var(--sps-transition);
+}
+
+.sps-radio-card:hover .sps-choice-icon,
+.sps-checkbox-card:hover .sps-choice-icon {
+    transform: scale(1.1);
+    color: var(--sps-accent-hover);
+}
+
+.sps-radio-card.is-selected .sps-choice-icon,
+.sps-checkbox-card.is-selected .sps-choice-icon {
+    color: var(--sps-accent);
+    filter: drop-shadow(0 0 6px rgba(57, 186, 255, 0.45));
+}
+
+.sps-step-icon-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--sps-radius-md);
+    background: rgba(57, 186, 255, 0.12);
+    border: 1px solid rgba(57, 186, 255, 0.25);
+    margin-bottom: 0.75rem;
+}
+
+.sps-step-icon {
+    width: 28px;
+    height: 28px;
+    color: var(--sps-accent);
+}
+
+.sps-upload-svg {
+    width: 44px;
+    height: 44px;
+    color: var(--sps-accent);
+}
+
+.sps-success-svg {
+    width: 64px;
+    height: 64px;
+    color: var(--sps-success-color);
+}
+
 /* Slider Component */
 .sps-slider-container {
     background: var(--sps-card-bg);
