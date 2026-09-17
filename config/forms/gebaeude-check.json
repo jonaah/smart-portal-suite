@@ -1,0 +1,489 @@
+{
+  "form_id": "gebaeude_check",
+  "form_type": "Gebaeude-Check",
+  "title": "Gebäude-Check",
+  "nc_form_title": "Gebaeudedaten",
+  "steps": [
+    {
+      "id": "typ",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Um was für einen Gebäudetyp handelt es sich?",
+      "reason": "Der Gebäudetyp beeinflusst die Kompaktheit des Gebäudes und damit das Verhältnis von wärmeübertragender Hüllfläche zum beheizten Volumen.",
+      "choices": [
+        { "text": "Freistehendes Haus" },
+        { "text": "Reihenmittelhaus" },
+        { "text": "Reihenendhaus/Doppelhaushälfte" }
+      ]
+    },
+    {
+      "id": "nutzung",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Aktuelle Nutzung?",
+      "reason": "Beeinflusst standardisierte Annahmen zum Nutzerverhalten (z.B. Warmwasserverbrauch) und die Art möglicher Förderung.",
+      "choices": [
+        { "text": "Eigennutzung (ausschließlich)" },
+        { "text": "Vermietung (ausschließlich)" },
+        { "text": "Eigennutzung + Vermietung" }
+      ]
+    },
+    {
+      "id": "flaeche",
+      "type": "radio",
+      "dataType": "int",
+      "label": "Wohnfläche",
+      "reason": "Zentraler Wert zur Bestimmung des Gebäudeenergiebedarfs pro Quadratmeter (Kennwert in kWh/m²a).",
+      "choices": [
+        { "text": "<100 qm", "value": 100 },
+        { "text": "100-150 qm", "value": 125 },
+        { "text": "151-200 qm", "value": 175 },
+        { "text": "201-250 qm", "value": 225 },
+        { "text": "251-300 qm", "value": 275 },
+        { "text": ">300 qm", "value": 325 }
+      ]
+    },
+    {
+      "id": "wohneinheiten",
+      "type": "radio",
+      "dataType": "int",
+      "label": "Anzahl der Wohneinheiten?",
+      "reason": "Hilft bei der Kategorisierung des Gebäudes (Einfamilien- vs. Mehrfamilienhaus) und bei Fördermittelberechnungen.",
+      "choices": [
+        { "text": "1", "value": 1 },
+        { "text": "2", "value": 2 },
+        { "text": "3", "value": 3 },
+        { "text": "4+", "value": 4 }
+      ]
+    },
+    {
+      "id": "geschosse",
+      "type": "radio",
+      "dataType": "int",
+      "label": "Anzahl der Geschosse?",
+      "choices": [
+        { "text": "1", "value": 1 },
+        { "text": "2", "value": 2 },
+        { "text": "3", "value": 3 },
+        { "text": "4", "value": 4 }
+      ]
+    },
+    {
+      "id": "baujahr",
+      "type": "radio",
+      "dataType": "int",
+      "label": "Baujahr?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Bzw. letzte Vollsanierung. Die energetischen Anforderungen an Gebäude haben sich mit den Wärmeschutzvorschriften und dem GEG in klaren Epochen verändert. Deshalb ist das Baujahr ein guter erster Indikator für Dämmung und Gebäudestandard.</li></ul>",
+      "reason": "Das Baujahr oder Jahr der letzten Vollsanierung ist entscheidend, um den energetischen Standard der Bauteile (z.B. Dämmung, Fenster) abschätzen zu können.",
+      "choices": [
+        { "text": "Vor 1918", "value": 1910 },
+        { "text": "1919–1948", "value": 1934 },
+        { "text": "1949–1977", "value": 1963 },
+        { "text": "1978–1983", "value": 1981 },
+        { "text": "1984–1994", "value": 1989 },
+        { "text": "1995–2001", "value": 1998 },
+        { "text": "2002+", "value": 2002 }
+      ]
+    },
+    {
+      "id": "baujahr_detail",
+      "type": "radio",
+      "dataType": "int",
+      "label": "Welche Bauphase ab 2002 trifft auf das Haus zu?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Bei Gebäuden ab 2002 sind die Vorschriften und der energetische Standard je nach Bauphase deutlich unterschiedlich.</li></ul>",
+      "showIf": { "field": "baujahr", "op": "gte", "value": 2002 },
+      "choices": [
+        { "text": "2002–2006", "value": 2004 },
+        { "text": "2007–2008", "value": 2008 },
+        { "text": "2009–2013", "value": 2011 },
+        { "text": "2014–2015", "value": 2014 },
+        { "text": "2016–2019", "value": 2018 },
+        { "text": "2020–2022", "value": 2021 },
+        { "text": "Ab 2023", "value": 2023 }
+      ]
+    },
+    {
+      "id": "geschosshoehe",
+      "type": "radio",
+      "dataType": "double",
+      "label": "Geschosshöhe in Meter?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Bitte geben Sie die <strong>durchschnittliche Geschosshöhe</strong> an.</li><li>Diese setzt sich zusammen aus <strong>Raumhöhe + Deckenhöhe</strong>.</li></ul>",
+      "reason": "Wird benötigt, um zusammen mit der Wohnfläche das beheizte Gebäudevolumen zu berechnen.",
+      "choices": [
+        { "text": "2,3-2,5", "value": 2.4 },
+        { "text": "2,5-2,7", "value": 2.6 },
+        { "text": "2,7-3,0", "value": 2.85 },
+        { "text": "3,0+", "value": 3.0 }
+      ]
+    },
+    {
+      "id": "vollgeschosse",
+      "type": "slider",
+      "dataType": "int",
+      "label": "Anzahl Vollgeschosse?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Liegen <strong>vollständig über der Geländeoberfläche</strong></li><li>Werden in der Regel als <strong>Wohn- oder Nutzgeschosse</strong> genutzt</li><li>Haben eine Raumhöhe von <strong>mind. 2,3m</strong> und eine Fläche von <strong>2/3 des Erdgeschosses</strong></li><li><strong>Wichtig:</strong> Untergeschosse zählen <strong>nicht</strong> als Vollgeschosse</li></ul>",
+      "reason": "Dient der Ermittlung der Gebäudegeometrie und der Berechnung der wärmeübertragenden Hüllfläche.",
+      "min": 0, "max": 10, "step": 1, "value": 1
+    },
+    {
+      "id": "beheizt",
+      "type": "slider",
+      "dataType": "int",
+      "label": "Anzahl beheizter Geschosse?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Geschosse, die über eine <strong>Heizung</strong> verfügen</li><li>Sind somit für <strong>Wohn- oder Nutzungszwecke</strong> geeignet</li><li>Das können sowohl <strong>Vollgeschosse</strong> als auch <strong>Untergeschosse</strong> (Keller) sein</li></ul>",
+      "reason": "Wichtig für die genaue Bestimmung des beheizten Volumens und der thermischen Gebäudehülle.",
+      "min": 0, "max": 5, "step": 1, "value": 1
+    },
+    {
+      "id": "keller",
+      "type": "slider",
+      "dataType": "int",
+      "label": "Anzahl der Kellergeschosse?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Ein Geschoss, das <strong>teilweise oder vollständig</strong> unter der Geländeoberfläche liegt</li></ul>",
+      "reason": "Wird benötigt, um Verluste über das Erdreich und unbeheizte Kellerbereiche zu berechnen.",
+      "min": 0, "max": 3, "step": 1, "value": 1
+    },
+    {
+      "id": "dachgeschoss",
+      "type": "radio",
+      "dataType": "int",
+      "label": "Dachgeschoss?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li><strong>Wichtig:</strong> Ein nicht ausgebauter Dachboden zählt <strong>nicht</strong> als Dachgeschoss</li></ul>",
+      "reason": "Beeinflusst die Dachfläche und das beheizte Volumen sowie die Einstufung der Dachdämmung.",
+      "choices": [
+        { "text": "JA", "value": 1 },
+        { "text": "NEIN", "value": 0 }
+      ]
+    },
+    {
+      "id": "energieverbrauch",
+      "type": "slider",
+      "dataType": "int",
+      "label": "Jährlicher Energieverbrauch?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Sie finden diese Angaben meist auf der <strong>Jahresabrechnung</strong> des Energieversorgers</li><li>Wenn möglich, geben Sie den <strong>Durchschnitt der letzen 3 Jahre</strong> an</li></ul>",
+      "reason": "Dient als Basis zur Berechnung des tatsächlichen Strombedarfs und für wirtschaftliche Berechnungen (z.B. Amortisation).",
+      "min": 1000, "max": 10000, "step": 250, "value": 5000, "suffix": " kWh"
+    },
+    {
+      "id": "kosten",
+      "type": "slider",
+      "dataType": "int",
+      "label": "Aktuelle Kosten?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Wie viel <strong>Cent/kWh</strong> bezahlen Sie aktuell für Strom?</li><li>Berechnung: <strong>Gesamtkosten</strong> des letzten Jahres / <strong>gesamt Stromverbrauch</strong> in kWh</li></ul>",
+      "reason": "Wird im Gebäudesteckbrief verwendet, um die zukünftigen Stromkosten und mögliche Einsparpotenziale zu berechnen.",
+      "min": 20, "max": 50, "step": 1, "value": 32, "suffix": " Cent/kWh"
+    },
+    {
+      "id": "energietraeger",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Hauptenergieträger",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Wenn mehrere Heizsysteme vorhanden sind, wählen Sie den <strong>Hauptenergieträger</strong> aus</li></ul>",
+      "reason": "Erforderlich für die Umrechnung von End- in Primärenergie und zur Bestimmung der spezifischen CO₂-Emissionen.",
+      "choices": [
+        { "text": "Öl" },
+        { "text": "Gas" },
+        { "text": "Strom" },
+        { "text": "Fern-/Nahwärme" },
+        { "text": "Wärmepumpe" },
+        { "text": "Holzpellets" },
+        { "text": "Geothermie" },
+        { "text": "Biomasse" }
+      ]
+    },
+    {
+      "id": "umrechnungsquote",
+      "type": "slider",
+      "dataType": "double",
+      "label": "Umrechnungsquote Wärmepumpe?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Geben Sie den durchschnittlichen <strong>Umrechnungsfaktor (JAZ/COP)</strong> Ihrer Wärmepumpe an</li><li>Beispiel: Aus 1 kWh Strom werden <strong>3,5 kWh Wärmeenergie</strong> erzeugt</li></ul>",
+      "reason": "Wird benötigt, um den tatsächlichen Stromverbrauch für die erzeugte Wärmeenergie abzuleiten.",
+      "showIf": { "field": "energietraeger", "op": "eq", "value": "Wärmepumpe" },
+      "min": 1, "max": 6, "step": 0.1, "value": 3.5
+    },
+    {
+      "id": "waermeverbrauch",
+      "type": "slider",
+      "dataType": "int",
+      "label": "Jährlicher Wärmeenergieverbrauch?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Geben Sie je nach Energieträger den jährlichen <strong>Wärme- oder Brennstoffverbrauch</strong> an</li><li>Nutzen Sie dazu die <strong>passende Einheit</strong> (z.B. Liter oder m³)</li><li>Die Anzeige zeigt Ihnen zusätzlich den <strong>umgerechneten kWh-Wert</strong> an</li></ul>",
+      "reason": "Ist die Grundlage für die Einstufung des Gebäudes und die Berechnung der Heizkosten im Gebäudesteckbrief.",
+      "min": 4000, "max": 40000, "step": 1000, "value": 15000, "suffix": " kWh",
+      "dynamicConfig": {
+        "dependsOn": "energietraeger",
+        "configs": {
+          "Gas": { "min": 4000, "max": 40000, "step": 1000, "value": 15000, "suffix": " kWh" },
+          "Öl": { "min": 500, "max": 5000, "step": 100, "value": 1500, "suffix": " Liter" },
+          "Holzpellets": { "min": 1000, "max": 10000, "step": 100, "value": 3000, "suffix": " kg" },
+          "Strom": { "min": 4000, "max": 40000, "step": 1000, "value": 15000, "suffix": " kWh" },
+          "Wärmepumpe": { "min": 1000, "max": 15000, "step": 500, "value": 4000, "suffix": " kWh" },
+          "Fern-/Nahwärme": { "min": 4000, "max": 40000, "step": 1000, "value": 15000, "suffix": " kWh" },
+          "Geothermie": { "min": 4000, "max": 40000, "step": 1000, "value": 15000, "suffix": " kWh" },
+          "Biomasse": { "min": 1000, "max": 10000, "step": 100, "value": 3000, "suffix": " kg" }
+        }
+      }
+    },
+    {
+      "id": "waermekosten",
+      "type": "slider",
+      "dataType": "int",
+      "label": "Aktuelle Wärmekosten?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Geben Sie die aktuellen Wärmekosten in <strong>Cent/kWh</strong> an</li><li>Berechnung: <strong>Wärme Gesamtkosten</strong> / <strong>gesamt Wärmeverbrauch</strong> in kWh</li></ul>",
+      "reason": "Dieser Wert wird im Gebäudesteckbrief zur Berechnung der Heizkosten, Einsparpotenziale und Wirtschaftlichkeit verwendet.",
+      "min": 5, "max": 25, "step": 1, "value": 11, "suffix": " Cent/kWh"
+    },
+    {
+      "id": "aussenwand_typ",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Welche Art von Außenwand hat das Gebäude?",
+      "reason": "Die Bauart der Außenwand beeinflusst den Wärmedurchgangskoeffizienten (U-Wert) und damit die energetische Qualität der Gebäudehülle maßgeblich.",
+      "choices": [
+        { "text": "Zweischalig" },
+        { "text": "Massivwand" },
+        { "text": "Fachwerk" },
+        { "text": "Holzbau / Fertighaus" }
+      ]
+    },
+    {
+      "id": "aussenwand_daemmung",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Ist die Außenwand gedämmt?",
+      "reason": "Bei zweischaligem Mauerwerk ist das Vorhandensein einer Dämmschicht entscheidend für den U-Wert der Außenwand.",
+      "showIf": { "field": "aussenwand_typ", "op": "eq", "value": "Zweischalig" },
+      "choices": [
+        { "text": "Ja" },
+        { "text": "Nein" }
+      ]
+    },
+    {
+      "id": "aussenwand_material",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Aus welchem Material besteht die Massivwand?",
+      "reason": "Das Material der Massivwand bestimmt die Wärmeleitfähigkeit und damit den energetischen Standard.",
+      "showIf": { "field": "aussenwand_typ", "op": "eq", "value": "Massivwand" },
+      "choices": [
+        { "text": "Hochlochziegel" },
+        { "text": "Vollziegel" },
+        { "text": "Sonstige" }
+      ]
+    },
+    {
+      "id": "aussenwand_dicke_voll",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Wie dick ist die Außenwand?",
+      "reason": "Die Wanddicke beeinflusst zusammen mit dem Material den U-Wert der Außenwand.",
+      "showIf": { "field": "aussenwand_material", "op": "eq", "value": "Vollziegel" },
+      "choices": [
+        { "text": "< 20 cm" },
+        { "text": "20–30 cm" },
+        { "text": "> 30 cm" }
+      ]
+    },
+    {
+      "id": "aussenwand_dicke_sonst",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Wie dick ist die Außenwand?",
+      "reason": "Die Wanddicke beeinflusst zusammen mit dem Material den U-Wert der Außenwand.",
+      "showIf": { "field": "aussenwand_material", "op": "eq", "value": "Sonstige" },
+      "choices": [
+        { "text": "< 20 cm" },
+        { "text": "> 20 cm" }
+      ]
+    },
+    {
+      "id": "aussenwand_fachwerk",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Art der Ausfachung?",
+      "reason": "Die Art der Ausfachung bei Fachwerk bestimmt die Wärmeleitfähigkeit und den energetischen Standard der Wand.",
+      "showIf": { "field": "aussenwand_typ", "op": "eq", "value": "Fachwerk" },
+      "choices": [
+        { "text": "Lehm" },
+        { "text": "Ziegel / Naturstein" }
+      ]
+    },
+    {
+      "id": "aussenwand_sanierung",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Wurde die Außenwand seit dem Baujahr energetisch saniert?",
+      "reason": "Das Sanierungsjahr bestimmt den aktuellen energetischen Standard der Außenwand und damit die Berechnung des U-Werts.",
+      "choices": [
+        { "text": "Ja, es gab eine Sanierung" },
+        { "text": "Nein, es gab keine Sanierung" }
+      ]
+    },
+    {
+      "id": "aussenwand_sanierung_jahr",
+      "type": "slider",
+      "dataType": "int",
+      "label": "In welchem Jahr wurde die Außenwand zuletzt saniert?",
+      "reason": "Wird benötigt, um den aktuellen Dämmstandard der Außenwand zeitlich einzuordnen.",
+      "showIf": { "field": "aussenwand_sanierung", "op": "eq", "value": "Ja, es gab eine Sanierung" },
+      "min": 1960, "max": 2026, "step": 1, "value": 2000
+    },
+    {
+      "id": "fenster_typ",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Welche Art von Fenstern hat das Gebäude?",
+      "reason": "Wird verwendet, um den Wärmedurchgangskoeffizienten (U-Wert) der Fenster zu ermitteln, da dieser stark vom Fenstertyp abhängt.",
+      "choices": [
+        { "text": "Holzfenster" },
+        { "text": "Kunststofffenster" },
+        { "text": "Aluminium-/Stahl-Fenster" }
+      ]
+    },
+    {
+      "id": "verglasung",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Welche Art von Verglasung hat das Gebäude?",
+      "reason": "Die Art der Verglasung bestimmt den U-Wert der Fenster und damit die Wärmeverluste.",
+      "showIf": { "field": "fenster_typ", "op": "eq", "value": "Holzfenster" },
+      "choices": [
+        { "text": "Einfachverglasung" },
+        { "text": "Doppelverglasung" }
+      ]
+    },
+    {
+      "id": "fenster_sanierung",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Wurden die Fenster seit dem Baujahr erneuert oder energetisch verbessert?",
+      "reason": "Das Sanierungsjahr bestimmt den aktuellen energetischen Standard der Fenster und den U-Wert der Verglasung.",
+      "choices": [
+        { "text": "Ja, es gab eine Sanierung" },
+        { "text": "Nein, es gab keine Sanierung" }
+      ]
+    },
+    {
+      "id": "fenster_sanierung_jahr",
+      "type": "slider",
+      "dataType": "int",
+      "label": "In welchem Jahr wurden die Fenster zuletzt saniert?",
+      "reason": "Wird benötigt, um den aktuellen Standard der Fenster zeitlich einzuordnen.",
+      "showIf": { "field": "fenster_sanierung", "op": "eq", "value": "Ja, es gab eine Sanierung" },
+      "min": 1960, "max": 2026, "step": 1, "value": 2000
+    },
+    {
+      "id": "dachart",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Wie ist das Dach über dem beheizten Wohnbereich überwiegend aufgebaut?",
+      "reason": "Die Bauart des Dachs beeinflusst den Wärmedurchgangskoeffizienten (U-Wert) und die möglichen Sanierungsmaßnahmen.",
+      "choices": [
+        { "text": "Holzdach" },
+        { "text": "Massives Dach" },
+        { "text": "Flachdach" }
+      ]
+    },
+    {
+      "id": "dach_sanierung",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Wurde das Dach seit dem Baujahr energetisch saniert?",
+      "reason": "Das Sanierungsjahr bestimmt den aktuellen energetischen Standard des Dachs und die Qualität der Dachdämmung.",
+      "choices": [
+        { "text": "Ja, es gab eine Sanierung" },
+        { "text": "Nein, es gab keine Sanierung" }
+      ]
+    },
+    {
+      "id": "dach_sanierung_jahr",
+      "type": "slider",
+      "dataType": "int",
+      "label": "In welchem Jahr wurde das Dach zuletzt saniert?",
+      "reason": "Wird benötigt, um den aktuellen Dämmstandard des Dachs zeitlich einzuordnen.",
+      "showIf": { "field": "dach_sanierung", "op": "eq", "value": "Ja, es gab eine Sanierung" },
+      "min": 1960, "max": 2026, "step": 1, "value": 2000
+    },
+    {
+      "id": "kellerdecke",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Wie ist die Decke über dem Keller überwiegend aufgebaut?",
+      "reason": "Die Bauart der Kellerdecke bestimmt den U-Wert und die möglichen Dämmmaßnahmen.",
+      "showIf": { "field": "keller", "op": "gt", "value": 0 },
+      "choices": [
+        { "text": "Holz" },
+        { "text": "Massiv" },
+        { "text": "Kappendecke" }
+      ]
+    },
+    {
+      "id": "keller_sanierung",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Wurde die Kellerdecke seit dem Baujahr energetisch saniert?",
+      "reason": "Das Sanierungsjahr bestimmt den aktuellen energetischen Standard der Kellerdecke.",
+      "showIf": { "field": "keller", "op": "gt", "value": 0 },
+      "choices": [
+        { "text": "Ja, es gab eine Sanierung" },
+        { "text": "Nein, es gab keine Sanierung" }
+      ]
+    },
+    {
+      "id": "keller_sanierung_jahr",
+      "type": "slider",
+      "dataType": "int",
+      "label": "In welchem Jahr wurde die Kellerdecke zuletzt saniert?",
+      "reason": "Wird benötigt, um den aktuellen Dämmstandard der Kellerdecke zeitlich einzuordnen.",
+      "showIf": { "field": "keller_sanierung", "op": "eq", "value": "Ja, es gab eine Sanierung" },
+      "min": 1960, "max": 2026, "step": 1, "value": 2000
+    },
+    {
+      "id": "zinssatz",
+      "type": "radio",
+      "dataType": "double",
+      "label": "Kalkulatorischer Zinssatz?",
+      "reason": "Wird verwendet, um die Wirtschaftlichkeit (Amortisationszeit, Kapitalwert) von Sanierungsmaßnahmen im Steckbrief zu berechnen.",
+      "choices": [
+        { "text": "1-2 % (Sicherheit)", "value": 1.5 },
+        { "text": "3-4% (Finanzierung)", "value": 3.5 },
+        { "text": "5+% (Investment)", "value": 5.0 }
+      ]
+    },
+    {
+      "id": "adresse",
+      "type": "group",
+      "dataType": "string",
+      "label": "Wo befindet sich das Objekt?",
+      "fields": [
+        { "id": "plz", "type": "number", "placeholder": "Objekt PLZ (5-stellig)" },
+        { "id": "ort", "type": "text", "placeholder": "Ort" },
+        {
+          "type": "row",
+          "fields": [
+            { "id": "strasse", "type": "text", "placeholder": "Straße", "flex": "1" },
+            { "id": "hausnummer", "type": "text", "placeholder": "Nr.", "flex": "0 0 80px" }
+          ]
+        },
+        {
+          "type": "row",
+          "fields": [
+            { "id": "Vorname", "type": "text", "placeholder": "Vorname", "flex": "1" },
+            { "id": "Nachname", "type": "text", "placeholder": "Nachname", "flex": "1" }
+          ]
+        },
+        { "id": "E-Mail", "type": "email", "placeholder": "E-Mail-Adresse" }
+      ]
+    },
+    {
+      "id": "summary",
+      "type": "summary",
+      "label": "Zusammenfassung"
+    },
+    {
+      "id": "consent",
+      "type": "consent",
+      "label": "Datenschutz",
+      "required": true
+    }
+  ]
+}

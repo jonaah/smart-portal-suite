@@ -1,0 +1,133 @@
+{
+  "form_id": "projekte_mit_mir",
+  "form_type": "Projekte mit mir",
+  "title": "Projekte mit mir",
+  "nc_form_title": "Projekte mit mir",
+  "steps": [
+    {
+      "id": "projektname",
+      "type": "text",
+      "dataType": "string",
+      "label": "Wie soll dein Projekt heißen?",
+      "desc": "Vergib einen kurzen Namen, damit wir dein Projekt eindeutig zuordnen können.<br>Beispiele: <em>Sanierung Einfamilienhaus &middot; Wärmepumpe 2026 &middot; Fenstererneuerung</em>",
+      "placeholder": "z.B. Sanierung Einfamilienhaus",
+      "maxLength": 80,
+      "required": true
+    },
+    {
+      "id": "projekttyp",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Um welche Art von Projekt handelt es sich?",
+      "desc": "Die Auswahl hilft uns, die richtige Förderung und die passenden Unterlagen vorzubereiten.",
+      "choices": [
+        { "text": "individueller Sanierungsfahrplan (iSFP)", "subtitle": "Ganzheitliche Sanierungsplanung nach BEG" },
+        { "text": "Effizienzhaus nach KfW", "subtitle": "KfW-Förderung Energieeffizient Sanieren" },
+        { "text": "Einzelmaßnahme (Fenster, Heizung, Heizungsoptimierung, Heizung, ...)", "subtitle": "Fenster, Heizung, Daemmung, Heizungsoptimierung..." },
+        { "text": "Verbrauchsausweis", "subtitle": "Energieausweis fuer Vermietung/Verkauf" }
+      ]
+    },
+    {
+      "id": "adresse",
+      "type": "address-full",
+      "dataType": "string",
+      "label": "Wo befindet sich das Objekt?",
+      "desc": "Vollstaendige Adresse des Gebaeudes. Die PLZ wird automatisch dem Ort zugeordnet.",
+      "required": true
+    },
+    {
+      "id": "foerderung",
+      "type": "radio",
+      "dataType": "string",
+      "label": "Förderinformationen - falls bekannt",
+      "desc": "Bitte geben Sie an, ob Sie eine Förderung nutzen möchten.<br>Wir prüfen anschließend, welche Programme für Ihr Projekt möglich sind.",
+      "choices": [
+        { "text": "keine Förderung geplant" },
+        { "text": "BAFA Einzelmaßnahme" },
+        { "text": "KfW Effizienzhaus" },
+        { "text": "KfW Einzelmaßnahme" }
+      ]
+    },
+    {
+      "id": "massnahme",
+      "type": "textarea",
+      "dataType": "string",
+      "label": "Maßnahmenbeschreibung",
+      "desc": "Bitte beschreibe kurz, welche Maßnahme geplant ist.<br>Beispiele: <em>Austausch der Heizung gegen Wärmepumpe &middot; Dämmung der Fassade &middot; Fenstertausch &middot; Dachsanierung</em>",
+      "placeholder": "z.B. Austausch der Ölheizung gegen eine Luft-Wasser-Wärmepumpe inkl. Heizkörpertausch...",
+      "maxLength": 500,
+      "required": false
+    },
+    {
+      "id": "investitionskosten",
+      "type": "text",
+      "dataType": "string",
+      "label": "Geschätzte Investitionskosten",
+      "desc": "Bitte gib die geschätzten Gesamtkosten der Maßnahme an.<br>Wenn bereits ein Angebot vorliegt, kannst du den Betrag aus dem Angebot übernehmen.",
+      "placeholder": "z.B. 35.000",
+      "maxLength": 20,
+      "required": false
+    },
+    {
+      "id": "umsetzungszeitraum",
+      "type": "date",
+      "dataType": "string",
+      "label": "Geplanter Umsetzungszeitraum",
+      "desc": "Wann soll die Maßnahme ungefähr umgesetzt werden?",
+      "placeholder": "",
+      "required": false
+    },
+    {
+      "id": "vorliegende_dokumente",
+      "type": "checkbox-multi",
+      "dataType": "array",
+      "label": "Was liegt bereits vor?",
+      "desc": "Waehle alle Dokumente aus, die du heute schon hochladen kannst. Fehlende Unterlagen kannst du jederzeit nachreichen.",
+      "choices": [
+        { "id": "angebot", "text": "Angebot / Kostenvoranschlag", "subtitle": "Vorliegendes Angebot eines Handwerksbetriebs" },
+        { "id": "rechnungen", "text": "Rechnungen", "subtitle": "Fuer abgeschlossene Massnahmen (Auszahlung & Verwendungsnachweis)" },
+        { "id": "fachunternehmer", "text": "Fachunternehmererklaerung", "subtitle": "Bestaetigung des ausfuehrenden Betriebs" },
+        { "id": "sonstiges", "text": "Sonstiges", "subtitle": "Technische Datenblaetter, Foerderbescheide, Vertraege, Planungsunterlagen..." }
+      ]
+    },
+    {
+      "id": "upload_angebot",
+      "type": "upload",
+      "dataType": "file",
+      "label": "Angebot / Kostenvoranschlag hochladen",
+      "showIf": { "field": "vorliegende_dokumente", "op": "in", "value": "angebot" }
+    },
+    {
+      "id": "upload_rechnungen",
+      "type": "upload",
+      "dataType": "file",
+      "label": "Rechnungen hochladen",
+      "showIf": { "field": "vorliegende_dokumente", "op": "in", "value": "rechnungen" }
+    },
+    {
+      "id": "upload_fachunternehmer",
+      "type": "upload",
+      "dataType": "file",
+      "label": "Fachunternehmererklärung hochladen",
+      "showIf": { "field": "vorliegende_dokumente", "op": "in", "value": "fachunternehmer" }
+    },
+    {
+      "id": "upload_sonstiges",
+      "type": "upload",
+      "dataType": "file",
+      "label": "Sonstige Dokumente hochladen",
+      "showIf": { "field": "vorliegende_dokumente", "op": "in", "value": "sonstiges" }
+    },
+    {
+      "id": "summary",
+      "type": "summary",
+      "label": "Zusammenfassung"
+    },
+    {
+      "id": "consent",
+      "type": "consent",
+      "label": "Datenschutz",
+      "required": true
+    }
+  ]
+}
