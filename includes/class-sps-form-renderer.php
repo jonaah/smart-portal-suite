@@ -1,6 +1,6 @@
 <?php
 /**
- * Form Renderer and Shortcode Handler
+ * Form Renderer, Shortcode Handler, and Schema Registry
  *
  * @package SmartPortalSuite
  */
@@ -40,43 +40,54 @@ class SPS_Form_Renderer {
 	 */
 	private function __construct() {
 		add_shortcode( self::SHORTCODE_TAG, array( $this, 'render_shortcode' ) );
+
+		// Register assets on init to guarantee availability in FSE block themes & Gutenberg
+		add_action( 'init', array( $this, 'register_assets' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_assets' ) );
 	}
 
 	/**
-	 * Register frontend assets.
+	 * Register frontend assets (idempotent).
 	 */
 	public function register_assets() {
-		wp_register_style(
-			'sps-portal-base',
-			SPS_PLUGIN_URL . 'assets/css/portal-base.css',
-			array(),
-			SPS_VERSION
-		);
+		if ( ! wp_style_is( 'sps-portal-base', 'registered' ) ) {
+			wp_register_style(
+				'sps-portal-base',
+				SPS_PLUGIN_URL . 'assets/css/portal-base.css',
+				array(),
+				SPS_VERSION
+			);
+		}
 
-		wp_register_script(
-			'sps-osm-autocomplete',
-			SPS_PLUGIN_URL . 'assets/js/osm-autocomplete.js',
-			array(),
-			SPS_VERSION,
-			true
-		);
+		if ( ! wp_script_is( 'sps-osm-autocomplete', 'registered' ) ) {
+			wp_register_script(
+				'sps-osm-autocomplete',
+				SPS_PLUGIN_URL . 'assets/js/osm-autocomplete.js',
+				array(),
+				SPS_VERSION,
+				true
+			);
+		}
 
-		wp_register_script(
-			'sps-calculations',
-			SPS_PLUGIN_URL . 'assets/js/calculations.js',
-			array(),
-			SPS_VERSION,
-			true
-		);
+		if ( ! wp_script_is( 'sps-calculations', 'registered' ) ) {
+			wp_register_script(
+				'sps-calculations',
+				SPS_PLUGIN_URL . 'assets/js/calculations.js',
+				array(),
+				SPS_VERSION,
+				true
+			);
+		}
 
-		wp_register_script(
-			'sps-form-engine',
-			SPS_PLUGIN_URL . 'assets/js/form-engine.js',
-			array( 'sps-osm-autocomplete', 'sps-calculations' ),
-			SPS_VERSION,
-			true
-		);
+		if ( ! wp_script_is( 'sps-form-engine', 'registered' ) ) {
+			wp_register_script(
+				'sps-form-engine',
+				SPS_PLUGIN_URL . 'assets/js/form-engine.js',
+				array( 'sps-osm-autocomplete', 'sps-calculations' ),
+				SPS_VERSION,
+				true
+			);
+		}
 	}
 
 	/**
@@ -90,27 +101,58 @@ class SPS_Form_Renderer {
 			'id' => '',
 		), $atts, self::SHORTCODE_TAG );
 
-		$form_id = sanitize_key( $atts['id'] );
-		if ( empty( $form_id ) ) {
-			return '<!-- SPS: Formular-ID fehlt -->';
+		$raw_id = sanitize_key( $atts['id'] );
+		if ( empty( $raw_id ) ) {
+			return '<!-- SPS: Formular-ID fehlt im Shortcode [sps_form id="..."] -->';
 		}
 
-		$schema = $this->load_schema( $form_id );
+		// Ensure assets are registered even if FSE evaluated this block prior to init/enqueue hooks
+		$this->register_assets();
+
+		// Load schema
+		$schema = $this->load_schema( $raw_id );
 		if ( ! $schema ) {
-			return sprintf( '<!-- SPS: Schema für Formular "%s" nicht gefunden -->', esc_html( $form_id ) );
+			return sprintf( '<!-- SPS: Schema für Formular "%s" nicht gefunden -->', esc_html( $raw_id ) );
 		}
+
+		$form_id = sanitize_key( isset( $schema['form_id'] ) ? $schema['form_id'] : $raw_id );
 
 		// Enqueue styles & scripts
 		wp_enqueue_style( 'sps-portal-base' );
 		wp_enqueue_script( 'sps-form-engine' );
 
-		wp_localize_script( 'sps-form-engine', 'spsFormData_' . str_replace( '-', '_', $form_id ), array(
+		// Global shared configuration
+		static $config_localized = false;
+		if ( ! $config_localized ) {
+			wp_localize_script( 'sps-form-engine', 'spsGlobalConfig', array(
+				'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+				'nonce'     => wp_create_nonce( SPS_Ajax_Handler::NONCE_ACTION ),
+				'iconsUrl'  => SPS_PLUGIN_URL . 'assets/icons/portal-icons.svg',
+				'siteUrl'   => home_url(),
+				'i18n'      => array(
+					'required'       => __( 'Bitte füllen Sie dieses Feld aus.', 'smart-portal-suite' ),
+					'invalidEmail'   => __( 'Bitte geben Sie eine gültige E-Mail-Adresse ein.', 'smart-portal-suite' ),
+					'fileTooLarge'   => __( 'Datei ist zu groß (max. 10 MB).', 'smart-portal-suite' ),
+					'fileTypeError'  => __( 'Dieser Dateityp ist nicht erlaubt.', 'smart-portal-suite' ),
+					'submitting'     => __( 'Wird gesendet...', 'smart-portal-suite' ),
+					'submit'         => __( 'Absenden', 'smart-portal-suite' ),
+					'retry'          => __( 'Erneut versuchen', 'smart-portal-suite' ),
+					'networkError'   => __( 'Netzwerkfehler. Bitte versuchen Sie es erneut.', 'smart-portal-suite' ),
+					'next'           => __( 'Weiter', 'smart-portal-suite' ),
+					'back'           => __( 'Zurück', 'smart-portal-suite' ),
+				),
+			) );
+			$config_localized = true;
+		}
+
+		// Prepare container data
+		$form_config = array(
+			'formId'    => $form_id,
 			'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
 			'nonce'     => wp_create_nonce( SPS_Ajax_Handler::NONCE_ACTION ),
-			'schema'    => $schema,
 			'iconsUrl'  => SPS_PLUGIN_URL . 'assets/icons/portal-icons.svg',
-			'timestamp' => time(),
-		) );
+			'schema'    => $schema,
+		);
 
 		ob_start();
 		$template_path = SPS_PLUGIN_DIR . 'templates/form-container.php';
@@ -123,23 +165,59 @@ class SPS_Form_Renderer {
 	/**
 	 * Load JSON schema for a given form ID.
 	 *
+	 * Checks exact match, underscore, and hyphen variations.
+	 *
 	 * @param string $form_id Form identifier.
 	 * @return array|null Decoded schema array or null on failure.
 	 */
 	public function load_schema( $form_id ) {
-		$file_path = SPS_PLUGIN_DIR . 'config/forms/' . $form_id . '.json';
-		if ( ! file_exists( $file_path ) ) {
-			// Fallback: try hyphenated or underscored version
-			$alt_id    = str_replace( '_', '-', $form_id );
-			$file_path = SPS_PLUGIN_DIR . 'config/forms/' . $alt_id . '.json';
-			if ( ! file_exists( $file_path ) ) {
-				return null;
+		$candidates = array(
+			$form_id,
+			str_replace( '_', '-', $form_id ),
+			str_replace( '-', '_', $form_id ),
+		);
+
+		$candidates = array_unique( $candidates );
+
+		foreach ( $candidates as $candidate ) {
+			$file_path = SPS_PLUGIN_DIR . 'config/forms/' . $candidate . '.json';
+			if ( file_exists( $file_path ) ) {
+				$json_content = file_get_contents( $file_path );
+				$decoded      = json_decode( $json_content, true );
+				if ( is_array( $decoded ) && ! empty( $decoded['steps'] ) ) {
+					return apply_filters( 'sps_form_schema', $decoded, $form_id );
+				}
 			}
 		}
 
-		$json_content = file_get_contents( $file_path );
-		$decoded      = json_decode( $json_content, true );
+		return null;
+	}
 
-		return is_array( $decoded ) ? $decoded : null;
+	/**
+	 * Get list of all available forms in config/forms/ directory.
+	 *
+	 * @return array Array of [ 'id' => ..., 'title' => ..., 'file' => ... ]
+	 */
+	public function get_available_forms() {
+		$forms = array();
+		$files = glob( SPS_PLUGIN_DIR . 'config/forms/*.json' );
+
+		if ( ! empty( $files ) ) {
+			foreach ( $files as $file ) {
+				$json_content = file_get_contents( $file );
+				$data         = json_decode( $json_content, true );
+				if ( is_array( $data ) && isset( $data['title'] ) ) {
+					$id = basename( $file, '.json' );
+					$forms[ $id ] = array(
+						'id'          => $id,
+						'form_id'     => isset( $data['form_id'] ) ? $data['form_id'] : $id,
+						'title'       => $data['title'],
+						'steps_count' => isset( $data['steps'] ) ? count( $data['steps'] ) : 0,
+					);
+				}
+			}
+		}
+
+		return apply_filters( 'sps_available_forms', $forms );
 	}
 }
