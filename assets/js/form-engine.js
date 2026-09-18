@@ -66,17 +66,29 @@ window.SPS = window.SPS || {};
     }
 
     /**
-     * Generates an inline SVG element referencing a symbol ID in the preloaded SVG sprite sheet.
-     * Supports various input formats, e.g.: "#icon-house", "icon-house", or "house".
+     * Generates an SVG element referencing a sprite symbol, or returns an inline SVG string directly.
      *
-     * @param {string} iconName - The identifier or filename of the icon.
-     * @param {string} [customClass=''] - Additional CSS class names to attach to the <svg> element.
-     * @returns {string} Safe SVG markup referencing the sprite symbol, or an empty string if iconName is empty.
+     * Supported formats:
+     *  - "#icon-house"  → sprite symbol reference
+     *  - "icon-house"   → sprite symbol reference
+     *  - "<svg ...>"    → returned as-is (inline SVG)
+     *
+     * @param {string} iconName    - Symbol ID, or raw inline SVG markup.
+     * @param {string} [customClass=''] - CSS class appended to the <svg> wrapper.
+     * @returns {string} SVG markup string.
      */
     function renderIcon(iconName, customClass = '') {
         if (!iconName) return '';
-        const raw = String(iconName).trim().replace(/^#/, '');
-        const iconId = raw.startsWith('icon-') ? raw : 'icon-' + raw;
+        const trimmed = String(iconName).trim();
+
+        // Raw inline SVG string: pass through directly, wrapped in a div for sizing
+        if (trimmed.startsWith('<svg') || trimmed.startsWith('<SVG')) {
+            return `<span class="sps-icon-inline ${customClass}" aria-hidden="true">${trimmed}</span>`;
+        }
+
+        // Sprite symbol reference
+        const raw       = trimmed.replace(/^#/, '');
+        const iconId    = raw.startsWith('icon-') ? raw : 'icon-' + raw;
         const cleanName = raw.replace(/^icon-/, '');
 
         return `<svg class="sps-icon ${customClass} sps-icon-${escapeAttr(cleanName)}" aria-hidden="true" focusable="false"><use href="#${escapeAttr(iconId)}"></use></svg>`;
@@ -121,56 +133,88 @@ window.SPS = window.SPS || {};
 
     /**
      * 2. Range Slider Renderer ('slider')
-     * Renders a continuous or stepped HTML5 range input accompanied by a live value display badge
-     * and minimum/maximum boundary markers. Formats numbers using SPS.Calculations.formatUnit() if available.
      *
-     * @param {Object} step - Step configuration from JSON schema.
-     * @param {string} step.id - Unique field identifier.
-     * @param {number} [step.min=0] - Lower slider boundary.
-     * @param {number} [step.max=100] - Upper slider boundary.
-     * @param {number} [step.step=1] - Incremental step size.
-     * @param {number} [step.value] - Default initial value.
-     * @param {string} [step.suffix=''] - Measurement unit suffix (e.g. ' kWh', ' %', ' €').
-     * @param {FormInstance} form - Active FormInstance owning this step.
-     * @returns {string} HTML markup for the slider component.
+     * Renders a two-column wrapper on desktop:
+     *   - Left column (.sps-slider-hero-icon): 180px fixed SVG illustration from step.icon.
+     *   - Right column (.sps-slider-container): value badge, discrete buttons OR range track.
+     *
+     * Discrete mode activates automatically when the step has 2–7 discrete values
+     * (determined via SPS.Calculations.getSliderStepValues). In this mode the range
+     * input is hidden (.is-hidden) and clickable buttons (.sps-slider-option) are shown instead.
+     *
+     * Optional schema fields processed here (no hardcoding of form-specific logic):
+     *  - step.referenceBadge  → displays a dynamically calculated badge (e.g. "Ø 3 Personen")
+     *  - step.conversion      → displays a secondary formatted value (e.g. "15.000 kWh / 1.531 Liter")
+     *
+     * @param {Object}       step - Step configuration from JSON schema.
+     * @param {FormInstance} form - Active FormInstance.
+     * @returns {string} HTML markup.
      */
     registerField('slider', function(step, form) {
-        const cfg = form.getStepConfig(step);
-        let currentVal = form.getAnswer(step.id);
+        const cfg         = form.getStepConfig(step);
+        const Calc        = SPS.Calculations;
+        let   currentVal  = form.getAnswer(step.id);
+
         if (currentVal === undefined || currentVal === null) {
             currentVal = cfg.value !== undefined ? cfg.value : (cfg.min || 0);
             form.setAnswer(step.id, currentVal, false);
         }
-        
-        const displayVal = (SPS.Calculations && SPS.Calculations.formatUnit) 
-            ? SPS.Calculations.formatUnit(currentVal, cfg.suffix || '') 
-            : currentVal + (cfg.suffix || '');
+
+        // Determine discrete values (2–7 steps → show buttons)
+        const discreteValues = (Calc && Calc.getSliderStepValues)
+            ? Calc.getSliderStepValues(cfg.min, cfg.max, cfg.step)
+            : [];
+        const isDiscrete = discreteValues.length > 0;
+
+        // Compute initial display value (conversion takes priority over plain suffix)
+        let displayVal;
+        if (step.conversion && Calc && Calc.resolveConversion) {
+            displayVal = Calc.resolveConversion(currentVal, step.conversion, form.answers);
+        } else {
+            displayVal = Calc ? Calc.formatUnit(currentVal, cfg.suffix || '') : (currentVal + (cfg.suffix || ''));
+        }
+
+        // Compute initial reference badge text (e.g. "Ø 3 Personen")
+        let badgeText = '';
+        if (step.referenceBadge && Calc && Calc.calculateReferenceBadge) {
+            badgeText = Calc.calculateReferenceBadge(currentVal, step.referenceBadge) || '';
+        }
+
+        // Discrete option buttons HTML
+        let discreteHtml = '';
+        if (isDiscrete) {
+            discreteHtml = `<div class="sps-slider-options active" data-target="${escapeAttr(step.id)}" role="group" aria-label="Wertauswahl">`;
+            discreteValues.forEach(val => {
+                const isActive = Math.abs(Number(currentVal) - val) < 1e-9;
+                discreteHtml += `<button type="button" class="sps-slider-option${isActive ? ' active' : ''}" data-slider-id="${escapeAttr(step.id)}" data-value="${val}">${val}</button>`;
+            });
+            discreteHtml += '</div>';
+        }
 
         return `
-            <div class="sps-slider-container">
-                <div class="sps-slider-header">
-                    <span class="sps-slider-value" id="${form.instanceId}_val_${step.id}">${SPS.escapeHtml(displayVal)}</span>
-                </div>
-                <div class="sps-slider-track-wrap">
-                    <input type="range" 
-                           id="${form.instanceId}_input_${step.id}" 
-                           class="sps-slider" 
-                           min="${cfg.min || 0}" 
-                           max="${cfg.max || 100}" 
-                           step="${cfg.step || 1}" 
+            <div class="sps-slider-wrapper">
+                ${step.icon ? `<div class="sps-slider-hero-icon">${renderIcon(step.icon, 'sps-hero-svg')}</div>` : ''}
+                <div class="sps-slider-container">
+                    ${badgeText ? `<div class="sps-slider-badge" id="${escapeAttr(form.instanceId)}_badge_${escapeAttr(step.id)}" aria-live="polite">${SPS.escapeHtml(badgeText)}</div>` : ''}
+                    <span class="sps-slider-val" id="${escapeAttr(form.instanceId)}_val_${escapeAttr(step.id)}">${SPS.escapeHtml(displayVal)}</span>
+                    <input type="range"
+                           id="${escapeAttr(form.instanceId)}_input_${escapeAttr(step.id)}"
+                           class="sps-slider${isDiscrete ? ' is-hidden' : ''}"
+                           min="${cfg.min !== undefined ? cfg.min : 0}"
+                           max="${cfg.max !== undefined ? cfg.max : 100}"
+                           step="${cfg.step !== undefined ? cfg.step : 1}"
                            value="${currentVal}"
                            aria-label="${SPS.escapeAttr(step.label || '')}"
-                           aria-valuemin="${cfg.min || 0}"
-                           aria-valuemax="${cfg.max || 100}"
+                           aria-valuemin="${cfg.min !== undefined ? cfg.min : 0}"
+                           aria-valuemax="${cfg.max !== undefined ? cfg.max : 100}"
                            aria-valuenow="${currentVal}">
-                </div>
-                <div class="sps-slider-range-labels">
-                    <span>${cfg.min || 0}${SPS.escapeHtml(cfg.suffix || '')}</span>
-                    <span>${cfg.max || 100}${SPS.escapeHtml(cfg.suffix || '')}</span>
+                    ${isDiscrete ? discreteHtml : `<div class="sps-slider-options" data-target="${escapeAttr(step.id)}"></div>`}
+                    ${step.conversion ? `<div class="sps-slider-conversion" id="${escapeAttr(form.instanceId)}_conv_${escapeAttr(step.id)}" aria-live="polite"></div>` : ''}
                 </div>
             </div>
         `;
     });
+
 
     /**
      * 3. Text & Generic Inputs Renderer ('text', 'email', 'tel', 'number')
@@ -542,7 +586,6 @@ window.SPS = window.SPS || {};
             this.container.innerHTML = `
                 <div class="sps-form-wrapper" role="form" aria-label="${SPS.escapeAttr(this.schema.title || 'Formular')}">
                     <div class="sps-progress-header">
-                        <div class="sps-step-counter" id="${this.instanceId}_step_counter">Schritt 1</div>
                         <div class="sps-progress-container" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                             <div class="sps-progress-bar" id="${this.instanceId}_progress_bar"></div>
                         </div>
@@ -554,7 +597,7 @@ window.SPS = window.SPS || {};
 
             this.stepsTarget = this.container.querySelector(`#${this.instanceId}_steps`);
             this.progressBar = this.container.querySelector(`#${this.instanceId}_progress_bar`);
-            this.counterEl = this.container.querySelector(`#${this.instanceId}_step_counter`);
+            this.counterEl = null;
 
             // Render all steps into DOM
             this.renderAllSteps();
@@ -592,16 +635,19 @@ window.SPS = window.SPS || {};
          * @returns {string} Step HTML markup.
          */
         renderStepHtml(step, index) {
-            const renderer = getFieldRenderer(step.type);
+            const renderer    = getFieldRenderer(step.type);
             const contentHtml = renderer(step, this);
-            const isLast = (index === this.steps.length - 1);
+            const isLast      = (index === this.steps.length - 1);
+            // For sliders, the icon is rendered inside the sps-slider-wrapper (hero position).
+            // Therefore we must NOT render it again in the step header above the question.
+            const showHeaderIcon = step.icon && step.type !== 'slider';
 
             return `
                 <div class="sps-step" id="${this.instanceId}_step_${index}" data-step-index="${index}" aria-hidden="true">
                     <div class="sps-step-header">
-                        ${step.icon ? `<div class="sps-step-icon-wrap">${renderIcon(step.icon, 'sps-step-icon')}</div>` : ''}
+                        ${showHeaderIcon ? `<div class="sps-step-icon-wrap">${renderIcon(step.icon, 'sps-step-icon')}</div>` : ''}
                         ${step.label ? `<h3 class="sps-question">${SPS.escapeHtml(step.label)}</h3>` : ''}
-                        ${step.desc ? `<div class="sps-desc">${step.desc}</div>` : ''}
+                        ${step.desc  ? `<div class="sps-desc">${step.desc}</div>` : ''}
                         ${step.reason ? `<div class="sps-reason-box"><span class="sps-reason-icon">&#9432;</span> <span class="sps-reason-text">${SPS.escapeHtml(step.reason)}</span></div>` : ''}
                     </div>
 
@@ -612,12 +658,12 @@ window.SPS = window.SPS || {};
                     <div class="sps-error-banner" id="${this.instanceId}_err_${index}" style="display:none;" role="alert"></div>
 
                     <div class="sps-nav-buttons">
-                        ${index > 0 
-                            ? `<button type="button" class="sps-btn sps-btn-back" data-action="prev">Zurück</button>` 
+                        ${index > 0
+                            ? `<button type="button" class="sps-btn sps-btn-back" data-action="prev">Zurück</button>`
                             : '<div></div>'}
-                        
-                        ${!isLast 
-                            ? `<button type="button" class="sps-btn sps-btn-next" data-action="next">Weiter</button>` 
+
+                        ${!isLast
+                            ? `<button type="button" class="sps-btn sps-btn-next" data-action="next">Weiter</button>`
                             : `<button type="button" class="sps-btn sps-btn-submit" data-action="submit">Absenden</button>`}
                     </div>
                 </div>
@@ -657,7 +703,7 @@ window.SPS = window.SPS || {};
                         const stepEl = radioCard.closest('.sps-step');
                         const stepIdx = parseInt(stepEl.getAttribute('data-step-index'), 10);
                         const step = this.steps[stepIdx];
-                        
+
                         input.checked = true;
                         this.setAnswer(step.id, input.value);
 
@@ -672,6 +718,35 @@ window.SPS = window.SPS || {};
                             }
                         }, 260);
                     }
+                }
+
+                // Discrete slider option buttons
+                const sliderOptionBtn = e.target.closest('.sps-slider-option');
+                if (sliderOptionBtn) {
+                    const sliderId = sliderOptionBtn.getAttribute('data-slider-id');
+                    const value    = parseFloat(sliderOptionBtn.getAttribute('data-value'));
+                    if (sliderId === undefined || isNaN(value)) return;
+
+                    // Sync the hidden range input
+                    const stepEl  = sliderOptionBtn.closest('.sps-step');
+                    const stepIdx = parseInt(stepEl.getAttribute('data-step-index'), 10);
+                    const step    = this.steps[stepIdx];
+                    const inputEl = document.getElementById(`${this.instanceId}_input_${sliderId}`);
+                    if (inputEl) inputEl.value = value;
+
+                    // Store the answer
+                    this.setAnswer(sliderId, value);
+
+                    // Update active class
+                    const optionBtns = sliderOptionBtn.closest('.sps-slider-options');
+                    if (optionBtns) {
+                        optionBtns.querySelectorAll('.sps-slider-option').forEach(b => {
+                            b.classList.toggle('active', Math.abs(parseFloat(b.getAttribute('data-value')) - value) < 1e-9);
+                        });
+                    }
+
+                    // Update the displayed value
+                    this._updateSliderDisplay(stepEl, step, value);
                 }
             });
 
@@ -726,19 +801,17 @@ window.SPS = window.SPS || {};
                 const stepEl = target.closest('.sps-step');
                 if (!stepEl) return;
                 const stepIdx = parseInt(stepEl.getAttribute('data-step-index'), 10);
-                const step = this.steps[stepIdx];
+                const step    = this.steps[stepIdx];
 
-                // Slider live value
+                // Slider live value update
                 if (target.type === 'range') {
-                    const cfg = this.getStepConfig(step);
-                    const valEl = stepEl.querySelector(`#${this.instanceId}_val_${step.id}`);
-                    if (valEl) {
-                        const displayVal = (SPS.Calculations && SPS.Calculations.formatUnit) 
-                            ? SPS.Calculations.formatUnit(target.value, cfg.suffix || '') 
-                            : target.value + (cfg.suffix || '');
-                        valEl.textContent = displayVal;
+                    const value = parseFloat(target.value);
+                    this.setAnswer(step.id, value);
+                    this._updateSliderDisplay(stepEl, step, value);
+                    // Update gradient fill
+                    if (SPS.Calculations && SPS.Calculations.updateSliderGradient) {
+                        SPS.Calculations.updateSliderGradient(target);
                     }
-                    this.setAnswer(step.id, parseFloat(target.value));
                     return;
                 }
 
@@ -791,6 +864,57 @@ window.SPS = window.SPS || {};
 
             // Autocomplete setup for address-full steps
             this.setupAddressAutocomplete();
+        }
+
+        /**
+         * Updates the displayed value, optional reference badge, and optional conversion text
+         * for a slider step. Fully schema-driven: reads step.conversion and step.referenceBadge
+         * from the JSON schema — no hardcoded field names or fuel factors anywhere in this method.
+         *
+         * Called both from the 'input' event handler (continuous sliders) and from the
+         * discrete button click handler (.sps-slider-option).
+         *
+         * @param {HTMLElement} stepEl - The .sps-step DOM element containing the slider.
+         * @param {Object}      step   - The step config from this.steps[].
+         * @param {number}      value  - The new numeric slider value.
+         */
+        _updateSliderDisplay(stepEl, step, value) {
+            const Calc = SPS.Calculations;
+            const cfg  = this.getStepConfig(step);
+
+            // 1. Main value display
+            const valEl = document.getElementById(`${this.instanceId}_val_${step.id}`);
+            if (valEl) {
+                let displayVal;
+                if (step.conversion && Calc && Calc.resolveConversion) {
+                    displayVal = Calc.resolveConversion(value, step.conversion, this.answers);
+                } else if (Calc && Calc.formatUnit) {
+                    displayVal = Calc.formatUnit(value, cfg.suffix || '');
+                } else {
+                    displayVal = value + (cfg.suffix || '');
+                }
+                valEl.textContent = displayVal;
+            }
+
+            // 2. Reference badge (e.g. "Ø 3 Personen") — deklarativ aus step.referenceBadge
+            if (step.referenceBadge) {
+                const badgeEl = document.getElementById(`${this.instanceId}_badge_${step.id}`);
+                if (badgeEl && Calc && Calc.calculateReferenceBadge) {
+                    const text = Calc.calculateReferenceBadge(value, step.referenceBadge);
+                    if (text) {
+                        badgeEl.textContent = text;
+                        badgeEl.hidden = false;
+                    } else {
+                        badgeEl.hidden = true;
+                    }
+                }
+            }
+
+            // 3. Update track gradient
+            const sliderInput = document.getElementById(`${this.instanceId}_input_${step.id}`);
+            if (sliderInput && Calc && Calc.updateSliderGradient) {
+                Calc.updateSliderGradient(sliderInput);
+            }
         }
 
         /**

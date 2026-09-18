@@ -21,10 +21,26 @@
       "label": "Um welche Art von Projekt handelt es sich?",
       "desc": "Die Auswahl hilft uns, die richtige Förderung und die passenden Unterlagen vorzubereiten.",
       "choices": [
-        { "text": "individueller Sanierungsfahrplan (iSFP)", "subtitle": "Ganzheitliche Sanierungsplanung nach BEG", "icon": "icon-document" },
-        { "text": "Effizienzhaus nach KfW", "subtitle": "KfW-Förderung Energieeffizient Sanieren", "icon": "icon-building" },
-        { "text": "Einzelmaßnahme (Fenster, Heizung, Heizungsoptimierung, Heizung, ...)", "subtitle": "Fenster, Heizung, Daemmung, Heizungsoptimierung...", "icon": "icon-renovation" },
-        { "text": "Verbrauchsausweis", "subtitle": "Energieausweis fuer Vermietung/Verkauf", "icon": "icon-solar" }
+        {
+          "text": "individueller Sanierungsfahrplan (iSFP)",
+          "subtitle": "Ganzheitliche Sanierungsplanung nach BEG",
+          "icon": "icon-document"
+        },
+        {
+          "text": "Effizienzhaus nach KfW",
+          "subtitle": "KfW-Förderung Energieeffizient Sanieren",
+          "icon": "icon-building"
+        },
+        {
+          "text": "Einzelmaßnahme (Fenster, Heizung, Heizungsoptimierung, Heizung, ...)",
+          "subtitle": "Fenster, Heizung, Daemmung, Heizungsoptimierung...",
+          "icon": "icon-renovation"
+        },
+        {
+          "text": "Verbrauchsausweis",
+          "subtitle": "Energieausweis fuer Vermietung/Verkauf",
+          "icon": "icon-solar"
+        }
       ]
     },
     {
@@ -42,10 +58,18 @@
       "label": "Förderinformationen - falls bekannt",
       "desc": "Bitte geben Sie an, ob Sie eine Förderung nutzen möchten.<br>Wir prüfen anschließend, welche Programme für Ihr Projekt möglich sind.",
       "choices": [
-        { "text": "keine Förderung geplant" },
-        { "text": "BAFA Einzelmaßnahme" },
-        { "text": "KfW Effizienzhaus" },
-        { "text": "KfW Einzelmaßnahme" }
+        {
+          "text": "keine Förderung geplant"
+        },
+        {
+          "text": "BAFA Einzelmaßnahme"
+        },
+        {
+          "text": "KfW Effizienzhaus"
+        },
+        {
+          "text": "KfW Einzelmaßnahme"
+        }
       ]
     },
     {
@@ -84,10 +108,30 @@
       "label": "Was liegt bereits vor?",
       "desc": "Waehle alle Dokumente aus, die du heute schon hochladen kannst. Fehlende Unterlagen kannst du jederzeit nachreichen.",
       "choices": [
-        { "id": "angebot", "text": "Angebot / Kostenvoranschlag", "subtitle": "Vorliegendes Angebot eines Handwerksbetriebs", "icon": "icon-document" },
-        { "id": "rechnungen", "text": "Rechnungen", "subtitle": "Fuer abgeschlossene Massnahmen (Auszahlung & Verwendungsnachweis)", "icon": "icon-euro" },
-        { "id": "fachunternehmer", "text": "Fachunternehmererklaerung", "subtitle": "Bestaetigung des ausfuehrenden Betriebs", "icon": "icon-check" },
-        { "id": "sonstiges", "text": "Sonstiges", "subtitle": "Technische Datenblaetter, Foerderbescheide, Vertraege, Planungsunterlagen...", "icon": "icon-upload" }
+        {
+          "id": "angebot",
+          "text": "Angebot / Kostenvoranschlag",
+          "subtitle": "Vorliegendes Angebot eines Handwerksbetriebs",
+          "icon": "icon-pm-angebot"
+        },
+        {
+          "id": "rechnungen",
+          "text": "Rechnungen",
+          "subtitle": "Fuer abgeschlossene Massnahmen (Auszahlung & Verwendungsnachweis)",
+          "icon": "icon-pm-rechnungen"
+        },
+        {
+          "id": "fachunternehmer",
+          "text": "Fachunternehmererklaerung",
+          "subtitle": "Bestaetigung des ausfuehrenden Betriebs",
+          "icon": "icon-pm-fachunternehmer"
+        },
+        {
+          "id": "sonstiges",
+          "text": "Sonstiges",
+          "subtitle": "Technische Datenblaetter, Foerderbescheide, Vertraege, Planungsunterlagen...",
+          "icon": "icon-pm-sonstiges"
+        }
       ]
     },
     {
@@ -95,28 +139,44 @@
       "type": "upload",
       "dataType": "file",
       "label": "Angebot / Kostenvoranschlag hochladen",
-      "showIf": { "field": "vorliegende_dokumente", "op": "in", "value": "angebot" }
+      "showIf": {
+        "field": "vorliegende_dokumente",
+        "op": "in",
+        "value": "angebot"
+      }
     },
     {
       "id": "upload_rechnungen",
       "type": "upload",
       "dataType": "file",
       "label": "Rechnungen hochladen",
-      "showIf": { "field": "vorliegende_dokumente", "op": "in", "value": "rechnungen" }
+      "showIf": {
+        "field": "vorliegende_dokumente",
+        "op": "in",
+        "value": "rechnungen"
+      }
     },
     {
       "id": "upload_fachunternehmer",
       "type": "upload",
       "dataType": "file",
       "label": "Fachunternehmererklärung hochladen",
-      "showIf": { "field": "vorliegende_dokumente", "op": "in", "value": "fachunternehmer" }
+      "showIf": {
+        "field": "vorliegende_dokumente",
+        "op": "in",
+        "value": "fachunternehmer"
+      }
     },
     {
       "id": "upload_sonstiges",
       "type": "upload",
       "dataType": "file",
       "label": "Sonstige Dokumente hochladen",
-      "showIf": { "field": "vorliegende_dokumente", "op": "in", "value": "sonstiges" }
+      "showIf": {
+        "field": "vorliegende_dokumente",
+        "op": "in",
+        "value": "sonstiges"
+      }
     },
     {
       "id": "summary",

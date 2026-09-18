@@ -35,8 +35,10 @@ const server = http.createServer((req, res) => {
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f1f5f9; padding: 2rem; }
   </style>
 </head>
-<body>
-  <h1>Smart Portal Suite - Testbench</h1>
+  <div class="sps-svg-sprite-storage" style="display:none !important;" aria-hidden="true">
+    ${fs.existsSync(path.join(BASE_DIR, 'assets/icons/portal-icons.svg')) ? fs.readFileSync(path.join(BASE_DIR, 'assets/icons/portal-icons.svg'), 'utf-8') : ''}
+    ${fs.existsSync(path.join(BASE_DIR, 'assets/icons/gebaeude-check.svg')) ? fs.readFileSync(path.join(BASE_DIR, 'assets/icons/gebaeude-check.svg'), 'utf-8') : ''}
+  </div>
   <div class="sps-form-container" data-sps-form-id="gebaeude_check"></div>
 
   <script src="/assets/js/osm-autocomplete.js"></script>

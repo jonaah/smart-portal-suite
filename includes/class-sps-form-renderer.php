@@ -176,9 +176,20 @@ class SPS_Form_Renderer {
 			$this->enqueue_sprite( $custom_sprite_path );
 		}
 
-		$form_specific_sprite = SPS_PLUGIN_DIR . 'assets/icons/' . $form_id . '.svg';
-		if ( file_exists( $form_specific_sprite ) ) {
-			$this->enqueue_sprite( $form_specific_sprite );
+		// Attempt to load a form-specific SVG sprite.
+		// Normalise the form_id: try both hyphen and underscore variants so that
+		// e.g. "gebaeude_check" finds "gebaeude-check.svg" and vice versa.
+		$sprite_id_variants = array_unique( array(
+			$form_id,
+			str_replace( '-', '_', $form_id ),
+			str_replace( '_', '-', $form_id ),
+		) );
+		foreach ( $sprite_id_variants as $variant ) {
+			$form_specific_sprite = SPS_PLUGIN_DIR . 'assets/icons/' . $variant . '.svg';
+			if ( file_exists( $form_specific_sprite ) ) {
+				$this->enqueue_sprite( $form_specific_sprite );
+				break; // Only load the first matching sprite per form
+			}
 		}
 
 		// Global shared configuration
