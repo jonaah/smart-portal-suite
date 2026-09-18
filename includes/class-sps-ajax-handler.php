@@ -83,35 +83,37 @@ class SPS_Ajax_Handler {
 		$fallback_triggered = false;
 		$error_message = '';
 		$nc_form_id = '';
+
+		SPS_Diagnostics::log( sprintf( 'Formularübertragung gestartet: %s', $form_type ), 'info' );
 		
 		// 1. Resolve Form ID
 		$form_id_result = $nc_forms->resolve_form_id( $form_type );
 		if ( is_wp_error( $form_id_result ) ) {
-			SPS_Diagnostics::log_error( 'Failed to resolve form ID for: ' . $form_type );
+			$error_message = 'Formular ID konnte nicht aufgelöst werden: ' . $form_id_result->get_error_message();
+			SPS_Diagnostics::log( $error_message, 'warning' );
 			$fallback_triggered = true;
-			$error_message = 'Formular ID Konnte nicht aufgelöst werden.';
 		} else {
 			$nc_form_id = $form_id_result;
 			// 2. Get Questions
 			$questions = $nc_forms->get_questions( $nc_form_id );
 			if ( is_wp_error( $questions ) || empty( $questions ) ) {
-				SPS_Diagnostics::log_error( 'Failed to load questions for form ID: ' . $nc_form_id );
+				$error_message = 'Formulardefinition konnte nicht geladen werden (ID: ' . $nc_form_id . ')';
+				SPS_Diagnostics::log( $error_message, 'warning' );
 				$fallback_triggered = true;
-				$error_message = 'Formulardefinition konnte nicht geladen werden.';
 			} else {
 				// 3. Map Answers
 				$mapped_answers = $nc_forms->map_answers( $questions, $answers );
 				if ( empty( $mapped_answers ) ) {
-					SPS_Diagnostics::log_error( 'Answer mapping resulted in empty payload.' );
+					$error_message = 'Antwort-Mapping ergab leeres Payload.';
+					SPS_Diagnostics::log( $error_message, 'warning' );
 					$fallback_triggered = true;
-					$error_message = 'Mapping ergab leeres Payload.';
 				} else {
 					// 4. Submit
 					$submit_result = $nc_forms->submit_form( $nc_form_id, $mapped_answers );
 					if ( is_wp_error( $submit_result ) ) {
-						SPS_Diagnostics::log_error( 'Failed to submit form: ' . $submit_result->get_error_message() );
+						$error_message = 'Forms API Submission fehlgeschlagen: ' . $submit_result->get_error_message();
+						SPS_Diagnostics::log( $error_message, 'warning' );
 						$fallback_triggered = true;
-						$error_message = 'Submission Fehler: ' . $submit_result->get_error_message();
 					}
 				}
 			}
@@ -119,18 +121,39 @@ class SPS_Ajax_Handler {
 
 		// WebDAV Fallback if API fails
 		if ( $fallback_triggered ) {
+			SPS_Diagnostics::log( sprintf( 'Leite WebDAV-Fallback für "%s" ein (Grund: %s)', $form_type, $error_message ), 'warning' );
+
 			$fallback_result = $webdav->store_lead_fallback( $answers, sanitize_title( $form_type ) );
 			if ( is_wp_error( $fallback_result ) ) {
-				SPS_Diagnostics::log_error( 'WebDAV Fallback failed: ' . $fallback_result->get_error_message() );
+				$fatal_err = 'WebDAV Fallback fehlgeschlagen: ' . $fallback_result->get_error_message();
+				SPS_Diagnostics::log( $fatal_err, 'error' );
 				wp_send_json_error( array( 'message' => __( 'Es gab einen Fehler bei der Übermittlung. Bitte versuchen Sie es später erneut.', 'smart-portal-suite' ) ), 500 );
 			}
 			
+			SPS_Diagnostics::log( sprintf( 'Lead für "%s" erfolgreich per WebDAV gespeichert.', $form_type ), 'info' );
+
+			// Admin Benachrichtigung per E-Mail senden
+			$admin_email = SPS_Settings::get_setting( 'admin_email' );
+			if ( ! empty( $admin_email ) && is_email( $admin_email ) ) {
+				$subject = sprintf( '[%s] Warnung: Nextcloud Forms Fallback aktiv (%s)', get_bloginfo( 'name' ), $form_type );
+				$body    = sprintf(
+					"Hallo Administrator,\n\neine Formularübermittlung für \"%s\" konnte nicht direkt an die Nextcloud Forms API übergeben werden.\n\nGrund: %s\n\nDie Lead-Daten wurden sicher als JSON im WebDAV-Fallback-Verzeichnis abgelegt.\n\nZeitpunkt: %s\nWebsite: %s",
+					$form_type,
+					$error_message,
+					current_time( 'mysql' ),
+					home_url()
+				);
+				wp_mail( $admin_email, $subject, $body );
+			}
+
 			// If fallback succeeds, we can still show a success message to the user!
 			wp_send_json_success( array(
 				'message' => __( 'Formulardaten erfolgreich empfangen (Fallback).', 'smart-portal-suite' ),
 				'form_id' => $form_type,
 			) );
 		}
+
+		SPS_Diagnostics::log( sprintf( 'Formular "%s" erfolgreich an Nextcloud Forms übertragen (Form ID: %s).', $form_type, $nc_form_id ), 'info' );
 
 		wp_send_json_success( array(
 			'message' => __( 'Formulardaten erfolgreich übermittelt.', 'smart-portal-suite' ),
