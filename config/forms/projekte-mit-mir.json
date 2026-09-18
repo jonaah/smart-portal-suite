@@ -21,10 +21,10 @@
       "label": "Um welche Art von Projekt handelt es sich?",
       "desc": "Die Auswahl hilft uns, die richtige Förderung und die passenden Unterlagen vorzubereiten.",
       "choices": [
-        { "text": "individueller Sanierungsfahrplan (iSFP)", "subtitle": "Ganzheitliche Sanierungsplanung nach BEG" },
-        { "text": "Effizienzhaus nach KfW", "subtitle": "KfW-Förderung Energieeffizient Sanieren" },
-        { "text": "Einzelmaßnahme (Fenster, Heizung, Heizungsoptimierung, Heizung, ...)", "subtitle": "Fenster, Heizung, Daemmung, Heizungsoptimierung..." },
-        { "text": "Verbrauchsausweis", "subtitle": "Energieausweis fuer Vermietung/Verkauf" }
+        { "text": "individueller Sanierungsfahrplan (iSFP)", "subtitle": "Ganzheitliche Sanierungsplanung nach BEG", "icon": "icon-document" },
+        { "text": "Effizienzhaus nach KfW", "subtitle": "KfW-Förderung Energieeffizient Sanieren", "icon": "icon-building" },
+        { "text": "Einzelmaßnahme (Fenster, Heizung, Heizungsoptimierung, Heizung, ...)", "subtitle": "Fenster, Heizung, Daemmung, Heizungsoptimierung...", "icon": "icon-renovation" },
+        { "text": "Verbrauchsausweis", "subtitle": "Energieausweis fuer Vermietung/Verkauf", "icon": "icon-solar" }
       ]
     },
     {
@@ -84,10 +84,10 @@
       "label": "Was liegt bereits vor?",
       "desc": "Waehle alle Dokumente aus, die du heute schon hochladen kannst. Fehlende Unterlagen kannst du jederzeit nachreichen.",
       "choices": [
-        { "id": "angebot", "text": "Angebot / Kostenvoranschlag", "subtitle": "Vorliegendes Angebot eines Handwerksbetriebs" },
-        { "id": "rechnungen", "text": "Rechnungen", "subtitle": "Fuer abgeschlossene Massnahmen (Auszahlung & Verwendungsnachweis)" },
-        { "id": "fachunternehmer", "text": "Fachunternehmererklaerung", "subtitle": "Bestaetigung des ausfuehrenden Betriebs" },
-        { "id": "sonstiges", "text": "Sonstiges", "subtitle": "Technische Datenblaetter, Foerderbescheide, Vertraege, Planungsunterlagen..." }
+        { "id": "angebot", "text": "Angebot / Kostenvoranschlag", "subtitle": "Vorliegendes Angebot eines Handwerksbetriebs", "icon": "icon-document" },
+        { "id": "rechnungen", "text": "Rechnungen", "subtitle": "Fuer abgeschlossene Massnahmen (Auszahlung & Verwendungsnachweis)", "icon": "icon-euro" },
+        { "id": "fachunternehmer", "text": "Fachunternehmererklaerung", "subtitle": "Bestaetigung des ausfuehrenden Betriebs", "icon": "icon-check" },
+        { "id": "sonstiges", "text": "Sonstiges", "subtitle": "Technische Datenblaetter, Foerderbescheide, Vertraege, Planungsunterlagen...", "icon": "icon-upload" }
       ]
     },
     {

@@ -8,24 +8,26 @@
       "id": "typ",
       "type": "radio",
       "dataType": "string",
+      "icon": "icon-house-single",
       "label": "Um was für einen Gebäudetyp handelt es sich?",
       "reason": "Der Gebäudetyp beeinflusst die Kompaktheit des Gebäudes und damit das Verhältnis von wärmeübertragender Hüllfläche zum beheizten Volumen.",
       "choices": [
-        { "text": "Freistehendes Haus" },
-        { "text": "Reihenmittelhaus" },
-        { "text": "Reihenendhaus/Doppelhaushälfte" }
+        { "text": "Freistehendes Haus", "icon": "icon-house-single" },
+        { "text": "Reihenmittelhaus", "icon": "icon-house-row-middle" },
+        { "text": "Reihenendhaus/Doppelhaushälfte", "icon": "icon-house-semi" }
       ]
     },
     {
       "id": "nutzung",
       "type": "radio",
       "dataType": "string",
+      "icon": "icon-user",
       "label": "Aktuelle Nutzung?",
       "reason": "Beeinflusst standardisierte Annahmen zum Nutzerverhalten (z.B. Warmwasserverbrauch) und die Art möglicher Förderung.",
       "choices": [
-        { "text": "Eigennutzung (ausschließlich)" },
-        { "text": "Vermietung (ausschließlich)" },
-        { "text": "Eigennutzung + Vermietung" }
+        { "text": "Eigennutzung (ausschließlich)", "icon": "icon-user" },
+        { "text": "Vermietung (ausschließlich)", "icon": "icon-users" },
+        { "text": "Eigennutzung + Vermietung", "icon": "icon-building" }
       ]
     },
     {
