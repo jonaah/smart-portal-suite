@@ -1,10 +1,29 @@
 /**
  * Smart Portal Suite - Modular Form Engine
  *
- * Handles multi-step form rendering, validation, dynamic conditionals,
- * autocomplete, file uploads, and AJAX submissions.
+ * Client-side multi-step form engine for WordPress.
+ *
+ * Architecture & Responsibilities:
+ * --------------------------------
+ * 1. Schema Parsing: Reads JSON form configurations directly from embedded <script class="sps-schema-data">
+ *    elements, avoiding race conditions with standard wp_localize_script execution.
+ * 2. Step Lifecycle: Pre-renders all steps into the DOM and activates them via CSS classes (.sps-step.active),
+ *    providing smooth transitions, fast response times, and preserved DOM state across steps.
+ * 3. Dynamic Branching: Evaluates "showIf" conditional rules (eq, neq, gt, gte, lt, lte, in) on-the-fly
+ *    during navigation, calculating the next/previous visible steps seamlessly.
+ * 4. Dynamic Step Configs: Re-configures slider ranges (min, max, step, suffix) based on preceding choices
+ *    (e.g. heating type determining heating demand sliders).
+ * 5. State Management: Centralized key-value answer dictionary (answers{}) and binary file map (files{}).
+ * 6. File Uploads: Drag-and-drop dropzone, size limit enforcement (10MB), file extension filtering,
+ *    and FormData binary streaming.
+ * 7. OpenStreetMap Integration: Live Nominatim address autocompletion with 300ms debouncing and automatic
+ *    field distribution (street, house number, zip, city).
+ * 8. Validation & Anti-Bot: Granular step-by-step validation, honeypot spam protection, completion duration
+ *    measurement, and secure WordPress AJAX submission with nonce verification.
  *
  * @package SmartPortalSuite
+ * @author  Smart Portal Suite Contributors
+ * @version 1.0.0
  */
 
 window.SPS = window.SPS || {};
@@ -13,15 +32,32 @@ window.SPS = window.SPS || {};
     'use strict';
 
     /**
-     * Field Type Renderers Registry.
-     * New field types can be registered via SPS.registerField(type, rendererFn).
+     * Internal registry mapping field type strings (e.g. 'radio', 'slider', 'addressFull')
+     * to their respective HTML generator functions.
+     *
+     * @type {Object.<string, function(Object, FormInstance): string>}
      */
     const fieldRegistry = {};
 
+    /**
+     * Registers a custom field renderer in the global SPS registry.
+     * Third-party add-ons or custom form scripts can call SPS.registerField() to add new field types.
+     *
+     * @param {string} type - Unique identifier for the field type (e.g. 'signature', 'date-range').
+     * @param {function(Object, FormInstance): string} rendererFn - Callback that takes (stepConfig, formInstance) and returns HTML string.
+     */
     function registerField(type, rendererFn) {
         fieldRegistry[type] = rendererFn;
     }
 
+    /**
+     * Resolves the renderer function for a given step type.
+     * Automatically normalizes hyphenated names (e.g. 'address-full' -> 'addressFull')
+     * and falls back to the default 'text' input renderer if an unknown type is encountered.
+     *
+     * @param {string} type - The field type string from the JSON schema.
+     * @returns {function(Object, FormInstance): string} The resolved renderer function.
+     */
     function getFieldRenderer(type) {
         // Normalize type names (e.g. 'address-full' -> 'addressFull' or exact match)
         if (fieldRegistry[type]) return fieldRegistry[type];
@@ -30,8 +66,12 @@ window.SPS = window.SPS || {};
     }
 
     /**
-     * Render an SVG icon referencing a symbol in the SVG sprite.
-     * Supports both "#icon-dateiname", "icon-dateiname", and "dateiname".
+     * Generates an inline SVG element referencing a symbol ID in the preloaded SVG sprite sheet.
+     * Supports various input formats, e.g.: "#icon-house", "icon-house", or "house".
+     *
+     * @param {string} iconName - The identifier or filename of the icon.
+     * @param {string} [customClass=''] - Additional CSS class names to attach to the <svg> element.
+     * @returns {string} Safe SVG markup referencing the sprite symbol, or an empty string if iconName is empty.
      */
     function renderIcon(iconName, customClass = '') {
         if (!iconName) return '';
@@ -44,7 +84,18 @@ window.SPS = window.SPS || {};
 
     // --- Core Field Renderers ---
 
-    // 1. Radio Cards
+    /**
+     * 1. Radio Cards Renderer ('radio')
+     * Renders a responsive grid of selectable option cards with optional icons, titles, and subtitles.
+     * When selected, adds an '.is-selected' CSS class and triggers a smooth auto-advance after 260ms.
+     *
+     * @param {Object} step - Step configuration from JSON schema.
+     * @param {string} step.id - Unique field identifier.
+     * @param {string} [step.label] - Accessible label for the radio group.
+     * @param {Array.<{text: string, value?: *, icon?: string, subtitle?: string}>} step.choices - Available options.
+     * @param {FormInstance} form - Active FormInstance owning this step.
+     * @returns {string} HTML markup for the radio cards grid.
+     */
     registerField('radio', function(step, form) {
         const currentVal = form.getAnswer(step.id);
         let html = '<div class="sps-radio-grid" role="radiogroup" aria-label="' + SPS.escapeHtml(step.label || '') + '">';
@@ -68,7 +119,21 @@ window.SPS = window.SPS || {};
         return html;
     });
 
-    // 2. Slider
+    /**
+     * 2. Range Slider Renderer ('slider')
+     * Renders a continuous or stepped HTML5 range input accompanied by a live value display badge
+     * and minimum/maximum boundary markers. Formats numbers using SPS.Calculations.formatUnit() if available.
+     *
+     * @param {Object} step - Step configuration from JSON schema.
+     * @param {string} step.id - Unique field identifier.
+     * @param {number} [step.min=0] - Lower slider boundary.
+     * @param {number} [step.max=100] - Upper slider boundary.
+     * @param {number} [step.step=1] - Incremental step size.
+     * @param {number} [step.value] - Default initial value.
+     * @param {string} [step.suffix=''] - Measurement unit suffix (e.g. ' kWh', ' %', ' €').
+     * @param {FormInstance} form - Active FormInstance owning this step.
+     * @returns {string} HTML markup for the slider component.
+     */
     registerField('slider', function(step, form) {
         const cfg = form.getStepConfig(step);
         let currentVal = form.getAnswer(step.id);
@@ -107,7 +172,17 @@ window.SPS = window.SPS || {};
         `;
     });
 
-    // 3. Text & Generic Inputs
+    /**
+     * 3. Text & Generic Inputs Renderer ('text', 'email', 'tel', 'number')
+     * Renders standard single-line HTML5 inputs with length constraints and accessible labeling.
+     *
+     * @param {Object} step - Step configuration.
+     * @param {string} step.id - Unique field identifier.
+     * @param {string} [step.placeholder] - Placeholder text.
+     * @param {number} [step.maxLength=255] - Maximum character limit.
+     * @param {FormInstance} form - Form instance.
+     * @returns {string} HTML markup for the text input group.
+     */
     registerField('text', function(step, form) {
         const val = form.getAnswer(step.id) || '';
         return `
@@ -124,11 +199,22 @@ window.SPS = window.SPS || {};
         `;
     });
 
+    // Aliases for standard HTML5 input variants sharing the text renderer logic
     registerField('email', fieldRegistry['text']);
     registerField('tel', fieldRegistry['text']);
     registerField('number', fieldRegistry['text']);
 
-    // 4. Textarea
+    /**
+     * 4. Textarea Renderer ('textarea')
+     * Renders a multi-line text input for longer comments, project descriptions, or inquiries.
+     *
+     * @param {Object} step - Step configuration.
+     * @param {string} step.id - Unique field identifier.
+     * @param {string} [step.placeholder] - Placeholder text.
+     * @param {number} [step.maxLength=2000] - Maximum allowed characters.
+     * @param {FormInstance} form - Form instance.
+     * @returns {string} HTML markup for the textarea group.
+     */
     registerField('textarea', function(step, form) {
         const val = form.getAnswer(step.id) || '';
         return `
@@ -143,7 +229,15 @@ window.SPS = window.SPS || {};
         `;
     });
 
-    // 5. Date
+    /**
+     * 5. Date Picker Renderer ('date')
+     * Renders a native HTML5 date input with localized date formatting support in modern browsers.
+     *
+     * @param {Object} step - Step configuration.
+     * @param {string} step.id - Unique field identifier.
+     * @param {FormInstance} form - Form instance.
+     * @returns {string} HTML markup for the date input.
+     */
     registerField('date', function(step, form) {
         const val = form.getAnswer(step.id) || '';
         return `
@@ -157,7 +251,17 @@ window.SPS = window.SPS || {};
         `;
     });
 
-    // 6. Group / Nested Fields (e.g. Address fields or contact rows)
+    /**
+     * 6. Nested Field Groups Renderer ('group')
+     * Supports complex multi-input layouts arranged in flexible horizontal rows or vertical stacks
+     * (e.g. combined First Name + Last Name rows, or Phone + Email combos).
+     *
+     * @param {Object} step - Step configuration.
+     * @param {string} step.id - Parent group ID.
+     * @param {Array.<Object>} step.fields - Array of child fields or row definitions.
+     * @param {FormInstance} form - Form instance.
+     * @returns {string} HTML markup for nested input structures.
+     */
     registerField('group', function(step, form) {
         let html = '<div class="sps-group-wrapper">';
         (step.fields || []).forEach(f => {
@@ -197,7 +301,18 @@ window.SPS = window.SPS || {};
         return html;
     });
 
-    // 7. Full Address with OpenStreetMap Nominatim Autocomplete
+    /**
+     * 7. Full Address with OpenStreetMap Nominatim Autocomplete ('addressFull', 'address-full')
+     * Renders a live autocomplete search bar connected to the OpenStreetMap Nominatim API,
+     * coupled with discrete manual input fields for Straße (street), Hausnummer (house number),
+     * PLZ (postal code), and Ort (city). Selecting an autocomplete match automatically populates
+     * and dispatches change events to all manual fields.
+     *
+     * @param {Object} step - Step configuration.
+     * @param {string} step.id - Base address field identifier (creates sub-keys: id_strasse, id_hausnummer, id_plz, id_ort).
+     * @param {FormInstance} form - Form instance.
+     * @returns {string} HTML markup for the compound address widget.
+     */
     registerField('addressFull', function(step, form) {
         const streetVal = form.getAnswer(step.id + '_strasse') || '';
         const nrVal = form.getAnswer(step.id + '_hausnummer') || '';
@@ -244,7 +359,17 @@ window.SPS = window.SPS || {};
     });
     registerField('address-full', fieldRegistry['addressFull']);
 
-    // 8. Multi-Checkbox Cards
+    /**
+     * 8. Multi-Checkbox Cards Renderer ('checkboxMulti', 'checkbox-multi')
+     * Renders a grid of cards allowing multiple choices to be selected simultaneously.
+     * Selected values are stored as an array of IDs in answers[step.id].
+     *
+     * @param {Object} step - Step configuration.
+     * @param {string} step.id - Unique field identifier.
+     * @param {Array.<{id?: string, text: string, subtitle?: string, icon?: string}>} step.choices - Selectable options.
+     * @param {FormInstance} form - Form instance.
+     * @returns {string} HTML markup for the multi-select checkbox grid.
+     */
     registerField('checkboxMulti', function(step, form) {
         const currentVals = form.getAnswer(step.id) || [];
         let html = '<div class="sps-checkbox-grid" role="group" aria-label="' + SPS.escapeHtml(step.label || '') + '">';
@@ -270,7 +395,17 @@ window.SPS = window.SPS || {};
     });
     registerField('checkbox-multi', fieldRegistry['checkboxMulti']);
 
-    // 9. File Upload
+    /**
+     * 9. File Upload Dropzone Renderer ('upload')
+     * Renders an interactive drag-and-drop file upload zone supporting multi-file selection,
+     * visual dragover feedback, client-side size (10MB) & extension validation,
+     * and removable file badge chips.
+     *
+     * @param {Object} step - Step configuration.
+     * @param {string} step.id - Unique field identifier.
+     * @param {FormInstance} form - Form instance.
+     * @returns {string} HTML markup for the dropzone and file list.
+     */
     registerField('upload', function(step, form) {
         const files = form.getFiles(step.id) || [];
         const hasFiles = files.length > 0;
@@ -298,12 +433,29 @@ window.SPS = window.SPS || {};
         `;
     });
 
-    // 10. Summary
+    /**
+     * 10. Summary Review Renderer ('summary')
+     * Renders a placeholder container that dynamically compiles and lists all previously answered
+     * questions before the final submission step.
+     *
+     * @param {Object} step - Step configuration.
+     * @param {FormInstance} form - Form instance.
+     * @returns {string} HTML markup placeholder for dynamic summary injection.
+     */
     registerField('summary', function(step, form) {
         return `<div class="sps-summary-wrapper" id="${form.instanceId}_summary_content"></div>`;
     });
 
-    // 11. Consent (GDPR)
+    /**
+     * 11. Consent / GDPR Checkbox Renderer ('consent')
+     * Renders a compliant consent agreement card with a required checkbox and a link to the privacy policy.
+     *
+     * @param {Object} step - Step configuration.
+     * @param {string} step.id - Field identifier.
+     * @param {string} [step.label] - Custom consent text.
+     * @param {FormInstance} form - Form instance.
+     * @returns {string} HTML markup for the consent card.
+     */
     registerField('consent', function(step, form) {
         const isChecked = !!form.getAnswer(step.id);
         const inputId = `${form.instanceId}_consent_input`;
@@ -324,9 +476,17 @@ window.SPS = window.SPS || {};
     });
 
     /**
-     * Form Instance Class
+     * FormInstance Class
+     *
+     * Encapsulates the entire runtime state, DOM lifecycle, dynamic branching,
+     * validation rules, and AJAX network communication for an individual form container.
      */
     class FormInstance {
+        /**
+         * Initializes a new FormInstance tied to a specific DOM container.
+         *
+         * @param {HTMLElement} container - The wrapper element with class .sps-form-container.
+         */
         constructor(container) {
             this.container = container;
             this.instanceId = container.id || 'sps_form_' + Math.random().toString(36).substr(2, 9);
@@ -339,11 +499,20 @@ window.SPS = window.SPS || {};
             this.steps = [];
             this.currentStepIndex = 0;
             this.answers = {};
-            this.files = {}; // step.id -> File[]
+            this.files = {}; // Map of step.id -> File[]
 
             this.init();
         }
 
+        /**
+         * Bootstraps the form lifecycle:
+         * 1. Extracts the JSON schema from the inline <script class="sps-schema-data"> tag
+         *    (with a fallback to window['spsFormData_' + formId] for testing).
+         * 2. Renders the structural container skeleton (header, progress bar, step container).
+         * 3. Pre-renders all steps into the DOM for fast zero-latency step transitions.
+         * 4. Attaches container-wide event delegation listeners.
+         * 5. Navigates to the first visible step.
+         */
         init() {
             // Load schema from embedded script tag
             const schemaScript = this.container.querySelector('.sps-schema-data');
@@ -353,6 +522,12 @@ window.SPS = window.SPS || {};
                 } catch (err) {
                     console.error('[SPS] JSON Schema parse error:', err);
                 }
+            }
+
+            // Fallback for standalone test suites or legacy configurations
+            if (!this.schema && this.formId && window['spsFormData_' + this.formId]) {
+                const legacy = window['spsFormData_' + this.formId];
+                this.schema = legacy.schema || legacy;
             }
 
             if (!this.schema || !this.schema.steps) {
@@ -392,6 +567,11 @@ window.SPS = window.SPS || {};
             this.goTo(firstIdx !== -1 ? firstIdx : 0);
         }
 
+        /**
+         * Renders all form steps into the steps container DOM node.
+         * Steps are initially placed into the DOM with aria-hidden="true" and without
+         * the '.active' class, ensuring instant switching with no DOM re-creation costs.
+         */
         renderAllSteps() {
             let html = '';
             this.steps.forEach((step, idx) => {
@@ -400,6 +580,17 @@ window.SPS = window.SPS || {};
             this.stepsTarget.innerHTML = html;
         }
 
+        /**
+         * Compiles the complete outer HTML for an individual step, including:
+         * - Step Header: Optional SVG icon, question title (h3), description, and info/reason box.
+         * - Step Body: Generated by the dedicated field renderer matching step.type.
+         * - Error Banner: Hidden by default, activated during validation errors.
+         * - Navigation Footer: Back button (if index > 0), Next button (or Submit button on final step).
+         *
+         * @param {Object} step - Step configuration object from schema.
+         * @param {number} index - 0-based index of the step in this.steps.
+         * @returns {string} Step HTML markup.
+         */
         renderStepHtml(step, index) {
             const renderer = getFieldRenderer(step.type);
             const contentHtml = renderer(step, this);
@@ -433,6 +624,18 @@ window.SPS = window.SPS || {};
             `;
         }
 
+        /**
+         * Binds centralized event delegations on the container DOM node.
+         * Using container delegation guarantees that all dynamically created or updated
+         * inputs and buttons retain functioning event handlers without memory leaks.
+         *
+         * Delegated Event Handlers:
+         * - 'click': Navigation action buttons (next, prev, submit) and radio card selection with 260ms auto-advance.
+         * - 'change': Multi-checkbox array syncing, consent checkbox, file upload trigger, and standard input syncing.
+         * - 'input': Real-time range slider value display formatting (via SPS.Calculations) and live text answer sync.
+         * - 'keydown': Advances to the next step when the Enter key is pressed (excluding multiline textareas).
+         * - 'dragover', 'dragleave', 'drop': File drag-and-drop mechanics on .sps-upload-dropzone elements.
+         */
         bindEvents() {
             // Click delegations for navigation and choices
             this.container.addEventListener('click', (e) => {
@@ -590,6 +793,11 @@ window.SPS = window.SPS || {};
             this.setupAddressAutocomplete();
         }
 
+        /**
+         * Initializes OpenStreetMap Nominatim live address suggestions for compound address steps.
+         * Debounces user keystrokes by 300ms, requires at least 3 characters before querying,
+         * populates dropdown choices with main/sub titles, and dismisses dropdown on outside clicks.
+         */
         setupAddressAutocomplete() {
             const searchInput = this.container.querySelector('.sps-address-search');
             if (!searchInput || !SPS.Autocomplete) return;
@@ -652,6 +860,15 @@ window.SPS = window.SPS || {};
             });
         }
 
+        /**
+         * Takes parsed OpenStreetMap address details and distributes them into the discrete manual
+         * input fields (Straße, Hausnummer, PLZ, Ort). Dispatches native 'input' events so the
+         * form answers store updates immediately.
+         *
+         * @param {Object} data - Nominatim result object.
+         * @param {Object} [data.address] - Structured address properties (road, house_number, postcode, city/town).
+         * @param {string} data.display_name - Formatted full address string for the search input.
+         */
         applyAddressData(data) {
             const addr = data.address || {};
             const road = addr.road || addr.pedestrian || addr.suburb || '';
@@ -675,6 +892,16 @@ window.SPS = window.SPS || {};
         }
 
         // --- File Upload State & Rendering ---
+
+        /**
+         * Validates and stages files selected by the user for a given upload step.
+         * Enforces a maximum file size of 10 MB per file and checks against the extension whitelist:
+         * pdf, jpg, jpeg, png, webp, doc, docx.
+         * Prevents duplicate files based on name and size.
+         *
+         * @param {string} stepId - Field ID of the upload step.
+         * @param {FileList|File[]} fileList - Newly selected files.
+         */
         handleFileSelect(stepId, fileList) {
             if (!fileList || fileList.length === 0) return;
             this.files[stepId] = this.files[stepId] || [];
@@ -705,6 +932,12 @@ window.SPS = window.SPS || {};
             this.updateFileList(stepId);
         }
 
+        /**
+         * Removes a staged file by its array index and updates both the answer state and DOM list.
+         *
+         * @param {string} stepId - Field ID of the upload step.
+         * @param {number} fileIndex - Index of the file to remove.
+         */
         removeFile(stepId, fileIndex) {
             if (this.files[stepId]) {
                 this.files[stepId].splice(fileIndex, 1);
@@ -713,6 +946,13 @@ window.SPS = window.SPS || {};
             }
         }
 
+        /**
+         * Generates HTML markup for the staged files list, rendering file badges with name,
+         * human-readable size (KB/MB), and interactive remove trigger buttons.
+         *
+         * @param {string} stepId - Field ID of the upload step.
+         * @returns {string} Staged files list HTML.
+         */
         renderFileList(stepId) {
             const files = this.files[stepId] || [];
             if (files.length === 0) return '';
@@ -734,6 +974,11 @@ window.SPS = window.SPS || {};
             return html;
         }
 
+        /**
+         * Updates the file list DOM container for a given upload step.
+         *
+         * @param {string} stepId - Field ID of the upload step.
+         */
         updateFileList(stepId) {
             const listEl = this.container.querySelector(`#${this.instanceId}_filelist_${stepId}`);
             if (listEl) {
@@ -741,11 +986,28 @@ window.SPS = window.SPS || {};
             }
         }
 
+        /**
+         * Returns the staged File objects array for an upload step.
+         *
+         * @param {string} stepId - Field ID of the upload step.
+         * @returns {File[]|undefined} Array of File objects or undefined.
+         */
         getFiles(stepId) {
             return this.files[stepId];
         }
 
         // --- State Management ---
+
+        /**
+         * Sets or deletes a key-value pair in the instance's answers dictionary.
+         * If value is empty, null, or undefined, the key is removed.
+         * When triggerUpdates is true, clears active step error banners, re-evaluates
+         * dynamic slider configurations, and refreshes the summary review screen.
+         *
+         * @param {string} key - Identifier for the answer (usually step.id or subfield id).
+         * @param {*} value - Value to record (string, number, boolean, array).
+         * @param {boolean} [triggerUpdates=true] - Whether to trigger reactive UI updates.
+         */
         setAnswer(key, value, triggerUpdates = true) {
             if (value === undefined || value === null || value === '') {
                 delete this.answers[key];
@@ -760,10 +1022,24 @@ window.SPS = window.SPS || {};
             }
         }
 
+        /**
+         * Retrieves the current answer for a given field key.
+         *
+         * @param {string} key - Field identifier.
+         * @returns {*} Recorded value or undefined.
+         */
         getAnswer(key) {
             return this.answers[key];
         }
 
+        /**
+         * Resolves dynamic step configurations based on prior answers.
+         * If a step defines "dynamicConfig" with a "dependsOn" field (e.g. heating type),
+         * this method looks up the chosen option and merges the specific overrides (e.g. min, max, step, suffix).
+         *
+         * @param {Object} step - Step definition from schema.
+         * @returns {Object} Effective step configuration with dynamic overrides applied.
+         */
         getStepConfig(step) {
             if (step.dynamicConfig && step.dynamicConfig.dependsOn) {
                 const depVal = this.getAnswer(step.dynamicConfig.dependsOn);
@@ -774,6 +1050,10 @@ window.SPS = window.SPS || {};
             return step;
         }
 
+        /**
+         * Re-evaluates dynamic step configurations across all visible steps and updates
+         * the active DOM range slider attributes (min, max, step, current value, and unit badge).
+         */
         updateDynamicConfigs() {
             this.steps.forEach(step => {
                 if (step.dynamicConfig && this.isVisible(step)) {
@@ -801,6 +1081,10 @@ window.SPS = window.SPS || {};
             });
         }
 
+        /**
+         * Re-compiles the HTML for the summary review step, displaying a structured list
+         * of all answered questions and their formatted responses before final submission.
+         */
         updateSummary() {
             const summaryEl = this.container.querySelector(`#${this.instanceId}_summary_content`);
             if (!summaryEl) return;
@@ -827,6 +1111,26 @@ window.SPS = window.SPS || {};
         }
 
         // --- Navigation & Visibility ---
+
+        /**
+         * Evaluates whether a given step should be displayed or skipped based on its "showIf" conditional rule.
+         *
+         * Supported Operators:
+         * - 'eq': Strict string equality (e.g. fieldValue === cond.value)
+         * - 'neq': Strict string inequality (e.g. fieldValue !== cond.value)
+         * - 'gt': Numerical greater than (e.g. fieldValue > cond.value)
+         * - 'gte': Numerical greater than or equal (e.g. fieldValue >= cond.value)
+         * - 'lt': Numerical less than (e.g. fieldValue < cond.value)
+         * - 'lte': Numerical less than or equal (e.g. fieldValue <= cond.value)
+         * - 'in': Value inclusion (checks if cond.value is in fieldValue array or string equality)
+         *
+         * @param {Object} step - Step configuration object from schema.
+         * @param {Object} [step.showIf] - Conditional visibility rule.
+         * @param {string} step.showIf.field - ID of the dependency field.
+         * @param {string} step.showIf.op - Operator ('eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in').
+         * @param {*} step.showIf.value - Target comparison value.
+         * @returns {boolean} True if the step should be displayed; false if it should be skipped.
+         */
         isVisible(step) {
             if (!step.showIf) return true;
             const cond = step.showIf;
@@ -849,6 +1153,12 @@ window.SPS = window.SPS || {};
             }
         }
 
+        /**
+         * Finds the index of the next step after startIndex that satisfies isVisible().
+         *
+         * @param {number} startIndex - Starting step index.
+         * @returns {number} Next visible step index, or -1 if no further steps exist.
+         */
         findNextVisibleStep(startIndex) {
             for (let i = startIndex + 1; i < this.steps.length; i++) {
                 if (this.isVisible(this.steps[i])) return i;
@@ -856,6 +1166,12 @@ window.SPS = window.SPS || {};
             return -1;
         }
 
+        /**
+         * Finds the index of the preceding step before startIndex that satisfies isVisible().
+         *
+         * @param {number} startIndex - Starting step index.
+         * @returns {number} Preceding visible step index, or -1 if no prior steps exist.
+         */
         findPrevVisibleStep(startIndex) {
             for (let i = startIndex - 1; i >= 0; i--) {
                 if (this.isVisible(this.steps[i])) return i;
@@ -863,6 +1179,16 @@ window.SPS = window.SPS || {};
             return -1;
         }
 
+        /**
+         * Switches the active view to the specified step index:
+         * - Deactivates the current step (.sps-step.active, aria-hidden="true").
+         * - Activates the targeted step (.active, aria-hidden="false").
+         * - Moves input focus to the first interactive field for seamless keyboard typing.
+         * - Synchronizes the progress bar width and counter badge.
+         * - Refreshes the summary screen if applicable.
+         *
+         * @param {number} index - Index of the step to activate.
+         */
         goTo(index) {
             if (index < 0 || index >= this.steps.length) return;
 
@@ -892,6 +1218,9 @@ window.SPS = window.SPS || {};
             this.updateSummary();
         }
 
+        /**
+         * Validates the active step and advances forward to the next visible step.
+         */
         next() {
             if (!this.validateStep(this.currentStepIndex)) return;
             const nextIdx = this.findNextVisibleStep(this.currentStepIndex);
@@ -900,6 +1229,9 @@ window.SPS = window.SPS || {};
             }
         }
 
+        /**
+         * Navigates backward to the preceding visible step.
+         */
         prev() {
             const prevIdx = this.findPrevVisibleStep(this.currentStepIndex);
             if (prevIdx !== -1) {
@@ -907,6 +1239,11 @@ window.SPS = window.SPS || {};
             }
         }
 
+        /**
+         * Calculates the dynamic progress percentage and updates the progress bar and counter badge.
+         * Measures progress exclusively among currently visible steps, so skipped questions
+         * do not artificially skew completion percentages.
+         */
         updateProgress() {
             // Count total visible steps
             const visibleIndices = [];
@@ -927,6 +1264,19 @@ window.SPS = window.SPS || {};
             }
         }
 
+        /**
+         * Performs client-side validation on the specified step before allowing forward navigation or submission.
+         *
+         * Checks performed:
+         * - Required check on standard inputs and multi-checkboxes.
+         * - Consent check (GDPR checkbox must be checked).
+         * - Upload check (at least one valid file must be staged).
+         * - Address check (Straße, PLZ, and Ort are mandatory).
+         * - Email syntax check via regular expression.
+         *
+         * @param {number} index - Index of the step to validate.
+         * @returns {boolean} True if all validation rules pass; false otherwise.
+         */
         validateStep(index) {
             const step = this.steps[index];
             if (!step || !this.isVisible(step)) return true;
@@ -974,6 +1324,12 @@ window.SPS = window.SPS || {};
             return true;
         }
 
+        /**
+         * Renders and displays an alert message banner for a step.
+         *
+         * @param {number} index - Index of the step.
+         * @param {string} msg - Error message text.
+         */
         showError(index, msg) {
             const errEl = this.container.querySelector(`#${this.instanceId}_err_${index}`);
             if (errEl) {
@@ -982,6 +1338,11 @@ window.SPS = window.SPS || {};
             }
         }
 
+        /**
+         * Clears and hides the error message banner for a step.
+         *
+         * @param {number} index - Index of the step.
+         */
         hideError(index) {
             const errEl = this.container.querySelector(`#${this.instanceId}_err_${index}`);
             if (errEl) {
@@ -990,6 +1351,16 @@ window.SPS = window.SPS || {};
         }
 
         // --- Submission Flow ---
+
+        /**
+         * Handles the asynchronous form submission to the WordPress backend:
+         * 1. Validates the final step.
+         * 2. Sets loading spinner state on the submit button.
+         * 3. Reads honeypot input (sps_hp) and records completion duration (sps_duration_ms).
+         * 4. Assembles a multipart/form-data payload with answers JSON and staged binary files.
+         * 5. Performs a fetch() POST request to admin-ajax.php (action: 'sps_submit_form').
+         * 6. Renders the success confirmation view or reports error messages.
+         */
         submit() {
             if (!this.validateStep(this.currentStepIndex)) return;
 
@@ -1051,6 +1422,11 @@ window.SPS = window.SPS || {};
             });
         }
 
+        /**
+         * Replaces the form container markup with an elegant success confirmation screen.
+         *
+         * @param {string} message - Success description message.
+         */
         renderSuccess(message) {
             this.container.innerHTML = `
                 <div class="sps-form-wrapper sps-success-box" role="alert">
@@ -1062,6 +1438,11 @@ window.SPS = window.SPS || {};
             `;
         }
 
+        /**
+         * Displays a fatal error view when schema loading or critical initialization fails.
+         *
+         * @param {string} message - Error description text.
+         */
         renderError(message) {
             this.container.innerHTML = `
                 <div class="sps-form-wrapper sps-error-box" role="alert">
@@ -1074,8 +1455,20 @@ window.SPS = window.SPS || {};
     }
 
     // --- Form Instances Registry ---
+
+    /**
+     * Internal registry mapping form instance IDs to their active FormInstance objects.
+     * @type {Object.<string, FormInstance>}
+     */
     const instances = {};
 
+    /**
+     * Mounts and initializes a form on the specified DOM container element.
+     * Prevents double mounting via the '.sps-mounted' class check.
+     *
+     * @param {HTMLElement} container - DOM container element with class .sps-form-container.
+     * @returns {FormInstance|null} Newly created FormInstance or null if invalid/already mounted.
+     */
     function mount(container) {
         if (!container || container.classList.contains('sps-mounted')) return null;
         const instance = new FormInstance(container);
@@ -1083,16 +1476,33 @@ window.SPS = window.SPS || {};
         return instance;
     }
 
+    /**
+     * Automatically queries the entire DOM for all unmounted form containers
+     * and initializes them. Safe to call multiple times or after AJAX page loads.
+     */
     function initAll() {
         const containers = document.querySelectorAll('.sps-form-container:not(.sps-mounted)');
         containers.forEach(el => mount(el));
     }
 
+    /**
+     * Retrieves an active FormInstance by its instance ID.
+     *
+     * @param {string} instanceId - Unique instance identifier.
+     * @returns {FormInstance|undefined} Matching form instance.
+     */
     function getForm(instanceId) {
         return instances[instanceId];
     }
 
     // --- Utilities ---
+
+    /**
+     * Escapes special characters in a string to prevent Cross-Site Scripting (XSS) in HTML bodies.
+     *
+     * @param {*} str - Raw input value.
+     * @returns {string} Sanitized string safe for HTML output.
+     */
     function escapeHtml(str) {
         if (str === null || str === undefined) return '';
         return String(str)
@@ -1103,11 +1513,17 @@ window.SPS = window.SPS || {};
             .replace(/'/g, '&#039;');
     }
 
+    /**
+     * Escapes special characters in a string to prevent attribute injection vulnerabilities.
+     *
+     * @param {*} str - Raw input value.
+     * @returns {string} Sanitized string safe for attribute output.
+     */
     function escapeAttr(str) {
         return escapeHtml(str);
     }
 
-    // Export public API
+    // --- Public API Exports ---
     SPS.FormInstance = FormInstance;
     SPS.mount = mount;
     SPS.initAll = initAll;
@@ -1117,7 +1533,7 @@ window.SPS = window.SPS || {};
     SPS.escapeHtml = escapeHtml;
     SPS.escapeAttr = escapeAttr;
 
-    // Automatic Mounting Lifecycle
+    // --- Automatic Lifecycle Hooks ---
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initAll);
     } else {
@@ -1126,3 +1542,4 @@ window.SPS = window.SPS || {};
     window.addEventListener('load', initAll);
 
 })(window.SPS);
+
