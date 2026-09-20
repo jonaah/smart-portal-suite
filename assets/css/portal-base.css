@@ -55,7 +55,7 @@
     max-width: 100%;
     margin: 0 auto;
     padding: clamp(16px, 3vw, 30px);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     color: var(--sps-text-main);
     background: var(--sps-bg-main);
     line-height: 1.5;
@@ -134,7 +134,7 @@
 }
 
 .sps-question {
-    font-size: clamp(48px, 6.4vw, 64px);
+    font-size: clamp(32px, 6.4vw, 64px);
     font-weight: 800;
     line-height: 1.3;
     margin: 0;
@@ -160,11 +160,13 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    vertical-align: middle;
+    margin-left: 10px;
 }
 
 .sps-reason-icon {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     color: var(--sps-accent);
     cursor: help;
     transition: transform 0.2s;
@@ -190,13 +192,24 @@
     border-radius: var(--sps-radius-md);
     color: var(--sps-text-main);
     font-size: clamp(13px, 1.5vw, 14px);
-    text-align: center;
+    font-weight: 400;
     line-height: 1.4;
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: normal;
+    text-align: left;
     opacity: 0;
     visibility: hidden;
     transition: all 0.2s ease;
     z-index: 999;
     pointer-events: none;
+}
+
+.sps-reason-tooltip strong {
+    color: #ffffff;
+    display: inline-block;
+    margin-bottom: 4px;
+    font-weight: 700;
 }
 
 .sps-reason-tooltip::after {
@@ -209,10 +222,22 @@
     border-color: transparent transparent var(--sps-accent) transparent;
 }
 
-.sps-reason-tooltip-wrapper:hover .sps-reason-tooltip {
+.sps-reason-tooltip-wrapper:hover .sps-reason-tooltip,
+.sps-reason-tooltip-wrapper:focus .sps-reason-tooltip,
+.sps-reason-tooltip-wrapper:focus-within .sps-reason-tooltip {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
+}
+
+.sps-reason-tooltip-wrapper:focus {
+    outline: none;
+}
+
+.sps-reason-tooltip-wrapper:focus-visible .sps-reason-icon {
+    outline: 2px solid var(--sps-accent);
+    outline-offset: 2px;
+    border-radius: 50%;
 }
 
 /* ═══════════════════════════════════════════
@@ -658,6 +683,137 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+}
+
+/* ═══════════════════════════════════════════
+   ADRESS-AUTOCOMPLETE & OPENSTREETMAP
+   ═══════════════════════════════════════════ */
+.sps-address-box,
+.sps-address-full {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.sps-address-search-wrap,
+.sps-osm-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.sps-autocomplete-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--sps-bg-surface);
+    border: 1px solid var(--sps-accent);
+    border-radius: var(--sps-radius-md);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    z-index: 1000;
+    max-height: 240px;
+    overflow-y: auto;
+    display: none;
+}
+
+.sps-autocomplete-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sps-autocomplete-dropdown::-webkit-scrollbar-thumb {
+    background: var(--sps-card-bg);
+    border-radius: 3px;
+}
+
+.sps-autocomplete-item {
+    padding: 11px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--sps-border-color);
+    transition: var(--sps-transition);
+    text-align: left;
+}
+
+.sps-autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.sps-autocomplete-item:hover {
+    background: var(--sps-card-hover);
+    padding-left: 20px;
+}
+
+.sps-autocomplete-item .sps-item-main {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--sps-text-main);
+}
+
+.sps-autocomplete-item .sps-item-sub {
+    font-size: 13px;
+    color: var(--sps-text-dim);
+    margin-top: 3px;
+}
+
+/* ═══════════════════════════════════════════
+   CONSENT & DATENSCHUTZ CHECKBOX
+   ═══════════════════════════════════════════ */
+.sps-consent-card {
+    display: flex;
+    align-items: flex-start;
+    text-align: left;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--sps-border-color);
+    border-radius: var(--sps-radius-md);
+    transition: var(--sps-transition);
+    width: 100%;
+}
+
+.sps-consent-card:hover {
+    border-color: var(--sps-border-active);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sps-consent-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    width: 100%;
+    margin: 0;
+    user-select: none;
+}
+
+.sps-consent-checkbox {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--sps-accent);
+    margin-top: 2px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.sps-consent-text {
+    font-size: 14px;
+    color: var(--sps-text-muted);
+    line-height: 1.45;
+}
+
+.sps-consent-link {
+    color: var(--sps-accent);
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--sps-transition);
+}
+
+.sps-consent-link:hover {
+    color: var(--sps-accent-hover);
+    text-decoration: underline;
 }
 
 /* ═══════════════════════════════════════════

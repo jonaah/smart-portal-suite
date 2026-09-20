@@ -725,7 +725,7 @@
       "max": 2026,
       "step": 1,
       "value": 2000,
-      "icon": "icon-slider-aussenwand-jahr"
+      "icon": "icon-slider-calendar"
     },
     {
       "id": "fenster_typ",
@@ -806,7 +806,7 @@
       "max": 2026,
       "step": 1,
       "value": 2000,
-      "icon": "icon-slider-fenster-jahr"
+      "icon": "icon-slider-calendar"
     },
     {
       "id": "dachart",
@@ -864,7 +864,7 @@
       "max": 2026,
       "step": 1,
       "value": 2000,
-      "icon": "icon-slider-dach-jahr"
+      "icon": "icon-slider-calendar"
     },
     {
       "id": "kellerdecke",
@@ -932,7 +932,7 @@
       "max": 2026,
       "step": 1,
       "value": 2000,
-      "icon": "icon-slider-keller-jahr"
+      "icon": "icon-slider-calendar"
     },
     {
       "id": "zinssatz",
@@ -1020,14 +1020,14 @@
           "type": "email",
           "placeholder": "E-Mail-Adresse",
           "required": true
+        },
+        {
+          "id": "consent",
+          "type": "consent",
+          "label": "Ich akzeptiere die Datenschutzbestimmungen und stimme der Verarbeitung meiner Daten zu.",
+          "required": true
         }
       ]
-    },
-    {
-      "id": "consent",
-      "type": "consent",
-      "label": "Datenschutz",
-      "required": true
     }
   ]
 }

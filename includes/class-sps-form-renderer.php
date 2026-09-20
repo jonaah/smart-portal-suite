@@ -198,9 +198,10 @@ class SPS_Form_Renderer {
 			wp_localize_script( 'sps-form-engine', 'spsGlobalConfig', array(
 				'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
 				'nonce'     => wp_create_nonce( SPS_Ajax_Handler::NONCE_ACTION ),
-				'iconsUrl'  => SPS_PLUGIN_URL . 'assets/icons/portal-icons.svg',
-				'siteUrl'   => home_url(),
-				'i18n'      => array(
+				'iconsUrl'   => SPS_PLUGIN_URL . 'assets/icons/portal-icons.svg',
+				'siteUrl'    => home_url(),
+				'privacyUrl' => SPS_Settings::get_setting( 'privacy_url', '/datenschutz' ),
+				'i18n'       => array(
 					'required'       => __( 'Bitte füllen Sie dieses Feld aus.', 'smart-portal-suite' ),
 					'invalidEmail'   => __( 'Bitte geben Sie eine gültige E-Mail-Adresse ein.', 'smart-portal-suite' ),
 					'fileTooLarge'   => __( 'Datei ist zu groß (max. 10 MB).', 'smart-portal-suite' ),

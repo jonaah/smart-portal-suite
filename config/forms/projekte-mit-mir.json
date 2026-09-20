@@ -181,13 +181,9 @@
     {
       "id": "summary",
       "type": "summary",
-      "label": "Zusammenfassung"
-    },
-    {
-      "id": "consent",
-      "type": "consent",
-      "label": "Datenschutz",
-      "required": true
+      "label": "Deine Angaben im Überblick",
+      "desc": "Prüfe deine Eingaben und sende das Projekt ab.",
+      "consent": true
     }
   ]
 }
