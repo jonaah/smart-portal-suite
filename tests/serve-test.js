@@ -27,7 +27,7 @@ const server = http.createServer((req, res) => {
   if (reqPath === '/' || reqPath === '/index.html' || reqPath === '/projekte-mit-mir') {
     const formId = isProjekte ? 'projekte_mit_mir' : 'gebaeude_check';
     const schemaPath = isProjekte ? 'config/forms/projekte-mit-mir.json' : 'config/forms/gebaeude-check.json';
-    const spritePath = isProjekte ? 'assets/icons/portal-icons.svg' : 'assets/icons/gebaeude-check.svg';
+    const spritePath = isProjekte ? 'assets/icons/projekte-mit-mir.svg' : 'assets/icons/gebaeude-check.svg';
 
     res.writeHead(200, { 'Content-Type': 'text/html; charset=UTF-8' });
     res.end(`<!DOCTYPE html>

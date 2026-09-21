@@ -1,86 +1,108 @@
 /**
  * Smart Portal Suite - Base Portal Stylesheet
  *
- * Modernes, modulares Design-System für WordPress-Formulare.
- * Verwendet ausschließlich semantische --sps-* CSS-Variablen auf :root und
- * .sps-form-container, sodass jedes Formular global über das Admin-Panel
- * oder individuell über Container-Inline-Styles angepasst werden kann.
+ * Leichtgewichtiges, modulares Design-System für WordPress-Formulare.
+ * Sämtliche Komponenten nutzen ausschließlich semantische --sps-* CSS-Variablen
+ * auf :root und .sps-form-container, sodass jedes Formular global über das Admin-Panel
+ * oder formularspezifisch über Container-Styles angepasst werden kann.
+ *
+ * Basiert auf den authentischen Legacy-Designs von Gebäude-Check und Projekte mit mir.
  *
  * @package SmartPortalSuite
+ * @version 1.1.0
  */
 
-:root {
-    /* ═══════════════════════════════════════════
-       FARB-SYSTEM (Authentische Legacy-Palette)
-       ═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   01. DESIGN TOKENS & CSS VARIABLES
+   ═══════════════════════════════════════════════════════════════ */
+:root,
+.sps-form-container {
+    /* Farbpalette (Authentisches Effizientes-Heim / Smart-Portal Theme) */
     --sps-bg-main: #2b224a;
-    --sps-bg-surface: #382c5e;
     --sps-card-bg: #5e41bf;
-    --sps-card-hover: #6d4fdb;
-    --sps-card-selected: rgba(57, 186, 255, 0.25);
+    --sps-card-hover: rgba(94, 65, 191, 0.85);
+    --sps-card-selected-bg: rgba(136, 217, 92, 0.08);
     
     --sps-accent: #39baff;
     --sps-accent-hover: #2d97d0;
     --sps-accent-green: #88D95C;
     --sps-accent-green-hover: #6fc044;
     
-    --sps-text-main: #ffffff;
+    --sps-text-main: #FFFFFF;
     --sps-text-muted: #deddea;
     --sps-text-dim: #b8b3d6;
     
     --sps-border-color: rgba(255, 255, 255, 0.08);
     --sps-border-active: rgba(255, 255, 255, 0.25);
-    --sps-border-focus: #39baff;
+    --sps-upload-border: rgba(57, 186, 255, 0.4);
     
     --sps-error-color: #ff5252;
-    --sps-error-bg: rgba(255, 82, 82, 0.15);
     --sps-success-color: #88D95C;
-    --sps-success-bg: rgba(136, 217, 92, 0.15);
     
-    --sps-radius-sm: 6px;
-    --sps-radius-md: 8px;
-    --sps-radius-lg: 12px;
+    /* Formen & Radien */
+    --sps-radius-card: 12px;
+    --sps-radius-input: 12px;
+    --sps-radius-btn: 10px;
+    --sps-radius-sm: 8px;
     
-    --sps-transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-    --sps-shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.2);
-    --sps-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+    /* Typografie */
+    --sps-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    
+    /* Verläufe & Schatten */
+    --sps-btn-gradient: linear-gradient(135deg, var(--sps-accent) 0%, #2196f3 100%);
+    --sps-progress-gradient: linear-gradient(90deg, var(--sps-accent), var(--sps-accent-green));
+    --sps-shadow-btn: 0 4px 15px rgba(57, 186, 255, 0.3);
+    --sps-shadow-btn-hover: 0 6px 22px rgba(57, 186, 255, 0.45);
+    --sps-shadow-card-selected: 0 0 18px rgba(57, 186, 255, 0.2);
+    --sps-shadow-card-green: 0 0 16px rgba(136, 217, 92, 0.15);
+    
+    /* Transition */
+    --sps-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ═══════════════════════════════════════════
-   GRUNDLAYOUT & CONTAINER
-   ═══════════════════════════════════════════ */
-.sps-form-container {
-    box-sizing: border-box;
-    width: 100%;
-    max-width: 100%;
-    margin: 0 auto;
-    padding: clamp(16px, 3vw, 30px);
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    color: var(--sps-text-main);
-    background: var(--sps-bg-main);
-    line-height: 1.5;
-    text-align: left;
-    position: relative;
+/* ═══════════════════════════════════════════════════════════════
+   02. WORDPRESS FULL-WIDTH OVERRIDES & RESET
+   ═══════════════════════════════════════════════════════════════ */
+body {
+    --wp--style--root--padding-right: 0 !important;
+    --wp--style--root--padding-left: 0 !important;
 }
 
+header, .site-header, .wp-block-header, .wp-block-template-part {
+    --wp--style--root--padding-right: var(--wp--preset--spacing--20) !important;
+    --wp--style--root--padding-left: var(--wp--preset--spacing--20) !important;
+}
+
+.sps-form-container,
 .sps-form-container *,
 .sps-form-container *::before,
 .sps-form-container *::after {
-    box-sizing: inherit;
+    box-sizing: border-box;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   03. GRUNDLAYOUT & PROGRESS BAR
+   ═══════════════════════════════════════════════════════════════ */
+.sps-form-container {
+    font-family: var(--sps-font-family);
+    max-width: 100%;
+    margin: 0 auto;
+    padding: clamp(16px, 3vw, 30px);
+    color: var(--sps-text-main);
+    background: var(--sps-bg-main);
+    border-radius: 0;
+    text-align: center;
+    position: relative;
+    line-height: 1.5;
 }
 
 .sps-form-wrapper {
     width: 100%;
-    max-width: 80%;
-    min-height: 100vh;
-    max-height: 100vh;
+    max-width: 100%;
     margin: 0 auto;
     position: relative;
 }
 
-/* ═══════════════════════════════════════════
-   FORTSCHRITTSBALKEN
-   ═══════════════════════════════════════════ */
 .sps-progress-container {
     width: 100%;
     height: 4px;
@@ -92,14 +114,14 @@
 
 .sps-progress-bar {
     height: 100%;
-    background: linear-gradient(90deg, var(--sps-accent), var(--sps-accent-green));
+    background: var(--sps-progress-gradient);
     width: 0%;
-    transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ═══════════════════════════════════════════
-   SCHRITTE & ANIMATION
-   ═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   04. SCHRITTE & ANIMATIONEN
+   ═══════════════════════════════════════════════════════════════ */
 .sps-step {
     display: none;
     animation: spsFadeIn 0.35s ease-out;
@@ -111,19 +133,13 @@
 }
 
 @keyframes spsFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-8px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ═══════════════════════════════════════════
-   FRAGE-TITEL & TOOLTIPS
-   ═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   05. FRAGE-TITEL, TOOLTIP, BESCHREIBUNG & DETAILS
+   ═══════════════════════════════════════════════════════════════ */
 .sps-question-container {
     display: flex;
     align-items: center;
@@ -134,7 +150,7 @@
 }
 
 .sps-question {
-    font-size: clamp(32px, 6.4vw, 64px);
+    font-size: clamp(33px, 4.8vw, 42px);
     font-weight: 800;
     line-height: 1.3;
     margin: 0;
@@ -144,29 +160,30 @@
 
 .sps-optional-badge {
     display: inline-block;
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     color: var(--sps-text-muted);
-    background: rgba(255, 255, 255, 0.1);
-    padding: 3px 8px;
-    border-radius: 4px;
-    margin-left: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--sps-border-active);
+    border-radius: 20px;
+    padding: 3px 10px;
+    margin-left: 10px;
     vertical-align: middle;
 }
 
-/* Schwebender Tooltip neben der Frage */
+/* Schwebender Tooltip (Wofür benötigen wir diese Angabe?) */
 .sps-reason-tooltip-wrapper {
     position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    vertical-align: middle;
-    margin-left: 10px;
 }
 
 .sps-reason-icon {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     color: var(--sps-accent);
     cursor: help;
     transition: transform 0.2s;
@@ -183,21 +200,18 @@
     right: -10px;
     transform: translateY(5px);
     margin-top: 12px;
-    width: 280px;
+    width: 260px;
     max-width: 85vw;
     background: var(--sps-card-bg);
     border: 1px solid var(--sps-accent);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    padding: 14px;
-    border-radius: var(--sps-radius-md);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    padding: 12px;
+    border-radius: var(--sps-radius-sm);
     color: var(--sps-text-main);
     font-size: clamp(13px, 1.5vw, 14px);
     font-weight: 400;
-    line-height: 1.4;
-    letter-spacing: normal;
-    text-transform: none;
-    white-space: normal;
     text-align: left;
+    line-height: 1.4;
     opacity: 0;
     visibility: hidden;
     transition: all 0.2s ease;
@@ -230,43 +244,32 @@
     transform: translateY(0);
 }
 
-.sps-reason-tooltip-wrapper:focus {
-    outline: none;
-}
-
-.sps-reason-tooltip-wrapper:focus-visible .sps-reason-icon {
-    outline: 2px solid var(--sps-accent);
-    outline-offset: 2px;
-    border-radius: 50%;
-}
-
-/* ═══════════════════════════════════════════
-   BESCHREIBUNGS-BOX
-   ═══════════════════════════════════════════ */
+/* Schritt-Beschreibung (Info-Box) */
 .sps-step-desc-box {
     display: flex;
     align-items: flex-start;
     gap: 12px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--sps-border-color);
-    border-radius: var(--sps-radius-md);
-    padding: 14px 18px;
-    margin: 0 auto 25px auto;
+    border-radius: var(--sps-radius-sm);
+    padding: 12px 16px;
+    margin: -5px auto 25px auto;
     max-width: 680px;
+    width: 100%;
     text-align: left;
 }
 
 .sps-step-desc-icon {
     flex-shrink: 0;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     color: var(--sps-accent);
     margin-top: 2px;
 }
 
 .sps-step-desc-text {
     color: var(--sps-text-muted);
-    font-size: clamp(14px, 1.8vw, 15px);
+    font-size: clamp(14px, 2vw, 15px);
     font-weight: 300;
     line-height: 1.5;
 }
@@ -281,14 +284,533 @@
     padding-left: 20px;
 }
 
+.sps-step-desc-text li {
+    margin-bottom: 6px;
+}
+
+.sps-step-desc-text li:last-child {
+    margin-bottom: 0;
+}
+
+/* Einklappbare Beschreibung (Akkordeon / Details) */
+.sps-expandable {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--sps-border-color);
+    border-radius: var(--sps-radius-sm);
+    margin: -10px auto 30px auto;
+    max-width: 600px;
+    width: 100%;
+    text-align: left;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.sps-expandable summary {
+    padding: 16px 20px;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--sps-accent);
+    font-size: 16px;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+
+.sps-expandable summary::-webkit-details-marker {
+    display: none;
+}
+
+.sps-expandable summary::after {
+    content: '+';
+    font-size: 24px;
+    font-weight: 300;
+    line-height: 1;
+    transition: transform 0.3s ease;
+}
+
+.sps-expandable[open] summary::after {
+    content: '−';
+}
+
+.sps-expandable-content {
+    padding: 0 20px 20px 20px;
+    color: var(--sps-text-muted);
+    line-height: 1.6;
+    font-size: 15px;
+}
+
+/* Infobox für zusätzliche Hinweise */
+.sps-info-box {
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 4px solid var(--sps-accent);
+    padding: 16px 20px;
+    margin: 25px auto 0 auto;
+    max-width: 600px;
+    width: 100%;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--sps-text-muted);
+    text-align: left;
+    border-radius: 0 var(--sps-radius-sm) var(--sps-radius-sm) 0;
+}
+
 .sps-step-body {
     margin: 20px 0 30px 0;
     width: 100%;
 }
 
-/* ═══════════════════════════════════════════
-   SLIDER LAYOUT (MOBILE VS. DESKTOP)
-   ═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   06. FORM FIELDS: KACHEL-OPTIONEN (GRID-MODE)
+   ═══════════════════════════════════════════════════════════════ */
+.sps-options-grid,
+.sps-radio-grid:not(.sps-choice-grid--list) {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    width: 100%;
+    max-width: 900px;
+    margin: 20px auto;
+}
+
+@media (min-width: 600px) {
+    .sps-options-grid,
+    .sps-radio-grid:not(.sps-choice-grid--list) {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+}
+
+.sps-radio-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px 16px;
+    border: 2px solid var(--sps-border-color);
+    border-radius: var(--sps-radius-card);
+    cursor: pointer;
+    transition: var(--sps-transition);
+    font-size: 16px;
+    font-weight: 500;
+    background: var(--sps-card-bg);
+    text-align: center;
+    min-height: 140px;
+    user-select: none;
+}
+
+.sps-radio-card input[type="radio"],
+.sps-radio-card input[type="checkbox"] {
+    display: none;
+}
+
+.sps-radio-card:hover {
+    border-color: var(--sps-border-active);
+    background: var(--sps-card-hover);
+    transform: translateY(-1px);
+}
+
+.sps-radio-card.selected,
+.sps-radio-card.is-selected {
+    border-color: var(--sps-accent);
+    background: var(--sps-card-bg);
+    box-shadow: var(--sps-shadow-card-selected);
+}
+
+/* Leuchtender Cyan-Punkt oben rechts bei selektierter Kachel */
+.sps-radio-card.selected::after,
+.sps-radio-card.is-selected::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--sps-accent);
+    box-shadow: 0 0 8px rgba(57, 186, 255, 0.6);
+}
+
+.sps-choice-icon-wrap {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    line-height: 1;
+}
+
+.sps-choice-icon-wrap svg,
+.sps-choice-icon svg {
+    max-width: 80px;
+    max-height: 80px;
+    width: auto;
+    height: auto;
+    transition: all 0.2s ease;
+}
+
+.sps-radio-text,
+.sps-choice-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--sps-text-main);
+    line-height: 1.3;
+}
+
+.sps-radio-subtitle,
+.sps-choice-subtitle {
+    font-size: 13px;
+    color: var(--sps-text-muted);
+    margin-top: 3px;
+    line-height: 1.4;
+    font-weight: 400;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   07. FORM FIELDS: LISTEN-OPTIONEN (RADIO & CHECKBOX-MULTI)
+   ═══════════════════════════════════════════════════════════════ */
+.sps-choice-grid--list,
+.sps-checkbox-options {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    width: 100%;
+    max-width: 900px;
+    margin: 20px auto;
+}
+
+@media (min-width: 600px) {
+    .sps-choice-grid--list,
+    .sps-checkbox-options {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.sps-choice-card--list,
+.sps-checkbox-option {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 20px;
+    border: 2px solid var(--sps-border-color);
+    border-radius: var(--sps-radius-card);
+    cursor: pointer;
+    transition: var(--sps-transition);
+    background: var(--sps-card-bg);
+    text-align: left;
+    min-height: 64px;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+.sps-choice-card--list:hover,
+.sps-checkbox-option:hover {
+    border-color: var(--sps-border-active);
+    transform: translateY(-1px);
+}
+
+.sps-choice-card--list.selected,
+.sps-choice-card--list.is-selected,
+.sps-checkbox-option.selected {
+    border-color: var(--sps-accent-green);
+    background: var(--sps-card-selected-bg);
+    box-shadow: var(--sps-shadow-card-green);
+}
+
+.sps-choice-card--list input[type="radio"],
+.sps-choice-card--list input[type="checkbox"],
+.sps-checkbox-option input[type="radio"],
+.sps-checkbox-option input[type="checkbox"] {
+    display: none;
+}
+
+/* Checkbox Indikator (Quadrat) */
+.sps-checkbox-box {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 2px solid var(--sps-border-active);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--sps-transition);
+    font-size: 14px;
+    font-weight: 700;
+    color: transparent;
+    line-height: 1;
+}
+
+.sps-choice-card--list.selected .sps-checkbox-box,
+.sps-choice-card--list.is-selected .sps-checkbox-box,
+.sps-checkbox-option.selected .sps-checkbox-box {
+    background: var(--sps-accent-green);
+    border-color: var(--sps-accent-green);
+    color: #1a3d0a;
+    box-shadow: 0 0 10px rgba(136, 217, 92, 0.4);
+}
+
+/* Radio Indikator (Kreis) */
+.sps-radio-box {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--sps-border-active);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--sps-transition);
+}
+
+.sps-choice-card--list.selected .sps-radio-box,
+.sps-choice-card--list.is-selected .sps-radio-box,
+.sps-checkbox-option.selected .sps-radio-box {
+    background: var(--sps-accent-green);
+    border-color: var(--sps-accent-green);
+    box-shadow: 0 0 10px rgba(136, 217, 92, 0.4);
+}
+
+.sps-choice-card--list.selected .sps-radio-box::after,
+.sps-choice-card--list.is-selected .sps-radio-box::after,
+.sps-checkbox-option.selected .sps-radio-box::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #1a3d0a;
+}
+
+.sps-choice-content,
+.sps-checkbox-option-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.sps-choice-icon-wrap--list,
+.sps-checkbox-option-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+}
+
+.sps-choice-icon-wrap--list svg,
+.sps-checkbox-option-icon svg {
+    max-width: 50px;
+    max-height: 40px;
+    width: auto;
+    height: auto;
+}
+
+.sps-multi-hint,
+.sps-field-hint {
+    text-align: center;
+    font-size: 13px;
+    color: var(--sps-text-muted);
+    margin-top: 12px;
+    opacity: 0.7;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   08. FORM FIELDS: EINGABEFELDER (TEXT, DATE, TEXTAREA, CURRENCY)
+   ═══════════════════════════════════════════════════════════════ */
+.sps-input-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto 20px auto;
+}
+
+.sps-input {
+    width: 100%;
+    padding: 18px 20px;
+    font-size: 18px;
+    border: 2px solid var(--sps-border-color);
+    border-radius: var(--sps-radius-input);
+    background: var(--sps-card-bg);
+    color: var(--sps-text-main);
+    transition: border-color 0.3s, box-shadow 0.3s;
+    box-sizing: border-box;
+    outline: none;
+    font-family: inherit;
+    min-width: 0;
+}
+
+.sps-input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 16px;
+}
+
+.sps-input:focus {
+    border-color: var(--sps-accent);
+    box-shadow: 0 0 0 3px rgba(57, 186, 255, 0.15);
+}
+
+.sps-input-counter {
+    position: absolute;
+    bottom: -22px;
+    right: 4px;
+    font-size: 12px;
+    color: var(--sps-text-muted);
+    opacity: 0.6;
+}
+
+.sps-input-row,
+.sps-group-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    width: 100%;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.sps-input-row .sps-input,
+.sps-group-row .sps-input {
+    margin-bottom: 0;
+    padding: 16px 14px;
+}
+
+/* Währung / Präfix (€ Kosten) */
+.sps-input-prefix-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto 20px auto;
+}
+
+.sps-input-prefix {
+    position: absolute;
+    left: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--sps-text-muted);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.sps-input-prefix-wrapper .sps-input {
+    padding-left: 36px;
+}
+
+/* Date Input */
+.sps-input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
+/* Textarea */
+.sps-textarea {
+    width: 100%;
+    max-width: 600px;
+    box-sizing: border-box;
+    padding: 14px 18px;
+    font-size: 15px;
+    font-family: inherit;
+    line-height: 1.6;
+    border: 2px solid var(--sps-border-color);
+    border-radius: var(--sps-radius-input);
+    background: var(--sps-card-bg);
+    color: var(--sps-text-main);
+    outline: none;
+    resize: vertical;
+    min-height: 120px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    margin: 0 auto;
+}
+
+.sps-textarea::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.sps-textarea:focus {
+    border-color: var(--sps-accent);
+    box-shadow: 0 0 0 3px rgba(57, 186, 255, 0.12);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   09. FORM FIELDS: ADRESSE & AUTOCOMPLETE (NOMINATIM / OSM)
+   ═══════════════════════════════════════════════════════════════ */
+.sps-address-full {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.sps-address-full .sps-input-row {
+    margin-bottom: 12px;
+}
+
+.sps-autocomplete-wrapper,
+.sps-osm-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.sps-suggestions,
+.sps-autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--sps-bg-main);
+    border: 1px solid var(--sps-accent);
+    border-radius: var(--sps-radius-sm);
+    margin-top: 5px;
+    z-index: 1000;
+    max-height: 240px;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    display: none;
+}
+
+.sps-suggestion-item,
+.sps-autocomplete-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    color: var(--sps-text-main);
+    border-bottom: 1px solid var(--sps-border-color);
+    transition: all 0.2s ease;
+    font-size: 15px;
+    text-align: left;
+}
+
+.sps-suggestion-item:last-child,
+.sps-autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.sps-suggestion-item:hover,
+.sps-autocomplete-item:hover {
+    background: var(--sps-card-bg);
+    color: var(--sps-accent);
+    padding-left: 20px;
+}
+
+.sps-suggestion-secondary,
+.sps-item-sub {
+    font-size: 12px;
+    color: var(--sps-text-muted);
+    margin-top: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   10. FORM FIELDS: SLIDER (HERO-ICON, VAL, TRACK, DISKRETE BUTTONS)
+   ═══════════════════════════════════════════════════════════════ */
 .sps-slider-wrapper {
     display: flex;
     flex-direction: column;
@@ -296,6 +818,9 @@
     margin-bottom: 30px;
     align-items: center;
     width: 100%;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .sps-slider-hero-icon {
@@ -304,28 +829,23 @@
     align-items: center;
     width: 100%;
     max-width: 180px;
-    flex-shrink: 0;
 }
 
 .sps-slider-hero-icon svg {
     width: 100%;
     height: auto;
-    max-height: 180px;
-    display: block;
 }
 
 .sps-slider-container {
     position: relative;
     background: var(--sps-card-bg);
-    padding: 35px 25px;
-    border-radius: var(--sps-radius-lg);
+    padding: 30px 20px;
+    border-radius: var(--sps-radius-card);
     text-align: center;
     width: 100%;
     box-sizing: border-box;
-    box-shadow: var(--sps-shadow-sm);
 }
 
-/* Desktop: Hero-Icon links neben dem Slider-Container */
 @media (min-width: 768px) {
     .sps-slider-wrapper {
         flex-direction: row;
@@ -336,17 +856,7 @@
 
     .sps-slider-hero-icon {
         flex: 0 0 180px;
-        max-width: 180px;
         align-self: stretch;
-        background: transparent;
-        padding: 0;
-        min-height: 100%;
-    }
-
-    .sps-slider-hero-icon svg {
-        width: 100%;
-        height: auto;
-        max-height: 100%;
     }
 
     .sps-slider-container {
@@ -355,73 +865,119 @@
     }
 }
 
-/* Slider-Wertanzeige */
-.sps-slider-val {
-    display: block;
-    font-size: clamp(36px, 5vw, 48px);
-    font-weight: 800;
+.sps-household-badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     color: var(--sps-text-main);
-    margin-bottom: 20px;
-    line-height: 1.1;
-    text-align: center;
+    font-size: 13px;
+    line-height: 1;
+    pointer-events: none;
+    z-index: 2;
 }
 
-/* HTML5 Range Input */
+.sps-household-badge[hidden] {
+    display: none;
+}
+
+.sps-slider-val {
+    display: block;
+    font-size: 36px;
+    font-weight: bold;
+    color: var(--sps-accent);
+    margin-bottom: 25px;
+}
+
 .sps-slider {
     -webkit-appearance: none;
+    -moz-appearance: none;
     appearance: none;
     width: 100%;
+    background: linear-gradient(to right, var(--sps-accent) 0%, rgba(255, 255, 255, 0.2) 0%);
     height: 8px;
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.2);
+    margin: 30px 0;
     outline: none;
     cursor: pointer;
-    margin: 20px 0;
-    transition: background 0.15s ease;
 }
 
 .sps-slider.is-hidden {
     display: none !important;
 }
 
+/* Slider Track */
+.sps-slider::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 8px;
+    background: transparent;
+    border-radius: 4px;
+}
+
+.sps-slider::-moz-range-track {
+    width: 100%;
+    height: 8px;
+    background: transparent;
+    border-radius: 4px;
+}
+
+.sps-slider::-moz-range-progress {
+    background-color: var(--sps-accent);
+    height: 8px;
+    border-radius: 4px 0 0 4px;
+}
+
+/* Slider Thumb */
 .sps-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
-    background: #ffffff;
+    background: var(--sps-accent);
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-    transition: transform 0.15s ease;
+    margin-top: -8px;
+    box-shadow: 0 0 10px rgba(57, 186, 255, 0.6);
+    transition: transform 0.1s, background-color 0.2s;
 }
 
 .sps-slider::-webkit-slider-thumb:hover {
-    transform: scale(1.15);
+    transform: scale(1.2);
+    background: var(--sps-accent-hover);
 }
 
 .sps-slider::-moz-range-thumb {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: #ffffff;
+    width: 24px;
+    height: 24px;
     border: none;
+    border-radius: 50%;
+    background: var(--sps-accent);
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-    transition: transform 0.15s ease;
+    box-shadow: 0 0 10px rgba(57, 186, 255, 0.6);
+    transition: transform 0.1s, background-color 0.2s;
 }
 
 .sps-slider::-moz-range-thumb:hover {
-    transform: scale(1.15);
+    transform: scale(1.2);
+    background: var(--sps-accent-hover);
 }
 
-/* Diskrete Slider-Options-Buttons (für 2..7 Schritte) */
+/* Diskrete Slider Options (2–7 Schritte) */
 .sps-slider-options {
     display: none;
-    grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
-    gap: 12px;
-    margin-top: 20px;
-    width: 100%;
+    grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+    gap: 10px;
+    margin-top: 6px;
+    justify-content: center;
+    max-width: 450px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .sps-slider-options.active {
@@ -429,366 +985,360 @@
 }
 
 .sps-slider-option {
-    padding: 14px 10px;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--sps-text-main);
+    border: 1px solid rgba(255, 255, 255, 0.25);
     background: rgba(255, 255, 255, 0.08);
-    border: 2px solid transparent;
-    border-radius: var(--sps-radius-md);
+    color: var(--sps-text-main);
+    border-radius: 10px;
+    padding: 0;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 600;
     cursor: pointer;
-    transition: var(--sps-transition);
-    text-align: center;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.12s ease;
 }
 
 .sps-slider-option:hover {
-    background: rgba(255, 255, 255, 0.18);
-    border-color: rgba(57, 186, 255, 0.4);
+    border-color: var(--sps-accent);
+    background: rgba(57, 186, 255, 0.16);
 }
 
 .sps-slider-option.active {
     background: var(--sps-accent);
-    color: #ffffff;
     border-color: var(--sps-accent);
-    box-shadow: 0 0 14px rgba(57, 186, 255, 0.4);
+    color: #fff;
+    box-shadow: 0 0 10px rgba(57, 186, 255, 0.45);
 }
 
-/* Haushalts-Badge */
-.sps-household-badge {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.12);
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--sps-text-main);
-}
-
-.sps-household-icon svg {
-    width: 16px;
-    height: 16px;
-    display: block;
-}
-
-/* Wärmeverbrauch Umrechnungs-Box */
 .sps-slider-conversion {
-    margin-top: 12px;
-    font-size: 15px;
+    margin-top: 14px;
     color: var(--sps-text-muted);
-    text-align: center;
+    font-size: 14px;
+    line-height: 1.5;
 }
 
-/* ═══════════════════════════════════════════
-   RADIO KACHELN (RADIO CARDS)
-   ═══════════════════════════════════════════ */
-.sps-radio-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    width: 100%;
-    margin: 20px 0;
-}
-
-.sps-radio-card {
-    background: var(--sps-card-bg);
-    border: 2px solid transparent;
-    border-radius: var(--sps-radius-lg);
-    padding: 22px 16px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: var(--sps-transition);
-    user-select: none;
-    box-shadow: var(--sps-shadow-sm);
-    position: relative;
-    text-align: center;
-}
-
-.sps-radio-input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.sps-radio-card:hover {
-    transform: translateY(-2px);
-    background: var(--sps-card-hover);
-    border-color: rgba(57, 186, 255, 0.4);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-}
-
-.sps-radio-card.is-selected {
-    background: var(--sps-card-hover);
-    border-color: var(--sps-accent);
-    box-shadow: 0 0 0 1px var(--sps-accent), 0 6px 20px rgba(57, 186, 255, 0.35);
-}
-
-.sps-choice-icon-wrap {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 14px;
-    width: 100%;
-    height: 100px;
-}
-
-.sps-choice-icon {
-    max-width: 100%;
-    max-height: 100px;
-    width: auto;
-    height: auto;
-    display: block;
-    transition: transform 0.2s ease;
-}
-
-.sps-radio-card:hover .sps-choice-icon {
-    transform: scale(1.05);
-}
-
-.sps-radio-text {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--sps-text-main);
-    line-height: 1.3;
-}
-
-.sps-radio-subtitle {
-    font-size: 13px;
-    color: var(--sps-text-muted);
-    margin-top: 6px;
-    font-weight: 400;
-}
-
-/* ═══════════════════════════════════════════
-   CHECKBOX MULTI KARTEN
-   ═══════════════════════════════════════════ */
-.sps-checkbox-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 16px;
-    width: 100%;
-    margin: 20px 0;
-}
-
-.sps-checkbox-card {
-    background: var(--sps-card-bg);
-    border: 2px solid transparent;
-    border-radius: var(--sps-radius-lg);
-    padding: 22px 16px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: var(--sps-transition);
-    user-select: none;
-    box-shadow: var(--sps-shadow-sm);
-    position: relative;
-    text-align: center;
-}
-
-.sps-checkbox-input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.sps-checkbox-indicator {
-    width: 22px;
-    height: 22px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-    margin-bottom: 12px;
-    transition: var(--sps-transition);
-}
-
-.sps-checkbox-card:hover {
-    background: var(--sps-card-hover);
-    border-color: rgba(57, 186, 255, 0.4);
-}
-
-.sps-checkbox-card.is-selected {
-    background: var(--sps-card-hover);
-    border-color: var(--sps-accent);
-}
-
-.sps-checkbox-card.is-selected .sps-checkbox-indicator {
-    background: var(--sps-accent);
-    border-color: var(--sps-accent);
-    box-shadow: inset 0 0 0 3px var(--sps-card-bg);
-}
-
-/* ═══════════════════════════════════════════
-   EINGABEFELDER (TEXT, NUMBER, EMAIL, ETC.)
-   ═══════════════════════════════════════════ */
-.sps-input-group {
+/* ═══════════════════════════════════════════════════════════════
+   11. FORM FIELDS: DATEI-UPLOAD (DROPZONE & FILE-CARDS MIT NOTIZEN)
+   ═══════════════════════════════════════════════════════════════ */
+.sps-upload-container {
     width: 100%;
     max-width: 600px;
     margin: 0 auto;
 }
 
-.sps-input {
+.sps-upload-zone,
+.sps-upload-dropzone {
+    position: relative;
+    border: 2px dashed var(--sps-upload-border);
+    border-radius: 16px;
+    padding: 44px 24px 36px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(57, 186, 255, 0.03);
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+
+.sps-upload-zone:hover,
+.sps-upload-zone.drag-over,
+.sps-upload-dropzone:hover,
+.sps-upload-dropzone.is-dragover {
+    border-color: var(--sps-accent);
+    background: rgba(57, 186, 255, 0.08);
+    box-shadow: 0 0 24px rgba(57, 186, 255, 0.15);
+}
+
+.sps-upload-zone.has-file,
+.sps-upload-dropzone.has-files {
+    border-color: var(--sps-accent-green);
+    background: rgba(136, 217, 92, 0.05);
+    padding: 24px;
+}
+
+.sps-upload-zone input[type="file"],
+.sps-upload-dropzone input[type="file"],
+.sps-file-input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
     width: 100%;
-    background: var(--sps-card-bg);
-    border: 2px solid var(--sps-border-color);
-    border-radius: var(--sps-radius-md);
-    color: var(--sps-text-main);
-    padding: 14px 18px;
-    font-size: 16px;
+    height: 100%;
+}
+
+.sps-upload-icon {
+    font-size: 52px;
+    margin-bottom: 14px;
+    display: block;
+    transition: transform 0.3s ease;
+    line-height: 1;
+}
+
+.sps-upload-icon svg {
+    width: 70px;
+    height: 70px;
+}
+
+.sps-upload-zone:hover .sps-upload-icon,
+.sps-upload-zone.drag-over .sps-upload-icon,
+.sps-upload-dropzone:hover .sps-upload-icon,
+.sps-upload-dropzone.is-dragover .sps-upload-icon {
+    transform: translateY(-5px) scale(1.1);
+}
+
+.sps-upload-zone.has-file .sps-upload-icon,
+.sps-upload-dropzone.has-files .sps-upload-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.sps-upload-label {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--sps-accent);
+    display: block;
+    margin-bottom: 6px;
+}
+
+.sps-upload-zone.has-file .sps-upload-label,
+.sps-upload-dropzone.has-files .sps-upload-label {
+    color: var(--sps-accent-green);
+}
+
+.sps-upload-hint {
+    font-size: 12px;
+    color: var(--sps-text-muted);
+    opacity: 0.7;
+    margin: 4px 0 0 0;
+}
+
+.sps-upload-files-list,
+.sps-file-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+    width: 100%;
+}
+
+/* File Card (Upload + Beschreibung) */
+.sps-file-card {
+    background: rgba(136, 217, 92, 0.07);
+    border: 1px solid rgba(136, 217, 92, 0.22);
+    border-radius: 10px;
+    padding: 12px 14px;
+    transition: border-color 0.2s;
+    text-align: left;
+}
+
+.sps-file-card:hover {
+    border-color: rgba(136, 217, 92, 0.4);
+}
+
+.sps-file-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.sps-file-card-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+
+.sps-file-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.sps-file-details {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.sps-file-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--sps-accent-green);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sps-file-size {
+    font-size: 12px;
+    color: var(--sps-text-muted);
+    flex-shrink: 0;
+}
+
+.sps-file-remove {
+    background: none;
+    border: none;
+    color: var(--sps-text-muted);
+    cursor: pointer;
+    font-size: 20px;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.2s;
+    flex-shrink: 0;
+}
+
+.sps-file-remove:hover {
+    color: var(--sps-error-color);
+}
+
+.sps-file-desc-row {
+    display: flex;
+    align-items: center;
+}
+
+.sps-file-desc-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 14px;
+    font-size: 14px;
     font-family: inherit;
-    transition: var(--sps-transition);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--sps-text-main);
     outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.sps-file-desc-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 13px;
+}
+
+.sps-file-desc-input:focus {
+    border-color: var(--sps-accent-green);
+    box-shadow: 0 0 0 3px rgba(136, 217, 92, 0.12);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   12. FORM FIELDS: ZUSAMMENFASSUNG (SUMMARY REVIEW TABLE)
+   ═══════════════════════════════════════════════════════════════ */
+.sps-summary,
+.sps-summary-list,
+.sps-summary-wrapper {
+    display: block !important;
+    width: 100% !important;
+    max-width: 680px;
+    margin: 0 auto;
+    text-align: left;
+}
+
+.sps-summary-row {
+    display: flex !important;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    width: 100% !important;
     box-sizing: border-box;
 }
 
-.sps-input:focus {
-    border-color: var(--sps-border-focus);
-    box-shadow: 0 0 0 3px rgba(57, 186, 255, 0.25);
-    background: var(--sps-card-hover);
-}
-
-.sps-input::placeholder {
-    color: rgba(255, 255, 255, 0.45);
-}
-
-.sps-textarea {
-    resize: vertical;
-    min-height: 120px;
-}
-
-/* Gruppe & Adress-Layout */
-.sps-group-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.sps-group-row {
-    display: flex;
-    gap: 12px;
-    width: 100%;
-}
-
-.sps-group-col {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-/* ═══════════════════════════════════════════
-   ADRESS-AUTOCOMPLETE & OPENSTREETMAP
-   ═══════════════════════════════════════════ */
-.sps-address-box,
-.sps-address-full {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.sps-address-search-wrap,
-.sps-osm-wrapper {
-    position: relative;
-    width: 100%;
-}
-
-.sps-autocomplete-dropdown {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    right: 0;
-    background: var(--sps-bg-surface);
-    border: 1px solid var(--sps-accent);
-    border-radius: var(--sps-radius-md);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
-    z-index: 1000;
-    max-height: 240px;
-    overflow-y: auto;
-    display: none;
-}
-
-.sps-autocomplete-dropdown::-webkit-scrollbar {
-    width: 6px;
-}
-
-.sps-autocomplete-dropdown::-webkit-scrollbar-thumb {
-    background: var(--sps-card-bg);
-    border-radius: 3px;
-}
-
-.sps-autocomplete-item {
-    padding: 11px 16px;
-    cursor: pointer;
-    border-bottom: 1px solid var(--sps-border-color);
-    transition: var(--sps-transition);
-    text-align: left;
-}
-
-.sps-autocomplete-item:last-child {
+.sps-summary-row:last-child {
     border-bottom: none;
 }
 
-.sps-autocomplete-item:hover {
-    background: var(--sps-card-hover);
-    padding-left: 20px;
-}
-
-.sps-autocomplete-item .sps-item-main {
-    font-weight: 600;
-    font-size: 15px;
-    color: var(--sps-text-main);
-}
-
-.sps-autocomplete-item .sps-item-sub {
+.sps-summary-label {
     font-size: 13px;
-    color: var(--sps-text-dim);
-    margin-top: 3px;
+    color: var(--sps-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+    min-width: 100px;
 }
 
-/* ═══════════════════════════════════════════
-   CONSENT & DATENSCHUTZ CHECKBOX
-   ═══════════════════════════════════════════ */
+.sps-summary-value {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--sps-text-main);
+    text-align: right;
+    flex: 1;
+    word-break: break-word;
+}
+
+.sps-summary-value .sps-summary-files {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-end;
+}
+
+.sps-summary-file-item {
+    font-size: 13px;
+    color: var(--sps-text-muted);
+}
+
+.sps-summary-file-item .sps-summary-file-desc,
+.sps-summary-file-desc {
+    color: var(--sps-accent-green);
+    font-style: italic;
+    margin-left: 6px;
+}
+
+.sps-summary-edit,
+.sps-summary-edit-btn {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: var(--sps-accent);
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    padding: 2px 8px;
+    border-radius: 6px;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+
+.sps-summary-edit:hover,
+.sps-summary-edit-btn:hover {
+    background: rgba(57, 186, 255, 0.12);
+}
+
+.sps-summary-empty {
+    color: rgba(255, 255, 255, 0.3);
+    font-style: italic;
+    font-size: 14px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   13. DATENSCHUTZ CHECKBOX & MODAL
+   ═══════════════════════════════════════════════════════════════ */
+.sps-privacy-wrapper,
 .sps-consent-card {
     display: flex;
     align-items: flex-start;
+    gap: 12px;
     text-align: left;
-    margin-top: 14px;
-    margin-bottom: 6px;
-    padding: 12px 16px;
+    margin: 20px auto 4px auto;
+    max-width: 600px;
+    padding: 14px 16px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--sps-border-color);
-    border-radius: var(--sps-radius-md);
-    transition: var(--sps-transition);
-    width: 100%;
-}
-
-.sps-consent-card:hover {
-    border-color: var(--sps-border-active);
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.sps-consent-label {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
+    border-radius: var(--sps-radius-sm);
     cursor: pointer;
-    width: 100%;
-    margin: 0;
-    user-select: none;
+    box-sizing: border-box;
 }
 
+.sps-privacy-checkbox,
 .sps-consent-checkbox {
     width: 20px;
     height: 20px;
@@ -798,245 +1348,138 @@
     cursor: pointer;
 }
 
+.sps-privacy-text,
 .sps-consent-text {
     font-size: 14px;
     color: var(--sps-text-muted);
-    line-height: 1.45;
+    line-height: 1.5;
 }
 
+.sps-privacy-text a,
 .sps-consent-link {
     color: var(--sps-accent);
     text-decoration: none;
     font-weight: 500;
-    transition: var(--sps-transition);
 }
 
+.sps-privacy-text a:hover,
 .sps-consent-link:hover {
-    color: var(--sps-accent-hover);
     text-decoration: underline;
-}
-
-/* ═══════════════════════════════════════════
-   DATEI-UPLOAD (DRAG & DROP)
-   ═══════════════════════════════════════════ */
-.sps-upload-container {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    width: 100%;
-    max-width: 650px;
-    margin: 0 auto;
-}
-
-.sps-upload-dropzone {
-    background: var(--sps-card-bg);
-    border: 2px dashed rgba(255, 255, 255, 0.25);
-    border-radius: var(--sps-radius-lg);
-    padding: 35px 20px;
-    text-align: center;
-    position: relative;
-    transition: var(--sps-transition);
-    cursor: pointer;
-}
-
-.sps-upload-dropzone:hover,
-.sps-upload-dropzone.is-dragover {
-    background: var(--sps-card-hover);
-    border-color: var(--sps-accent);
-}
-
-.sps-file-input {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-}
-
-.sps-btn-upload {
-    display: inline-block;
-    background: rgba(57, 186, 255, 0.2);
-    color: var(--sps-accent);
-    border: 1px solid var(--sps-accent);
-    padding: 10px 20px;
-    border-radius: var(--sps-radius-sm);
-    font-weight: 700;
-    font-size: 15px;
-    margin-bottom: 8px;
-    pointer-events: none;
-}
-
-.sps-upload-hint {
-    font-size: 13px;
-    color: var(--sps-text-muted);
-    margin: 6px 0 0 0;
-}
-
-.sps-file-items {
-    list-style: none;
-    padding: 0;
-    margin: 10px 0 0 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.sps-file-item {
-    background: var(--sps-card-bg);
-    border: 1px solid var(--sps-border-color);
-    border-radius: var(--sps-radius-sm);
-    padding: 10px 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 14px;
-    text-align: left;
-}
-
-.sps-file-name {
-    flex: 1;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.sps-file-size {
-    color: var(--sps-text-muted);
-    font-size: 12px;
-}
-
-.sps-file-remove {
-    background: none;
-    border: none;
-    color: var(--sps-error-color);
-    font-size: 20px;
-    cursor: pointer;
-    line-height: 1;
-    padding: 0 4px;
-}
-
-/* ═══════════════════════════════════════════
-   DATENSCHUTZ CHECKBOX & MODAL
-   ═══════════════════════════════════════════ */
-.sps-privacy-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    margin: 25px 0 10px 0;
-    cursor: pointer;
-    font-size: 14px;
-    color: var(--sps-text-muted);
-    text-align: left;
-}
-
-.sps-privacy-checkbox {
-    width: 20px;
-    height: 20px;
-    accent-color: var(--sps-accent);
-    cursor: pointer;
-    flex-shrink: 0;
-}
-
-.sps-privacy-link {
-    color: #ffffff;
-    text-decoration: underline;
-    cursor: pointer;
 }
 
 /* Datenschutz Modal Overlay */
 .sps-modal-overlay {
+    display: none;
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(4px);
-    z-index: 99999;
-    display: flex;
-    align-items: center;
+    inset: 0;
+    background: rgba(15, 10, 30, 0.85);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
     justify-content: center;
-    padding: 20px;
+    align-items: center;
     opacity: 0;
-    visibility: hidden;
-    transition: all 0.25s ease;
+    transition: opacity 0.3s ease;
 }
 
 .sps-modal-overlay.active {
+    display: flex;
     opacity: 1;
-    visibility: visible;
 }
 
 .sps-modal-content {
-    background: var(--sps-card-bg);
-    border: 1px solid var(--sps-border-color);
-    border-radius: var(--sps-radius-lg);
-    max-width: 650px;
-    width: 100%;
-    max-height: 85vh;
-    overflow-y: auto;
-    padding: 30px;
+    background: var(--sps-bg-main);
+    width: 90%;
+    max-width: 580px;
+    padding: 40px 30px;
+    border-radius: 16px;
+    border: 1px solid var(--sps-accent);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
     text-align: left;
     position: relative;
-    box-shadow: var(--sps-shadow-md);
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
     color: var(--sps-text-main);
 }
 
-.sps-modal-close {
+.sps-modal-overlay.active .sps-modal-content {
+    transform: translateY(0);
+}
+
+.sps-modal-content h3 {
+    margin-top: 0;
+    color: var(--sps-text-main);
+    font-size: 22px;
+    margin-bottom: 14px;
+}
+
+.sps-modal-content p,
+.sps-modal-text {
+    color: var(--sps-text-muted);
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 24px;
+    max-height: 55vh;
+    overflow-y: auto;
+}
+
+.sps-modal-close,
+.sps-modal-close-icon {
     position: absolute;
-    top: 15px;
+    top: 18px;
     right: 20px;
-    font-size: 28px;
+    font-size: 24px;
     color: var(--sps-text-muted);
     cursor: pointer;
     line-height: 1;
+    transition: color 0.2s;
 }
 
-.sps-modal-close:hover {
-    color: #ffffff;
-}
-
-/* ═══════════════════════════════════════════
-   FEHLERMELDUNGEN & NAVIGATION
-   ═══════════════════════════════════════════ */
-.sps-error-banner {
+.sps-modal-close:hover,
+.sps-modal-close-icon:hover {
     color: var(--sps-error-color);
-    font-size: 15px;
-    font-weight: 600;
-    margin-top: 15px;
-    text-align: center;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   14. NAVIGATION BUTTONS & FEHLERMELDUNG
+   ═══════════════════════════════════════════════════════════════ */
+.sps-btn-group,
 .sps-nav-buttons {
+    margin-top: auto;
+    padding-top: 36px;
     display: flex;
-    gap: 15px;
+    gap: 14px;
     align-items: center;
     justify-content: center;
-    margin-top: 30px;
-    padding-top: 20px;
+    flex-wrap: wrap;
+    width: 100%;
 }
 
 .sps-btn {
     padding: 14px 32px;
-    font-size: 18px;
-    font-weight: 700;
-    border-radius: var(--sps-radius-md);
+    font-size: 17px;
     border: none;
+    border-radius: var(--sps-radius-btn);
     cursor: pointer;
-    background: var(--sps-accent);
-    color: #ffffff;
-    transition: var(--sps-transition);
+    background: var(--sps-btn-gradient);
+    color: #fff;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: var(--sps-shadow-btn);
+    letter-spacing: 0.01em;
+    font-family: inherit;
     text-decoration: none;
-    box-shadow: 0 4px 14px rgba(57, 186, 255, 0.3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .sps-btn:hover {
-    background: var(--sps-accent-hover);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: var(--sps-shadow-btn-hover);
+}
+
+.sps-btn:active {
+    transform: scale(0.97);
 }
 
 .sps-btn:disabled {
@@ -1048,27 +1491,48 @@
 .sps-btn-back {
     background: transparent;
     color: var(--sps-text-muted);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 2px solid var(--sps-border-color);
     box-shadow: none;
 }
 
 .sps-btn-back:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #ffffff;
+    background: var(--sps-card-bg);
+    color: var(--sps-text-main);
+    transform: none;
+    box-shadow: none;
 }
 
-/* ═══════════════════════════════════════════
-   ERFOLGS-ANZEIGE
-   ═══════════════════════════════════════════ */
+.sps-error-message,
+.sps-error-banner {
+    color: var(--sps-error-color);
+    font-size: 15px;
+    margin-top: 12px;
+    display: none;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   15. ERFOLGS-SCREEN (SUCCESS)
+   ═══════════════════════════════════════════════════════════════ */
+.sps-success,
 .sps-success-box {
     text-align: center;
-    padding: 40px 20px;
+    padding: 60px 24px;
+    background: var(--sps-card-bg);
+    border: 2px solid var(--sps-accent-green);
+    border-radius: 16px;
+    animation: spsFadeIn 0.5s ease-out;
+    max-width: 650px;
+    margin: 20px auto;
 }
 
 .sps-success-icon {
-    display: inline-block;
+    font-size: 64px;
     margin-bottom: 20px;
-    color: var(--sps-success-color);
+    display: block;
+    animation: spsBounce 0.6s ease-out 0.2s both;
+    color: var(--sps-accent-green);
 }
 
 .sps-success-icon svg {
@@ -1076,45 +1540,102 @@
     height: 64px;
 }
 
+@keyframes spsBounce {
+    0%   { transform: scale(0); }
+    70%  { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
 .sps-success-title {
     font-size: 32px;
     font-weight: 800;
-    color: var(--sps-success-color);
+    color: var(--sps-accent-green);
     margin: 0 0 15px 0;
 }
 
 .sps-success-desc {
+    font-size: 16px;
+    color: var(--sps-text-muted);
+    line-height: 1.6;
+    margin: 0 auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   16. LOGIN GATE (GATED CONTAINER)
+   ═══════════════════════════════════════════════════════════════ */
+.sps-login-gate,
+.qc-gated-container {
+    max-width: 100%;
+    padding: 100px 20px 140px 20px;
+    text-align: center;
+    background: var(--sps-bg-main);
+    color: var(--sps-text-main);
+    border: 1px solid var(--sps-border-color);
+    border-radius: var(--sps-radius-card);
+}
+
+.sps-login-gate-icon {
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+
+.sps-login-gate-title {
+    font-size: 28px;
+    margin-bottom: 15px;
+    color: var(--sps-text-main);
+}
+
+.sps-login-gate-desc {
     font-size: 18px;
     color: var(--sps-text-muted);
     max-width: 600px;
-    margin: 0 auto;
+    margin: 0 auto 30px auto;
     line-height: 1.6;
 }
 
-.sps-success-desc a {
-    color: #ffffff;
-    text-decoration: underline;
+.sps-login-gate-actions {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
-/* ═══════════════════════════════════════════
-   RESPONSIVE OPTIMIERUNGEN
-   ═══════════════════════════════════════════ */
+.sps-btn-login {
+    background: var(--sps-btn-gradient);
+    box-shadow: var(--sps-shadow-btn);
+}
+
+.sps-btn-register {
+    background: transparent;
+    border: 2px solid var(--sps-border-color);
+    color: var(--sps-text-muted);
+}
+
+.sps-btn-register:hover {
+    background: var(--sps-card-bg);
+    color: var(--sps-text-main);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   17. RESPONSIVE OPTIMIERUNGEN
+   ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 600px) {
-    .sps-radio-grid,
-    .sps-checkbox-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .sps-group-row {
-        flex-direction: column;
-    }
-    
+    .sps-btn-group,
     .sps-nav-buttons {
         flex-direction: column-reverse;
-        width: 100%;
+        align-items: stretch;
     }
-    
+
     .sps-btn {
         width: 100%;
+    }
+
+    .sps-summary-row {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .sps-summary-value {
+        text-align: left;
     }
 }

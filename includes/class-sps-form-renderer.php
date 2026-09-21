@@ -162,6 +162,31 @@ class SPS_Form_Renderer {
 
 		$form_id = sanitize_key( isset( $schema['form_id'] ) ? $schema['form_id'] : $raw_id );
 
+		// Check for login requirement
+		if ( ! empty( $schema['requires_login'] ) && ! is_user_logged_in() ) {
+			wp_enqueue_style( 'sps-portal-base' );
+			$login_redirect = ( is_ssl() ? 'https://' : 'http://' ) . ( isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '' ) . ( isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '' );
+			$login_url    = wp_login_url( $login_redirect );
+			$register_url = wp_registration_url();
+
+			return sprintf(
+				'<div class="sps-form-wrapper sps-login-gate">
+					<div class="sps-login-gate-icon">&#128274;</div>
+					<h3 class="sps-login-gate-title">%s</h3>
+					<p class="sps-login-gate-desc">%s</p>
+					<div class="sps-login-gate-actions">
+						<a href="%s" class="sps-btn sps-btn-login">%s</a>
+						%s
+					</div>
+				</div>',
+				esc_html__( 'Anmeldung erforderlich', 'smart-portal-suite' ),
+				esc_html__( 'Dieses Formular steht exklusiv registrierten Partnern und Kunden zur Verfügung. Bitte melden Sie sich an, um fortzufahren.', 'smart-portal-suite' ),
+				esc_url( $login_url ),
+				esc_html__( 'Jetzt anmelden', 'smart-portal-suite' ),
+				get_option( 'users_can_register' ) ? sprintf( '<a href="%s" class="sps-btn sps-btn-register">%s</a>', esc_url( $register_url ), esc_html__( 'Registrieren', 'smart-portal-suite' ) ) : ''
+			);
+		}
+
 		// Enqueue styles & scripts
 		wp_enqueue_style( 'sps-portal-base' );
 		wp_enqueue_script( 'sps-form-engine' );

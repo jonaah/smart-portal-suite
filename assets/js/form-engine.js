@@ -110,22 +110,35 @@ window.SPS = window.SPS || {};
      */
     registerField('radio', function(step, form) {
         const currentVal = form.getAnswer(step.id);
-        let html = '<div class="sps-radio-grid" role="radiogroup" aria-label="' + SPS.escapeHtml(step.label || '') + '">';
+        const isList = step.layout === 'list';
+        let html = `<div class="${isList ? 'sps-choice-grid--list sps-checkbox-options' : 'sps-options-grid sps-radio-grid'}" role="radiogroup" aria-label="${SPS.escapeHtml(step.label || '')}">`;
         (step.choices || []).forEach((choice, idx) => {
             const val = choice.value !== undefined ? choice.value : choice.text;
             const isChecked = currentVal !== undefined && String(currentVal) === String(val);
             const inputId = `${form.instanceId}_${step.id}_${idx}`;
             
-            html += `
-                <label class="sps-radio-card ${isChecked ? 'is-selected' : ''}" for="${inputId}">
-                    <input type="radio" id="${inputId}" name="${form.instanceId}_${step.id}" value="${SPS.escapeAttr(val)}" ${isChecked ? 'checked' : ''} class="sps-radio-input">
-                    <div class="sps-radio-content">
-                        ${choice.icon ? `<div class="sps-choice-icon-wrap">${renderIcon(choice.icon, 'sps-choice-icon')}</div>` : ''}
-                        <div class="sps-radio-text">${SPS.escapeHtml(choice.text)}</div>
-                        ${choice.subtitle ? `<div class="sps-radio-subtitle">${SPS.escapeHtml(choice.subtitle)}</div>` : ''}
-                    </div>
-                </label>
-            `;
+            if (isList) {
+                html += `
+                    <label class="sps-choice-card--list sps-choice-option sps-radio-option ${isChecked ? 'selected is-selected' : ''}" id="${form.instanceId}_label_${step.id}_${idx}" for="${inputId}">
+                        <input type="radio" id="${inputId}" name="${form.instanceId}_${step.id}" value="${SPS.escapeAttr(val)}" data-index="${idx}" ${isChecked ? 'checked' : ''} class="sps-radio-input">
+                        <div class="sps-radio-box"></div>
+                        <div class="sps-choice-content">
+                            <div class="sps-choice-title">${SPS.escapeHtml(choice.text)}</div>
+                            ${choice.subtitle ? `<div class="sps-choice-subtitle">${SPS.escapeHtml(choice.subtitle)}</div>` : ''}
+                        </div>
+                        ${choice.icon ? `<div class="sps-choice-icon-wrap--list sps-choice-icon">${renderIcon(choice.icon, 'sps-choice-icon-svg')}</div>` : ''}
+                    </label>
+                `;
+            } else {
+                html += `
+                    <label class="sps-radio-card sps-choice-option ${isChecked ? 'selected is-selected' : ''}" id="${form.instanceId}_label_${step.id}_${idx}" for="${inputId}">
+                        <input type="radio" id="${inputId}" name="${form.instanceId}_${step.id}" value="${SPS.escapeAttr(val)}" data-index="${idx}" ${isChecked ? 'checked' : ''} class="sps-radio-input">
+                        ${choice.icon ? `<div class="sps-choice-icon-wrap">${renderIcon(choice.icon, 'sps-choice-icon-svg')}</div>` : ''}
+                        <div class="sps-radio-text sps-choice-title">${SPS.escapeHtml(choice.text)}</div>
+                        ${choice.subtitle ? `<div class="sps-radio-subtitle sps-choice-subtitle">${SPS.escapeHtml(choice.subtitle)}</div>` : ''}
+                    </label>
+                `;
+            }
         });
         html += '</div>';
         return html;
@@ -218,7 +231,7 @@ window.SPS = window.SPS || {};
 
     /**
      * 3. Text & Generic Inputs Renderer ('text', 'email', 'tel', 'number')
-     * Renders standard single-line HTML5 inputs with length constraints and accessible labeling.
+     * Renders standard single-line HTML5 inputs with length constraints, prefix/suffix and live counter.
      *
      * @param {Object} step - Step configuration.
      * @param {string} step.id - Unique field identifier.
@@ -229,16 +242,38 @@ window.SPS = window.SPS || {};
      */
     registerField('text', function(step, form) {
         const val = form.getAnswer(step.id) || '';
+        const isCurrency = step.format === 'currency' || step.id === 'investitionskosten';
+        const inputType = step.type === 'email' ? 'email' : (step.type === 'tel' ? 'tel' : 'text');
+        const hasPrefix = !!step.prefix;
+        const hasSuffix = !!step.suffix;
+        const showCounter = (step.showCounter || step.maxLength) && !isCurrency;
+
+        let inputHtml = `
+            <input type="${inputType}" 
+                   id="${form.instanceId}_input_${step.id}" 
+                   class="sps-input ${isCurrency ? 'sps-currency-input' : ''}" 
+                   value="${SPS.escapeAttr(val)}"
+                   placeholder="${SPS.escapeAttr(step.placeholder || '')}" 
+                   maxlength="${step.maxLength || 255}"
+                   ${isCurrency ? 'inputmode="numeric"' : ''}
+                   autocomplete="on"
+                   aria-label="${SPS.escapeAttr(step.label || '')}">
+        `;
+
+        if (hasPrefix || hasSuffix) {
+            inputHtml = `
+                <div class="sps-input-prefix-wrapper">
+                    ${hasPrefix ? `<span class="sps-input-prefix">${SPS.escapeHtml(step.prefix)}</span>` : ''}
+                    ${inputHtml}
+                    ${hasSuffix ? `<span class="sps-input-suffix">${SPS.escapeHtml(step.suffix)}</span>` : ''}
+                </div>
+            `;
+        }
+
         return `
-            <div class="sps-input-group">
-                <input type="${step.type === 'email' ? 'email' : (step.type === 'tel' ? 'tel' : 'text')}" 
-                       id="${form.instanceId}_input_${step.id}" 
-                       class="sps-input" 
-                       value="${SPS.escapeAttr(val)}"
-                       placeholder="${SPS.escapeAttr(step.placeholder || '')}" 
-                       maxlength="${step.maxLength || 255}"
-                       autocomplete="on"
-                       aria-label="${SPS.escapeAttr(step.label || '')}">
+            <div class="sps-input-group sps-input-wrapper">
+                ${inputHtml}
+                ${showCounter ? `<span class="sps-input-counter" id="${form.instanceId}_counter_${step.id}">${val.length} / ${step.maxLength || 255}</span>` : ''}
             </div>
         `;
     });
@@ -250,7 +285,7 @@ window.SPS = window.SPS || {};
 
     /**
      * 4. Textarea Renderer ('textarea')
-     * Renders a multi-line text input for longer comments, project descriptions, or inquiries.
+     * Renders a multi-line text input with live character counter.
      *
      * @param {Object} step - Step configuration.
      * @param {string} step.id - Unique field identifier.
@@ -261,14 +296,17 @@ window.SPS = window.SPS || {};
      */
     registerField('textarea', function(step, form) {
         const val = form.getAnswer(step.id) || '';
+        const maxLen = step.maxLength || 2000;
+        const showCounter = step.showCounter || step.maxLength;
         return `
-            <div class="sps-input-group">
+            <div class="sps-input-group sps-input-wrapper">
                 <textarea id="${form.instanceId}_input_${step.id}" 
                           class="sps-input sps-textarea" 
                           rows="4"
                           placeholder="${SPS.escapeAttr(step.placeholder || '')}" 
-                          maxlength="${step.maxLength || 2000}"
+                          maxlength="${maxLen}"
                           aria-label="${SPS.escapeAttr(step.label || '')}">${SPS.escapeHtml(val)}</textarea>
+                ${showCounter ? `<span class="sps-input-counter" id="${form.instanceId}_counter_${step.id}">${val.length} / ${maxLen}</span>` : ''}
             </div>
         `;
     });
@@ -284,12 +322,15 @@ window.SPS = window.SPS || {};
      */
     registerField('date', function(step, form) {
         const val = form.getAnswer(step.id) || '';
+        const minAttr = step.min === 'today' ? `min="${new Date().toISOString().split('T')[0]}"` : (step.min ? `min="${SPS.escapeAttr(step.min)}"` : '');
         return `
             <div class="sps-input-group">
                 <input type="date" 
                        id="${form.instanceId}_input_${step.id}" 
-                       class="sps-input" 
+                       class="sps-input sps-date-input" 
                        value="${SPS.escapeAttr(val)}"
+                       ${minAttr}
+                       onclick="if(this.showPicker) this.showPicker();"
                        aria-label="${SPS.escapeAttr(step.label || '')}">
             </div>
         `;
@@ -483,25 +524,40 @@ window.SPS = window.SPS || {};
      */
     registerField('checkboxMulti', function(step, form) {
         const currentVals = form.getAnswer(step.id) || [];
-        let html = '<div class="sps-checkbox-grid" role="group" aria-label="' + SPS.escapeHtml(step.label || '') + '">';
+        const isList = step.layout === 'list';
+        let html = `<div class="${isList ? 'sps-choice-grid--list sps-checkbox-options' : 'sps-options-grid sps-checkbox-grid'}" role="group" aria-label="${SPS.escapeHtml(step.label || '')}">`;
         (step.choices || []).forEach((choice, idx) => {
             const val = choice.id !== undefined ? choice.id : choice.text;
             const isChecked = Array.isArray(currentVals) && currentVals.includes(val);
             const inputId = `${form.instanceId}_${step.id}_${idx}`;
 
-            html += `
-                <label class="sps-checkbox-card ${isChecked ? 'is-selected' : ''}" for="${inputId}">
-                    <input type="checkbox" id="${inputId}" name="${form.instanceId}_${step.id}[]" value="${SPS.escapeAttr(val)}" ${isChecked ? 'checked' : ''} class="sps-checkbox-input">
-                    <div class="sps-radio-content">
-                        <div class="sps-checkbox-indicator"></div>
-                        ${choice.icon ? `<div class="sps-choice-icon-wrap">${renderIcon(choice.icon, 'sps-choice-icon')}</div>` : ''}
-                        <div class="sps-radio-text">${SPS.escapeHtml(choice.text)}</div>
-                        ${choice.subtitle ? `<div class="sps-radio-subtitle">${SPS.escapeHtml(choice.subtitle)}</div>` : ''}
-                    </div>
-                </label>
-            `;
+            if (isList) {
+                html += `
+                    <label class="sps-choice-card--list sps-choice-option sps-checkbox-option ${isChecked ? 'selected is-selected' : ''}" id="${form.instanceId}_chk_${step.id}_${idx}" for="${inputId}">
+                        <input type="checkbox" id="${inputId}" name="${form.instanceId}_${step.id}[]" value="${SPS.escapeAttr(val)}" data-index="${idx}" ${isChecked ? 'checked' : ''} class="sps-checkbox-input">
+                        <div class="sps-checkbox-box">&#10003;</div>
+                        <div class="sps-choice-content">
+                            <div class="sps-choice-title">${SPS.escapeHtml(choice.text)}</div>
+                            ${choice.subtitle ? `<div class="sps-choice-subtitle">${SPS.escapeHtml(choice.subtitle)}</div>` : ''}
+                        </div>
+                        ${choice.icon ? `<div class="sps-choice-icon-wrap--list sps-choice-icon">${renderIcon(choice.icon, 'sps-choice-icon-svg')}</div>` : ''}
+                    </label>
+                `;
+            } else {
+                html += `
+                    <label class="sps-checkbox-card sps-choice-option ${isChecked ? 'selected is-selected' : ''}" id="${form.instanceId}_chk_${step.id}_${idx}" for="${inputId}">
+                        <input type="checkbox" id="${inputId}" name="${form.instanceId}_${step.id}[]" value="${SPS.escapeAttr(val)}" data-index="${idx}" ${isChecked ? 'checked' : ''} class="sps-checkbox-input">
+                        ${choice.icon ? `<div class="sps-choice-icon-wrap">${renderIcon(choice.icon, 'sps-choice-icon-svg')}</div>` : ''}
+                        <div class="sps-radio-text sps-choice-title">${SPS.escapeHtml(choice.text)}</div>
+                        ${choice.subtitle ? `<div class="sps-radio-subtitle sps-choice-subtitle">${SPS.escapeHtml(choice.subtitle)}</div>` : ''}
+                    </label>
+                `;
+            }
         });
         html += '</div>';
+        if (step.hint) {
+            html += `<p class="sps-multi-hint">${SPS.escapeHtml(step.hint)}</p>`;
+        }
         return html;
     });
     registerField('checkbox-multi', fieldRegistry['checkboxMulti']);
@@ -510,7 +566,7 @@ window.SPS = window.SPS || {};
      * 9. File Upload Dropzone Renderer ('upload')
      * Renders an interactive drag-and-drop file upload zone supporting multi-file selection,
      * visual dragover feedback, client-side size (10MB) & extension validation,
-     * and removable file badge chips.
+     * file cards with description inputs, and removable files.
      *
      * @param {Object} step - Step configuration.
      * @param {string} step.id - Unique field identifier.
@@ -520,25 +576,26 @@ window.SPS = window.SPS || {};
     registerField('upload', function(step, form) {
         const files = form.getFiles(step.id) || [];
         const hasFiles = files.length > 0;
+        const uploadIcon = step.icon || 'icon-pm-upload';
+        const multAttr = step.multiple !== false ? 'multiple' : '';
+        const acceptExt = step.accept ? step.accept.replace(/\./g, '').toUpperCase().split(',').join(' · ') : 'Alle Dateitypen';
 
         return `
             <div class="sps-upload-container">
-                <div class="sps-upload-dropzone ${hasFiles ? 'has-files' : ''}" id="${form.instanceId}_dropzone_${step.id}">
+                <div class="sps-upload-zone sps-upload-dropzone ${hasFiles ? 'has-file has-files' : ''}" id="${form.instanceId}_dropzone_${step.id}">
                     <input type="file" 
                            id="${form.instanceId}_input_${step.id}" 
                            class="sps-file-input" 
-                           multiple 
-                           accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+                           ${multAttr} 
+                           accept="${step.accept || '.pdf,.jpg,.jpeg,.png,.webp,.heic'}"
                            aria-label="${SPS.escapeAttr(step.label || 'Dateien hochladen')}">
-                    <div class="sps-upload-icon">
-                        ${renderIcon('icon-upload', 'sps-upload-svg')}
-                    </div>
-                    <label for="${form.instanceId}_input_${step.id}" class="sps-btn sps-btn-upload">Dateien auswählen</label>
-                    <p class="sps-upload-hint">Oder Dateien hierher ziehen (PDF, JPG, PNG &middot; max. 10 MB pro Datei)</p>
+                    <span class="sps-upload-icon">${renderIcon(uploadIcon, 'sps-upload-svg')}</span>
+                    <span class="sps-upload-label">${hasFiles ? 'Dateien ausgewählt' : (step.uploadLabel || 'Dateien auswählen oder hierher ziehen')}</span>
+                    <span class="sps-upload-hint">${acceptExt} &middot; Max. 20 MB pro Datei</span>
                 </div>
 
-                <div class="sps-file-list" id="${form.instanceId}_filelist_${step.id}">
-                    ${form.renderFileList(step.id)}
+                <div class="sps-upload-files-list sps-file-list" id="${form.instanceId}_filelist_${step.id}">
+                    ${form.renderFileList(step.id, step)}
                 </div>
             </div>
         `;
@@ -626,6 +683,16 @@ window.SPS = window.SPS || {};
             this.currentStepIndex = 0;
             this.answers = {};
             this.files = {}; // Map of step.id -> File[]
+            this.fileDescriptions = {}; // Map of step.id -> string[]
+            this.isEditingFromSummary = false;
+
+            // Optional lead_id from URL query string
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                this.leadId = urlParams.get('lead_id') || urlParams.get('lid') || null;
+            } catch (e) {
+                this.leadId = null;
+            }
 
             this.init();
         }
@@ -720,9 +787,9 @@ window.SPS = window.SPS || {};
             const renderer    = getFieldRenderer(step.type);
             const contentHtml = renderer(step, this);
             const isLast      = (index === this.steps.length - 1);
-            // For sliders, the icon is rendered inside the sps-slider-wrapper (hero position).
+            // For sliders and uploads, the icon is rendered inside the field wrapper.
             // Therefore we must NOT render it again in the step header above the question.
-            const showHeaderIcon = step.icon && step.type !== 'slider';
+            const showHeaderIcon = step.icon && step.type !== 'slider' && step.type !== 'upload';
             const reasonText     = step.reason || step.tooltip;
 
             return `
@@ -733,12 +800,13 @@ window.SPS = window.SPS || {};
                             ${step.label ? `
                                 <h3 class="sps-question">
                                     ${SPS.escapeHtml(step.label)}
+                                    ${step.optional ? '<span class="sps-optional-badge">optional</span>' : ''}
                                     ${reasonText ? `
                                         <span class="sps-reason-tooltip-wrapper" tabindex="0" role="tooltip" aria-label="${SPS.escapeHtml(reasonText)}">
                                             <svg class="sps-reason-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <circle cx="12" cy="12" r="10"></circle>
-                                                <line x1="12" y1="16" x2="12" y2="12"></line>
-                                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
                                             </svg>
                                             <span class="sps-reason-tooltip">
                                                 <strong>Wofür benötigen wir diese Angabe?</strong><br>
@@ -749,7 +817,27 @@ window.SPS = window.SPS || {};
                                 </h3>
                             ` : ''}
                         </div>
-                        ${step.desc  ? `<div class="sps-desc">${step.desc}</div>` : ''}
+                        ${step.desc ? `
+                            <div class="sps-step-desc-box">
+                                <svg class="sps-step-desc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                </svg>
+                                <div class="sps-step-desc-text">${step.desc}</div>
+                            </div>
+                        ` : ''}
+                        ${step.details ? `
+                            <details class="sps-expandable">
+                                <summary>Weitere Informationen</summary>
+                                <div class="sps-expandable-content">${step.details}</div>
+                            </details>
+                        ` : ''}
+                        ${step.info ? `
+                            <div class="sps-info-box">
+                                <strong>Gut zu wissen:</strong><br>${step.info}
+                            </div>
+                        ` : ''}
                     </div>
 
                     <div class="sps-step-body">
@@ -796,8 +884,19 @@ window.SPS = window.SPS || {};
                     return;
                 }
 
+                // Summary "Bearbeiten" edit button
+                const editBtn = e.target.closest('[data-edit-step]');
+                if (editBtn) {
+                    const stepIdx = parseInt(editBtn.getAttribute('data-edit-step'), 10);
+                    if (!isNaN(stepIdx) && stepIdx >= 0 && stepIdx < this.steps.length) {
+                        this.isEditingFromSummary = true;
+                        this.goTo(stepIdx);
+                    }
+                    return;
+                }
+
                 // Radio card selection
-                const radioCard = e.target.closest('.sps-radio-card');
+                const radioCard = e.target.closest('.sps-radio-card, .sps-choice-card--list, .sps-choice-option');
                 if (radioCard) {
                     const input = radioCard.querySelector('input[type="radio"]');
                     if (input) {
@@ -809,8 +908,12 @@ window.SPS = window.SPS || {};
                         this.setAnswer(step.id, input.value);
 
                         // Highlight selected
-                        stepEl.querySelectorAll('.sps-radio-card').forEach(c => c.classList.remove('is-selected'));
+                        stepEl.querySelectorAll('.sps-radio-card, .sps-choice-card--list, .sps-choice-option').forEach(c => {
+                            c.classList.remove('is-selected');
+                            c.classList.remove('selected');
+                        });
                         radioCard.classList.add('is-selected');
+                        radioCard.classList.add('selected');
 
                         // Auto-advance after smooth feedback delay
                         setTimeout(() => {
@@ -864,9 +967,10 @@ window.SPS = window.SPS || {};
                     const checked = Array.from(stepEl.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
                     this.setAnswer(step.id, checked);
                     
-                    const card = target.closest('.sps-checkbox-card');
+                    const card = target.closest('.sps-checkbox-card, .sps-choice-card--list, .sps-choice-option');
                     if (card) {
                         card.classList.toggle('is-selected', target.checked);
+                        card.classList.toggle('selected', target.checked);
                     }
                     return;
                 }
@@ -920,6 +1024,37 @@ window.SPS = window.SPS || {};
                 if (!stepEl) return;
                 const stepIdx = parseInt(stepEl.getAttribute('data-step-index'), 10);
                 const step    = this.steps[stepIdx];
+
+                // File description inputs
+                if (target.classList.contains('sps-file-desc-input')) {
+                    const sId = target.dataset.stepId;
+                    const fIdx = parseInt(target.dataset.fileIndex, 10);
+                    if (sId && !isNaN(fIdx)) {
+                        this.fileDescriptions[sId] = this.fileDescriptions[sId] || [];
+                        this.fileDescriptions[sId][fIdx] = target.value;
+                    }
+                    return;
+                }
+
+                // Currency formatting
+                if (target.classList.contains('sps-currency-input')) {
+                    const raw = target.value.replace(/\D/g, '');
+                    if (raw) {
+                        const num = parseInt(raw, 10);
+                        target.value = num.toLocaleString('de-DE');
+                        if (step) this.setAnswer(step.id, num);
+                    } else {
+                        target.value = '';
+                        if (step) this.setAnswer(step.id, '');
+                    }
+                }
+
+                // Character counters
+                const counter = stepEl.querySelector(`.sps-input-counter[data-for="${target.id}"]`);
+                if (counter) {
+                    const max = target.getAttribute('maxlength') || 0;
+                    counter.textContent = `${target.value.length} / ${max}`;
+                }
 
                 // Slider live value update
                 if (target.type === 'range') {
@@ -1297,6 +1432,7 @@ window.SPS = window.SPS || {};
         handleFileSelect(stepId, fileList) {
             if (!fileList || fileList.length === 0) return;
             this.files[stepId] = this.files[stepId] || [];
+            this.fileDescriptions[stepId] = this.fileDescriptions[stepId] || [];
 
             const maxFileSize = 10 * 1024 * 1024; // 10MB
             const allowedExts = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx'];
@@ -1317,6 +1453,7 @@ window.SPS = window.SPS || {};
                 // Avoid duplicate names
                 if (!this.files[stepId].some(f => f.name === file.name && f.size === file.size)) {
                     this.files[stepId].push(file);
+                    this.fileDescriptions[stepId].push('');
                 }
             }
 
@@ -1333,36 +1470,61 @@ window.SPS = window.SPS || {};
         removeFile(stepId, fileIndex) {
             if (this.files[stepId]) {
                 this.files[stepId].splice(fileIndex, 1);
+                if (this.fileDescriptions[stepId]) {
+                    this.fileDescriptions[stepId].splice(fileIndex, 1);
+                }
                 this.setAnswer(stepId, this.files[stepId].length > 0 ? this.files[stepId].map(f => f.name) : null);
                 this.updateFileList(stepId);
             }
         }
 
         /**
-         * Generates HTML markup for the staged files list, rendering file badges with name,
-         * human-readable size (KB/MB), and interactive remove trigger buttons.
+         * Generates HTML markup for the staged files list, rendering file cards with name,
+         * human-readable size (KB/MB), optional description input, and interactive remove trigger buttons.
          *
          * @param {string} stepId - Field ID of the upload step.
+         * @param {Object} [step] - Optional step configuration object.
          * @returns {string} Staged files list HTML.
          */
-        renderFileList(stepId) {
+        renderFileList(stepId, step) {
             const files = this.files[stepId] || [];
             if (files.length === 0) return '';
+            const stepObj = step || this.steps.find(s => s.id === stepId) || {};
+            const allowDesc = !!stepObj.allowDescription;
+            const descriptions = this.fileDescriptions[stepId] || [];
 
-            let html = '<ul class="sps-file-items">';
+            let html = '<div class="sps-file-cards">';
             files.forEach((file, idx) => {
                 const sizeKb = Math.round(file.size / 1024);
                 const sizeStr = sizeKb > 1024 ? (sizeKb / 1024).toFixed(1) + ' MB' : sizeKb + ' KB';
+                const descVal = descriptions[idx] || '';
+
                 html += `
-                    <li class="sps-file-item">
-                        <span class="sps-file-icon">&#128196;</span>
-                        <span class="sps-file-name" title="${SPS.escapeAttr(file.name)}">${SPS.escapeHtml(file.name)}</span>
-                        <span class="sps-file-size">(${sizeStr})</span>
-                        <button type="button" class="sps-file-remove" onclick="SPS.getForm('${this.instanceId}').removeFile('${stepId}', ${idx})" aria-label="Datei entfernen">&times;</button>
-                    </li>
+                    <div class="sps-file-card" data-step-id="${stepId}" data-file-index="${idx}">
+                        <div class="sps-file-card-top">
+                            <div class="sps-file-card-info">
+                                <span class="sps-file-icon">&#128196;</span>
+                                <div class="sps-file-details">
+                                    <span class="sps-file-name" title="${SPS.escapeAttr(file.name)}">${SPS.escapeHtml(file.name)}</span>
+                                    <span class="sps-file-size">${sizeStr}</span>
+                                </div>
+                            </div>
+                            <button type="button" class="sps-file-remove" onclick="SPS.getForm('${this.instanceId}').removeFile('${stepId}', ${idx})" aria-label="Datei entfernen">&times;</button>
+                        </div>
+                        ${allowDesc ? `
+                            <div class="sps-file-desc-row">
+                                <input type="text" 
+                                       class="sps-file-desc-input" 
+                                       data-step-id="${stepId}" 
+                                       data-file-index="${idx}" 
+                                       placeholder="Kurze Beschreibung (optional)" 
+                                       value="${SPS.escapeAttr(descVal)}">
+                            </div>
+                        ` : ''}
+                    </div>
                 `;
             });
-            html += '</ul>';
+            html += '</div>';
             return html;
         }
 
@@ -1482,10 +1644,11 @@ window.SPS = window.SPS || {};
             if (!summaryEl) return;
 
             let html = '<div class="sps-summary-list">';
-            this.steps.forEach(step => {
+            this.steps.forEach((step, stepIdx) => {
                 if (step.id && step.id !== 'summary' && step.id !== 'consent' && this.isVisible(step)) {
                     let label = step.label || step.id;
                     let val = this.getAnswer(step.id);
+                    let displayHtml = '';
 
                     if (step.type === 'addressFull' || step.type === 'address-full') {
                         label = 'Objekt Adresse';
@@ -1494,21 +1657,50 @@ window.SPS = window.SPS || {};
                         const str = this.getAnswer('strasse') || this.getAnswer(step.id + '_strasse') || '';
                         const hn  = this.getAnswer('hausnummer') || this.getAnswer(step.id + '_hausnummer') || '';
                         if (str || plz) {
-                            val = `${str} ${hn}<br>${plz} ${ort}`.trim();
+                            displayHtml = `${SPS.escapeHtml(str)} ${SPS.escapeHtml(hn)}<br>${SPS.escapeHtml(plz)} ${SPS.escapeHtml(ort)}`.trim();
+                        }
+                    } else if (step.type === 'upload') {
+                        const files = this.files[step.id] || [];
+                        const descs = this.fileDescriptions[step.id] || [];
+                        if (files.length > 0) {
+                            displayHtml = files.map((f, i) => {
+                                const desc = descs[i] ? ` <span class="sps-summary-file-desc">(${SPS.escapeHtml(descs[i])})</span>` : '';
+                                return `&#128196; ${SPS.escapeHtml(f.name)}${desc}`;
+                            }).join('<br>');
+                        } else {
+                            displayHtml = '<span class="sps-summary-empty">Keine Dateien hochgeladen</span>';
+                        }
+                    } else if (step.choices && Array.isArray(step.choices)) {
+                        if (Array.isArray(val)) {
+                            displayHtml = val.map(v => {
+                                const match = step.choices.find(c => (c.id !== undefined ? c.id : c.text) === v);
+                                return match ? SPS.escapeHtml(match.text) : SPS.escapeHtml(v);
+                            }).join(', ');
+                        } else if (val !== undefined && val !== null && val !== '') {
+                            const match = step.choices.find(c => (c.id !== undefined ? c.id : c.text) === val);
+                            displayHtml = match ? SPS.escapeHtml(match.text) : SPS.escapeHtml(val);
+                        }
+                    } else if (val !== undefined && val !== null && val !== '') {
+                        if (step.format === 'currency' || step.prefix === '€') {
+                            const num = typeof val === 'number' ? val : parseFloat(String(val).replace(/\D/g, ''));
+                            displayHtml = isNaN(num) ? SPS.escapeHtml(String(val)) : `€ ${num.toLocaleString('de-DE')}`;
+                        } else {
+                            displayHtml = SPS.escapeHtml(String(val));
+                            if (step.type === 'slider' && step.suffix) displayHtml += SPS.escapeHtml(step.suffix);
                         }
                     }
 
-                    if (val !== undefined && val !== null && val !== '') {
-                        if (Array.isArray(val)) val = val.join(', ');
-                        if (step.type === 'slider' && step.suffix) val += step.suffix;
-                        
-                        html += `
-                            <div class="sps-summary-item">
-                                <div class="sps-summary-label">${SPS.escapeHtml(label.replace(/<[^>]*>/g, ''))}</div>
-                                <div class="sps-summary-value">${String(val).includes('<br>') ? val : SPS.escapeHtml(String(val))}</div>
-                            </div>
-                        `;
+                    if (!displayHtml) {
+                        displayHtml = '<span class="sps-summary-empty">Keine Angabe</span>';
                     }
+
+                    html += `
+                        <div class="sps-summary-row" data-step-index="${stepIdx}">
+                            <div class="sps-summary-label">${SPS.escapeHtml(label.replace(/<[^>]*>/g, ''))}</div>
+                            <div class="sps-summary-value">${displayHtml}</div>
+                            <button type="button" class="sps-summary-edit sps-summary-edit-btn" data-edit-step="${stepIdx}">Bearbeiten</button>
+                        </div>
+                    `;
                 }
             });
             html += '</div>';
@@ -1612,6 +1804,16 @@ window.SPS = window.SPS || {};
                 nextEl.classList.add('active');
                 nextEl.setAttribute('aria-hidden', 'false');
 
+                // Adjust Next button label if returning from summary edit
+                const nextBtn = nextEl.querySelector('.sps-btn-next');
+                if (nextBtn) {
+                    if (this.isEditingFromSummary) {
+                        nextBtn.textContent = 'Speichern & Zurück';
+                    } else {
+                        nextBtn.textContent = 'Weiter';
+                    }
+                }
+
                 // Auto-focus first input
                 const firstInput = nextEl.querySelector('input:not([type="hidden"]), select, textarea');
                 if (firstInput && firstInput.type !== 'radio' && firstInput.type !== 'range') {
@@ -1628,6 +1830,16 @@ window.SPS = window.SPS || {};
          */
         next() {
             if (!this.validateStep(this.currentStepIndex)) return;
+
+            if (this.isEditingFromSummary) {
+                this.isEditingFromSummary = false;
+                const summaryIdx = this.steps.findIndex(s => s.type === 'summary');
+                if (summaryIdx !== -1) {
+                    this.goTo(summaryIdx);
+                    return;
+                }
+            }
+
             const nextIdx = this.findNextVisibleStep(this.currentStepIndex);
             if (nextIdx !== -1) {
                 this.goTo(nextIdx);
@@ -1900,6 +2112,10 @@ window.SPS = window.SPS || {};
             formData.append('form_type', this.schema.form_type || this.schema.title);
             formData.append('form_id', this.schema.form_id || this.formId);
             formData.append('answers', JSON.stringify(this.answers));
+            formData.append('file_descriptions', JSON.stringify(this.fileDescriptions));
+            if (this.leadId) {
+                formData.append('lead_id', this.leadId);
+            }
             formData.append('sps_hp', hpValue);
             formData.append('sps_duration_ms', Date.now() - this.startTime);
 
