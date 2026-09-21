@@ -14,3 +14,7 @@ build/
 # Logs
 *.log
 debug.log
+legacy-forms/gebaeude-check.txt
+.agents/rules/effizienter-code.md
+assets/icons/gebaeude-check_old.svg
+legacy-forms/projekte-mit-mir.txt

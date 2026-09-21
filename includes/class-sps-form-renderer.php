@@ -61,6 +61,79 @@ class SPS_Form_Renderer {
 
 		// Print SVG sprites in footer
 		add_action( 'wp_footer', array( $this, 'print_svg_sprites' ), 20 );
+
+		// Apply saved form-specific theme overrides as inline CSS variables
+		add_filter( 'sps_form_container_styles', array( $this, 'apply_saved_theme_styles' ), 10, 3 );
+	}
+
+	/**
+	 * Apply saved per-form theme styles from wp_options.
+	 *
+	 * Reads the option `sps_form_theme_{form_id}` (supporting hyphen and underscore variants)
+	 * and converts it to a CSS variable declaration string appended to any existing inline styles.
+	 * Also falls back to SPS_Settings::primary_color if configured.
+	 *
+	 * @param string $existing_styles Current inline styles string.
+	 * @param string $form_id         Form identifier.
+	 * @param array  $schema          Form schema data.
+	 * @return string Combined inline styles.
+	 */
+	public function apply_saved_theme_styles( $existing_styles, $form_id, $schema ) {
+		$saved_theme = class_exists( 'SPS_Form_Manager' )
+			? SPS_Form_Manager::get_theme( $form_id )
+			: array();
+
+		if ( empty( $saved_theme ) ) {
+			$variants = array_unique( array(
+				sanitize_key( $form_id ),
+				sanitize_key( str_replace( '-', '_', $form_id ) ),
+				sanitize_key( str_replace( '_', '-', $form_id ) ),
+			) );
+			foreach ( $variants as $variant ) {
+				$opt = get_option( 'sps_form_theme_' . $variant );
+				if ( ! empty( $opt ) && is_array( $opt ) ) {
+					$saved_theme = $opt;
+					break;
+				}
+			}
+		}
+
+		// Fallback for primary accent color from SPS_Settings (if no per-form theme override exists)
+		if ( empty( $saved_theme ) || empty( $saved_theme['--sps-accent'] ) ) {
+			$global_primary = SPS_Settings::get_setting( 'primary_color', '' );
+			if ( ! empty( $global_primary ) && '#00838f' !== $global_primary && '#39baff' !== $global_primary ) {
+				if ( empty( $saved_theme ) ) {
+					$saved_theme = array();
+				}
+				$saved_theme['--sps-accent'] = $global_primary;
+			}
+		}
+
+		if ( empty( $saved_theme ) || ! is_array( $saved_theme ) ) {
+			return $existing_styles;
+		}
+
+		$vars = array();
+		foreach ( $saved_theme as $var_name => $var_value ) {
+			// Only allow --sps-* variables
+			if ( 0 !== strpos( $var_name, '--sps-' ) ) {
+				continue;
+			}
+			$clean_name = '--' . sanitize_key( ltrim( $var_name, '-' ) );
+			$vars[] = $clean_name . ': ' . esc_attr( $var_value );
+		}
+
+		if ( empty( $vars ) ) {
+			return $existing_styles;
+		}
+
+		$theme_styles = implode( '; ', $vars );
+
+		if ( ! empty( $existing_styles ) ) {
+			return $existing_styles . '; ' . $theme_styles;
+		}
+
+		return $theme_styles;
 	}
 
 	/**
@@ -162,6 +235,31 @@ class SPS_Form_Renderer {
 
 		$form_id = sanitize_key( isset( $schema['form_id'] ) ? $schema['form_id'] : $raw_id );
 
+		// Check for login requirement
+		if ( ! empty( $schema['requires_login'] ) && ! is_user_logged_in() ) {
+			wp_enqueue_style( 'sps-portal-base' );
+			$login_redirect = ( is_ssl() ? 'https://' : 'http://' ) . ( isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '' ) . ( isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '' );
+			$login_url    = wp_login_url( $login_redirect );
+			$register_url = wp_registration_url();
+
+			return sprintf(
+				'<div class="sps-form-wrapper sps-login-gate">
+					<div class="sps-login-gate-icon">&#128274;</div>
+					<h3 class="sps-login-gate-title">%s</h3>
+					<p class="sps-login-gate-desc">%s</p>
+					<div class="sps-login-gate-actions">
+						<a href="%s" class="sps-btn sps-btn-login">%s</a>
+						%s
+					</div>
+				</div>',
+				esc_html__( 'Anmeldung erforderlich', 'smart-portal-suite' ),
+				esc_html__( 'Dieses Formular steht exklusiv registrierten Partnern und Kunden zur Verfügung. Bitte melden Sie sich an, um fortzufahren.', 'smart-portal-suite' ),
+				esc_url( $login_url ),
+				esc_html__( 'Jetzt anmelden', 'smart-portal-suite' ),
+				get_option( 'users_can_register' ) ? sprintf( '<a href="%s" class="sps-btn sps-btn-register">%s</a>', esc_url( $register_url ), esc_html__( 'Registrieren', 'smart-portal-suite' ) ) : ''
+			);
+		}
+
 		// Enqueue styles & scripts
 		wp_enqueue_style( 'sps-portal-base' );
 		wp_enqueue_script( 'sps-form-engine' );
@@ -176,9 +274,20 @@ class SPS_Form_Renderer {
 			$this->enqueue_sprite( $custom_sprite_path );
 		}
 
-		$form_specific_sprite = SPS_PLUGIN_DIR . 'assets/icons/' . $form_id . '.svg';
-		if ( file_exists( $form_specific_sprite ) ) {
-			$this->enqueue_sprite( $form_specific_sprite );
+		// Attempt to load a form-specific SVG sprite.
+		// Normalise the form_id: try both hyphen and underscore variants so that
+		// e.g. "gebaeude_check" finds "gebaeude-check.svg" and vice versa.
+		$sprite_id_variants = array_unique( array(
+			$form_id,
+			str_replace( '-', '_', $form_id ),
+			str_replace( '_', '-', $form_id ),
+		) );
+		foreach ( $sprite_id_variants as $variant ) {
+			$form_specific_sprite = SPS_PLUGIN_DIR . 'assets/icons/' . $variant . '.svg';
+			if ( file_exists( $form_specific_sprite ) ) {
+				$this->enqueue_sprite( $form_specific_sprite );
+				break; // Only load the first matching sprite per form
+			}
 		}
 
 		// Global shared configuration
@@ -187,9 +296,10 @@ class SPS_Form_Renderer {
 			wp_localize_script( 'sps-form-engine', 'spsGlobalConfig', array(
 				'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
 				'nonce'     => wp_create_nonce( SPS_Ajax_Handler::NONCE_ACTION ),
-				'iconsUrl'  => SPS_PLUGIN_URL . 'assets/icons/portal-icons.svg',
-				'siteUrl'   => home_url(),
-				'i18n'      => array(
+				'iconsUrl'   => SPS_PLUGIN_URL . 'assets/icons/portal-icons.svg',
+				'siteUrl'    => home_url(),
+				'privacyUrl' => SPS_Settings::get_setting( 'privacy_url', '/datenschutz' ),
+				'i18n'       => array(
 					'required'       => __( 'Bitte füllen Sie dieses Feld aus.', 'smart-portal-suite' ),
 					'invalidEmail'   => __( 'Bitte geben Sie eine gültige E-Mail-Adresse ein.', 'smart-portal-suite' ),
 					'fileTooLarge'   => __( 'Datei ist zu groß (max. 10 MB).', 'smart-portal-suite' ),
@@ -267,13 +377,17 @@ class SPS_Form_Renderer {
 				$json_content = file_get_contents( $file );
 				$data         = json_decode( $json_content, true );
 				if ( is_array( $data ) && isset( $data['title'] ) ) {
-					$id = basename( $file, '.json' );
-					$forms[ $id ] = array(
-						'id'          => $id,
-						'form_id'     => isset( $data['form_id'] ) ? $data['form_id'] : $id,
+					$file_slug    = basename( $file, '.json' );
+					$canonical_id = isset( $data['form_id'] ) ? sanitize_key( $data['form_id'] ) : sanitize_key( $file_slug );
+					$form_entry   = array(
+						'id'          => $canonical_id,
+						'file_id'     => $file_slug,
+						'form_id'     => $canonical_id,
 						'title'       => $data['title'],
 						'steps_count' => isset( $data['steps'] ) ? count( $data['steps'] ) : 0,
 					);
+					// Primary entry by canonical form ID (unique per form)
+					$forms[ $canonical_id ] = $form_entry;
 				}
 			}
 		}

@@ -297,10 +297,16 @@ class SPS_Settings {
 	}
 
 	public function render_field_primary_color() {
-		$value = self::get_setting( 'primary_color', '#00838f' );
+		$value = self::get_setting( 'primary_color', '#39baff' );
+		$customizer_url = admin_url( 'admin.php?page=sps-forms' );
 		?>
-		<input type="text" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[primary_color]" value="<?php echo esc_attr( $value ); ?>" class="sps-color-picker" data-default-color="#00838f" />
-		<p class="description"><?php esc_html_e( 'Primäre Akzentfarbe für Formular-Schaltflächen, Fortschrittsanzeige und Slider.', 'smart-portal-suite' ); ?></p>
+		<input type="text" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[primary_color]" value="<?php echo esc_attr( $value ); ?>" class="sps-color-picker" data-default-color="#39baff" />
+		<p class="description">
+			<?php esc_html_e( 'Globale Standard-Akzentfarbe für interaktive Elemente wie Buttons, Radio-Auswahlen und den Fortschrittsbalken.', 'smart-portal-suite' ); ?><br>
+			<?php esc_html_e( 'Tipp: Unter', 'smart-portal-suite' ); ?>
+			<a href="<?php echo esc_url( $customizer_url ); ?>"><strong><?php esc_html_e( 'Smart Portal > Formulare', 'smart-portal-suite' ); ?></strong></a>
+			<?php esc_html_e( 'kannst du jedes Formular komplett individuell (inkl. Hintergründe, Kartenfarben, Radien & Live-Vorschau) anpassen.', 'smart-portal-suite' ); ?>
+		</p>
 		<?php
 	}
 
@@ -462,8 +468,8 @@ class SPS_Settings {
 		$sanitized['webdav_base_dir'] = ! empty( $base_dir ) ? $base_dir : 'SPS_Leads';
 
 		// Formular Design: Primärfarbe
-		$color = isset( $input['primary_color'] ) ? sanitize_hex_color( $input['primary_color'] ) : '#00838f';
-		$sanitized['primary_color'] = ! empty( $color ) ? $color : '#00838f';
+		$color = isset( $input['primary_color'] ) ? sanitize_hex_color( $input['primary_color'] ) : '#39baff';
+		$sanitized['primary_color'] = ! empty( $color ) ? $color : '#39baff';
 
 		// Datenschutz URL
 		$sanitized['privacy_url'] = isset( $input['privacy_url'] ) ? esc_url_raw( trim( $input['privacy_url'] ) ) : '';

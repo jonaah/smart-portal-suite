@@ -32,6 +32,7 @@ define( 'SPS_PREFIX', 'sps_' );
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-settings.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-ajax-handler.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-form-renderer.php';
+require_once SPS_PLUGIN_DIR . 'includes/class-sps-form-manager.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-diagnostics.php';
 
 /**
@@ -54,6 +55,7 @@ function sps_init() {
 	SPS_Form_Renderer::get_instance();
 
 	if ( is_admin() ) {
+		SPS_Form_Manager::get_instance();
 		SPS_Diagnostics::get_instance();
 	}
 }
