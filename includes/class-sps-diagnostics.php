@@ -283,7 +283,7 @@ class SPS_Diagnostics {
 
 		// Schritt 4: Nextcloud Forms API v3 Verfügbarkeit
 		$start_time = microtime( true );
-		$forms_res  = $client->request( 'ocs/v2.php/apps/forms/api/v3/forms?type=owned', 'GET' );
+		$forms_res  = $client->request( 'ocs/v2.php/apps/forms/api/v3/forms', 'GET' );
 		$duration_ms = round( ( microtime( true ) - $start_time ) * 1000 );
 
 		if ( is_wp_error( $forms_res ) ) {
@@ -298,7 +298,13 @@ class SPS_Diagnostics {
 			$forms_body = json_decode( wp_remote_retrieve_body( $forms_res ), true );
 
 			if ( 200 === $forms_code ) {
-				$form_count = isset( $forms_body['ocs']['data']['forms'] ) ? count( $forms_body['ocs']['data']['forms'] ) : 0;
+				$raw_forms = array();
+				if ( isset( $forms_body['ocs']['data']['forms'] ) && is_array( $forms_body['ocs']['data']['forms'] ) ) {
+					$raw_forms = $forms_body['ocs']['data']['forms'];
+				} elseif ( isset( $forms_body['ocs']['data'] ) && is_array( $forms_body['ocs']['data'] ) ) {
+					$raw_forms = $forms_body['ocs']['data'];
+				}
+				$form_count = count( $raw_forms );
 				$results['steps'][] = array(
 					'step'    => 'forms_api',
 					'title'   => __( 'Nextcloud Forms API v3 aktiv', 'smart-portal-suite' ),
