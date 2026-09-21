@@ -61,6 +61,79 @@ class SPS_Form_Renderer {
 
 		// Print SVG sprites in footer
 		add_action( 'wp_footer', array( $this, 'print_svg_sprites' ), 20 );
+
+		// Apply saved form-specific theme overrides as inline CSS variables
+		add_filter( 'sps_form_container_styles', array( $this, 'apply_saved_theme_styles' ), 10, 3 );
+	}
+
+	/**
+	 * Apply saved per-form theme styles from wp_options.
+	 *
+	 * Reads the option `sps_form_theme_{form_id}` (supporting hyphen and underscore variants)
+	 * and converts it to a CSS variable declaration string appended to any existing inline styles.
+	 * Also falls back to SPS_Settings::primary_color if configured.
+	 *
+	 * @param string $existing_styles Current inline styles string.
+	 * @param string $form_id         Form identifier.
+	 * @param array  $schema          Form schema data.
+	 * @return string Combined inline styles.
+	 */
+	public function apply_saved_theme_styles( $existing_styles, $form_id, $schema ) {
+		$saved_theme = class_exists( 'SPS_Form_Manager' )
+			? SPS_Form_Manager::get_theme( $form_id )
+			: array();
+
+		if ( empty( $saved_theme ) ) {
+			$variants = array_unique( array(
+				sanitize_key( $form_id ),
+				sanitize_key( str_replace( '-', '_', $form_id ) ),
+				sanitize_key( str_replace( '_', '-', $form_id ) ),
+			) );
+			foreach ( $variants as $variant ) {
+				$opt = get_option( 'sps_form_theme_' . $variant );
+				if ( ! empty( $opt ) && is_array( $opt ) ) {
+					$saved_theme = $opt;
+					break;
+				}
+			}
+		}
+
+		// Fallback for primary accent color from SPS_Settings (if no per-form theme override exists)
+		if ( empty( $saved_theme ) || empty( $saved_theme['--sps-accent'] ) ) {
+			$global_primary = SPS_Settings::get_setting( 'primary_color', '' );
+			if ( ! empty( $global_primary ) && '#00838f' !== $global_primary && '#39baff' !== $global_primary ) {
+				if ( empty( $saved_theme ) ) {
+					$saved_theme = array();
+				}
+				$saved_theme['--sps-accent'] = $global_primary;
+			}
+		}
+
+		if ( empty( $saved_theme ) || ! is_array( $saved_theme ) ) {
+			return $existing_styles;
+		}
+
+		$vars = array();
+		foreach ( $saved_theme as $var_name => $var_value ) {
+			// Only allow --sps-* variables
+			if ( 0 !== strpos( $var_name, '--sps-' ) ) {
+				continue;
+			}
+			$clean_name = '--' . sanitize_key( ltrim( $var_name, '-' ) );
+			$vars[] = $clean_name . ': ' . esc_attr( $var_value );
+		}
+
+		if ( empty( $vars ) ) {
+			return $existing_styles;
+		}
+
+		$theme_styles = implode( '; ', $vars );
+
+		if ( ! empty( $existing_styles ) ) {
+			return $existing_styles . '; ' . $theme_styles;
+		}
+
+		return $theme_styles;
 	}
 
 	/**
@@ -304,13 +377,17 @@ class SPS_Form_Renderer {
 				$json_content = file_get_contents( $file );
 				$data         = json_decode( $json_content, true );
 				if ( is_array( $data ) && isset( $data['title'] ) ) {
-					$id = basename( $file, '.json' );
-					$forms[ $id ] = array(
-						'id'          => $id,
-						'form_id'     => isset( $data['form_id'] ) ? $data['form_id'] : $id,
+					$file_slug    = basename( $file, '.json' );
+					$canonical_id = isset( $data['form_id'] ) ? sanitize_key( $data['form_id'] ) : sanitize_key( $file_slug );
+					$form_entry   = array(
+						'id'          => $canonical_id,
+						'file_id'     => $file_slug,
+						'form_id'     => $canonical_id,
 						'title'       => $data['title'],
 						'steps_count' => isset( $data['steps'] ) ? count( $data['steps'] ) : 0,
 					);
+					// Primary entry by canonical form ID (unique per form)
+					$forms[ $canonical_id ] = $form_entry;
 				}
 			}
 		}
