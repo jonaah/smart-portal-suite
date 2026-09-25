@@ -34,6 +34,7 @@ require_once SPS_PLUGIN_DIR . 'includes/class-sps-ajax-handler.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-form-renderer.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-form-manager.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-diagnostics.php';
+require_once SPS_PLUGIN_DIR . 'includes/class-sps-account-sync-page.php';
 
 /**
  * Nextcloud Bridge Module laden.
@@ -41,6 +42,12 @@ require_once SPS_PLUGIN_DIR . 'includes/class-sps-diagnostics.php';
 require_once SPS_PLUGIN_DIR . 'modules/nextcloud/class-sps-nc-client.php';
 require_once SPS_PLUGIN_DIR . 'modules/nextcloud/class-sps-nc-forms.php';
 require_once SPS_PLUGIN_DIR . 'modules/nextcloud/class-sps-nc-webdav.php';
+
+/**
+ * Authentication & User Sync Module laden.
+ */
+require_once SPS_PLUGIN_DIR . 'modules/auth/class-sps-nc-user-sync.php';
+require_once SPS_PLUGIN_DIR . 'modules/auth/class-sps-auth-shortcodes.php';
 
 /**
  * Plugin Initialisierung.
@@ -53,10 +60,13 @@ function sps_init() {
 	SPS_Settings::get_instance();
 	SPS_Ajax_Handler::get_instance();
 	SPS_Form_Renderer::get_instance();
+	SPS_NC_User_Sync::get_instance();
+	SPS_Auth_Shortcodes::get_instance();
 
 	if ( is_admin() ) {
 		SPS_Form_Manager::get_instance();
 		SPS_Diagnostics::get_instance();
+		SPS_Account_Sync_Page::get_instance();
 	}
 }
 add_action( 'plugins_loaded', 'sps_init' );

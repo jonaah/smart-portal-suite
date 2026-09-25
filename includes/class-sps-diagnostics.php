@@ -367,6 +367,52 @@ class SPS_Diagnostics {
 			}
 		}
 
+		// Schritt 6: Nextcloud User Provisioning API (Account Sync)
+		$start_time  = microtime( true );
+		$prov_res    = $client->request( 'ocs/v1.php/cloud/users/' . rawurlencode( $service_account ) . '?format=json', 'GET' );
+		$duration_ms = round( ( microtime( true ) - $start_time ) * 1000 );
+
+		if ( is_wp_error( $prov_res ) ) {
+			$results['steps'][] = array(
+				'step'    => 'user_provisioning',
+				'title'   => __( 'Nextcloud User Provisioning API', 'smart-portal-suite' ),
+				'status'  => 'warning',
+				'message' => sprintf( __( 'User Provisioning API nicht erreichbar: %s', 'smart-portal-suite' ), $prov_res->get_error_message() ),
+			);
+		} else {
+			$prov_code   = wp_remote_retrieve_response_code( $prov_res );
+			$prov_body   = json_decode( wp_remote_retrieve_body( $prov_res ), true );
+			$prov_status = isset( $prov_body['ocs']['meta']['statuscode'] ) ? (int) $prov_body['ocs']['meta']['statuscode'] : null;
+
+			if ( 200 === $prov_code && 100 === $prov_status ) {
+				$results['steps'][] = array(
+					'step'    => 'user_provisioning',
+					'title'   => __( 'User Provisioning API aktiv', 'smart-portal-suite' ),
+					'status'  => 'success',
+					'message' => sprintf( __( 'Service-Account verfügt über Administrator-Rechte zur Benutzerverwaltung (%d ms).', 'smart-portal-suite' ), $duration_ms ),
+				);
+			} else {
+				$results['steps'][] = array(
+					'step'    => 'user_provisioning',
+					'title'   => __( 'User Provisioning API eingeschränkt', 'smart-portal-suite' ),
+					'status'  => 'warning',
+					'message' => sprintf( __( 'Service-Account konnte Benutzerdaten nicht abfragen (HTTP %d, OCS %s). Prüfe, ob der Account in der Gruppe "admin" ist.', 'smart-portal-suite' ), $prov_code, var_export( $prov_status, true ) ),
+				);
+			}
+		}
+
+		// Schritt 7: Nextcloud Datenbank-Verbindung (Social Login)
+		$nc_db_host = SPS_Settings::get_setting( 'nc_db_host', '' );
+		if ( ! empty( $nc_db_host ) ) {
+			$db_test = SPS_NC_User_Sync::get_instance()->test_nc_db_connection();
+			$results['steps'][] = array(
+				'step'    => 'nc_db',
+				'title'   => __( 'Nextcloud Datenbank (Social Login)', 'smart-portal-suite' ),
+				'status'  => $db_test['success'] ? 'success' : 'warning',
+				'message' => $db_test['message'],
+			);
+		}
+
 		self::log( 'Nextcloud Live-Verbindungstest erfolgreich durchgeführt.', 'info' );
 		wp_send_json_success( $results );
 	}
