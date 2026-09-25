@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin-Konstanten definieren
-define( 'SPS_VERSION', '0.1.0' );
+define( 'SPS_VERSION', '0.2.0' );
 define( 'SPS_PLUGIN_FILE', __FILE__ );
 define( 'SPS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SPS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -70,3 +70,24 @@ function sps_init() {
 	}
 }
 add_action( 'plugins_loaded', 'sps_init' );
+
+/**
+ * Automatischer Update-Checker via GitHub Releases (PUC v5).
+ * Ermöglicht 1-Klick-Updates direkt im WordPress-Admin bei neuen GitHub Releases.
+ */
+if ( file_exists( SPS_PLUGIN_DIR . 'includes/vendor/plugin-update-checker/plugin-update-checker.php' ) ) {
+	require_once SPS_PLUGIN_DIR . 'includes/vendor/plugin-update-checker/plugin-update-checker.php';
+	$sps_update_checker = YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+		'https://github.com/jonaah/smart-portal-suite/',
+		SPS_PLUGIN_FILE,
+		'smart-portal-suite'
+	);
+	// Release-Assets (.zip aus GitHub Actions) priorisieren
+	$sps_update_checker->getVcsApi()->enableReleaseAssets();
+	
+	// Optionaler Filter für Private Repositories oder Access-Tokens
+	$sps_auth_token = apply_filters( 'sps_github_updater_token', '' );
+	if ( ! empty( $sps_auth_token ) ) {
+		$sps_update_checker->setAuthentication( $sps_auth_token );
+	}
+}

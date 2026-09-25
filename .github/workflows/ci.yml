@@ -1,0 +1,123 @@
+name: CI Quality Gate
+
+on:
+  push:
+    branches:
+      - main
+      - Development
+  pull_request:
+    branches:
+      - main
+      - Development
+
+jobs:
+  php-syntax:
+    name: PHP Syntax Matrix (${{ matrix.php-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['7.4', '8.0', '8.1', '8.2', '8.3']
+      fail-fast: false
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          tools: none
+
+      - name: Check PHP Syntax (Lint)
+        run: |
+          echo "Scanning PHP files for syntax errors against PHP ${{ matrix.php-version }}..."
+          ERRORS=0
+          while IFS= read -r -d '' file; do
+            php -l "$file" > /dev/null 2>&1
+            if [ $? -ne 0 ]; then
+              echo "::error file=$file::Syntax error found in $file"
+              php -l "$file"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done < <(find . -type f -name "*.php" -not -path "*/vendor/*" -not -path "*/node_modules/*" -not -path "./legacy/*" -print0)
+          
+          if [ $ERRORS -gt 0 ]; then
+            echo "Failed: $ERRORS PHP file(s) contained syntax errors."
+            exit 1
+          fi
+          echo "All PHP files passed syntax check on PHP ${{ matrix.php-version }}."
+
+  json-validation:
+    name: Validate JSON Schemas
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Validate Form Schemas & JSON
+        run: |
+          echo "Validating JSON files..."
+          python3 -c "
+          import json, glob, sys
+          files = glob.glob('config/forms/*.json') + glob.glob('*.json')
+          failed = False
+          for f in files:
+              try:
+                  with open(f, 'r', encoding='utf-8') as fp:
+                      json.load(fp)
+                  print(f'✓ {f} is valid JSON')
+              except Exception as e:
+                  print(f'✗ Error in {f}: {e}', file=sys.stderr)
+                  failed = True
+          if failed:
+              sys.exit(1)
+          "
+
+  js-syntax:
+    name: Validate JavaScript Syntax
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check JS Syntax
+        run: |
+          echo "Checking JavaScript syntax..."
+          node -c assets/js/*.js
+          echo "All JS files passed syntax check."
+
+  version-consistency:
+    name: Verify Version Consistency
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check Version Match
+        run: |
+          python3 -c "
+          import re, sys
+          with open('smart-portal-suite.php', 'r') as f:
+              content = f.read()
+          header_match = re.search(r'\*\s*Version:\s*([0-9\.]+)', content)
+          const_match = re.search(r'define\(\s*[\'\"]SPS_VERSION[\'\"],\s*[\'\"]([0-9\.]+)[\'\"]\s*\);', content)
+          
+          if not header_match or not const_match:
+              print('Could not extract version from smart-portal-suite.php', file=sys.stderr)
+              sys.exit(1)
+              
+          header_v = header_match.group(1)
+          const_v = const_match.group(1)
+          
+          if header_v != const_v:
+              print(f'::error::Version mismatch! Plugin Header is {header_v} but SPS_VERSION is {const_v}', file=sys.stderr)
+              sys.exit(1)
+              
+          print(f'Version consistency verified: {header_v}')
+          "
