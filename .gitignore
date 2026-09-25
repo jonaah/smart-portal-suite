@@ -14,3 +14,7 @@ build/
 # Logs
 *.log
 debug.log
+.agents/
+assets/icons/gebaeude-check_old.svg
+legacy/
+docs/

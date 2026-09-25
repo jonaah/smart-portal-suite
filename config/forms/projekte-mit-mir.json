@@ -3,28 +3,48 @@
   "form_type": "Projekte mit mir",
   "title": "Projekte mit mir",
   "nc_form_title": "Projekte mit mir",
+  "requires_login": true,
+  "sprite": "assets/icons/projekte-mit-mir.svg",
   "steps": [
     {
       "id": "projektname",
       "type": "text",
       "dataType": "string",
       "label": "Wie soll dein Projekt heißen?",
-      "desc": "Vergib einen kurzen Namen, damit wir dein Projekt eindeutig zuordnen können.<br>Beispiele: <em>Sanierung Einfamilienhaus &middot; Wärmepumpe 2026 &middot; Fenstererneuerung</em>",
+      "desc": "Vergib einen kurzen Namen, damit wir dein Projekt eindeutig zuordnen können.<br>Beispiele: <em>Sanierung Einfamilienhaus · Wärmepumpe 2026 · Fenstererneuerung</em>",
       "placeholder": "z.B. Sanierung Einfamilienhaus",
       "maxLength": 80,
+      "showCounter": true,
       "required": true
     },
     {
       "id": "projekttyp",
       "type": "radio",
+      "layout": "list",
       "dataType": "string",
       "label": "Um welche Art von Projekt handelt es sich?",
       "desc": "Die Auswahl hilft uns, die richtige Förderung und die passenden Unterlagen vorzubereiten.",
       "choices": [
-        { "text": "individueller Sanierungsfahrplan (iSFP)", "subtitle": "Ganzheitliche Sanierungsplanung nach BEG", "icon": "icon-document" },
-        { "text": "Effizienzhaus nach KfW", "subtitle": "KfW-Förderung Energieeffizient Sanieren", "icon": "icon-building" },
-        { "text": "Einzelmaßnahme (Fenster, Heizung, Heizungsoptimierung, Heizung, ...)", "subtitle": "Fenster, Heizung, Daemmung, Heizungsoptimierung...", "icon": "icon-renovation" },
-        { "text": "Verbrauchsausweis", "subtitle": "Energieausweis fuer Vermietung/Verkauf", "icon": "icon-solar" }
+        {
+          "text": "individueller Sanierungsfahrplan (iSFP)",
+          "subtitle": "Ganzheitliche Sanierungsplanung nach BEG",
+          "icon": "icon-pm-isfp"
+        },
+        {
+          "text": "Effizienzhaus nach KfW",
+          "subtitle": "KfW-Förderung Energieeffizient Sanieren",
+          "icon": "icon-pm-kfw-house"
+        },
+        {
+          "text": "Einzelmaßnahme (Fenster, Heizung, Heizungsoptimierung, ...)",
+          "subtitle": "Fenster, Heizung, Dämmung, Heizungsoptimierung...",
+          "icon": "icon-pm-tools"
+        },
+        {
+          "text": "Verbrauchsausweis",
+          "subtitle": "Energieausweis für Vermietung/Verkauf",
+          "icon": "icon-pm-energy-cert"
+        }
       ]
     },
     {
@@ -32,20 +52,33 @@
       "type": "address-full",
       "dataType": "string",
       "label": "Wo befindet sich das Objekt?",
-      "desc": "Vollstaendige Adresse des Gebaeudes. Die PLZ wird automatisch dem Ort zugeordnet.",
+      "desc": "Vollständige Adresse des Gebäudes. Die PLZ wird automatisch dem Ort zugeordnet.",
       "required": true
     },
     {
       "id": "foerderung",
       "type": "radio",
+      "layout": "list",
       "dataType": "string",
       "label": "Förderinformationen - falls bekannt",
       "desc": "Bitte geben Sie an, ob Sie eine Förderung nutzen möchten.<br>Wir prüfen anschließend, welche Programme für Ihr Projekt möglich sind.",
       "choices": [
-        { "text": "keine Förderung geplant" },
-        { "text": "BAFA Einzelmaßnahme" },
-        { "text": "KfW Effizienzhaus" },
-        { "text": "KfW Einzelmaßnahme" }
+        {
+          "text": "keine Förderung geplant",
+          "icon": "icon-pm-no-funding"
+        },
+        {
+          "text": "BAFA Einzelmaßnahme",
+          "icon": "icon-pm-bafa"
+        },
+        {
+          "text": "KfW Effizienzhaus",
+          "icon": "icon-pm-kfw"
+        },
+        {
+          "text": "KfW Einzelmaßnahme",
+          "icon": "icon-pm-kfw"
+        }
       ]
     },
     {
@@ -53,41 +86,70 @@
       "type": "textarea",
       "dataType": "string",
       "label": "Maßnahmenbeschreibung",
-      "desc": "Bitte beschreibe kurz, welche Maßnahme geplant ist.<br>Beispiele: <em>Austausch der Heizung gegen Wärmepumpe &middot; Dämmung der Fassade &middot; Fenstertausch &middot; Dachsanierung</em>",
+      "desc": "Bitte beschreibe kurz, welche Maßnahme geplant ist.<br>Beispiele: <em>Austausch der Heizung gegen Wärmepumpe · Dämmung der Fassade · Fenstertausch · Dachsanierung</em>",
       "placeholder": "z.B. Austausch der Ölheizung gegen eine Luft-Wasser-Wärmepumpe inkl. Heizkörpertausch...",
       "maxLength": 500,
+      "showCounter": true,
+      "optional": true,
       "required": false
     },
     {
       "id": "investitionskosten",
       "type": "text",
+      "format": "currency",
+      "prefix": "€",
       "dataType": "string",
       "label": "Geschätzte Investitionskosten",
       "desc": "Bitte gib die geschätzten Gesamtkosten der Maßnahme an.<br>Wenn bereits ein Angebot vorliegt, kannst du den Betrag aus dem Angebot übernehmen.",
       "placeholder": "z.B. 35.000",
       "maxLength": 20,
+      "optional": true,
       "required": false
     },
     {
       "id": "umsetzungszeitraum",
       "type": "date",
+      "min": "today",
       "dataType": "string",
       "label": "Geplanter Umsetzungszeitraum",
       "desc": "Wann soll die Maßnahme ungefähr umgesetzt werden?",
       "placeholder": "",
+      "optional": true,
       "required": false
     },
     {
       "id": "vorliegende_dokumente",
       "type": "checkbox-multi",
+      "layout": "list",
       "dataType": "array",
       "label": "Was liegt bereits vor?",
-      "desc": "Waehle alle Dokumente aus, die du heute schon hochladen kannst. Fehlende Unterlagen kannst du jederzeit nachreichen.",
+      "desc": "Wähle alle Dokumente aus, die du heute schon hochladen kannst. Fehlende Unterlagen kannst du jederzeit nachreichen.",
+      "hint": "Mehrfachauswahl möglich · Keine Auswahl = kein Upload erforderlich",
       "choices": [
-        { "id": "angebot", "text": "Angebot / Kostenvoranschlag", "subtitle": "Vorliegendes Angebot eines Handwerksbetriebs", "icon": "icon-document" },
-        { "id": "rechnungen", "text": "Rechnungen", "subtitle": "Fuer abgeschlossene Massnahmen (Auszahlung & Verwendungsnachweis)", "icon": "icon-euro" },
-        { "id": "fachunternehmer", "text": "Fachunternehmererklaerung", "subtitle": "Bestaetigung des ausfuehrenden Betriebs", "icon": "icon-check" },
-        { "id": "sonstiges", "text": "Sonstiges", "subtitle": "Technische Datenblaetter, Foerderbescheide, Vertraege, Planungsunterlagen...", "icon": "icon-upload" }
+        {
+          "id": "angebot",
+          "text": "Angebot / Kostenvoranschlag",
+          "subtitle": "Vorliegendes Angebot eines Handwerksbetriebs",
+          "icon": "icon-pm-angebot"
+        },
+        {
+          "id": "rechnungen",
+          "text": "Rechnungen",
+          "subtitle": "Für abgeschlossene Maßnahmen (Auszahlung & Verwendungsnachweis)",
+          "icon": "icon-pm-rechnungen"
+        },
+        {
+          "id": "fachunternehmer",
+          "text": "Fachunternehmererklärung",
+          "subtitle": "Bestätigung des ausführenden Betriebs",
+          "icon": "icon-pm-fachunternehmer"
+        },
+        {
+          "id": "sonstiges",
+          "text": "Sonstiges",
+          "subtitle": "Technische Datenblätter, Förderbescheide, Verträge, Planungsunterlagen...",
+          "icon": "icon-pm-sonstiges"
+        }
       ]
     },
     {
@@ -95,39 +157,72 @@
       "type": "upload",
       "dataType": "file",
       "label": "Angebot / Kostenvoranschlag hochladen",
-      "showIf": { "field": "vorliegende_dokumente", "op": "in", "value": "angebot" }
+      "desc": "Bitte lade vorliegende Angebote oder Kostenvoranschläge von Handwerksbetrieben hoch.<br>Diese benötigen wir für: Förderanträge · Kostenschätzung · technische Prüfung",
+      "optional": true,
+      "multiple": true,
+      "accept": ".pdf,.jpg,.jpeg,.png,.heic",
+      "allowDescription": true,
+      "showIf": {
+        "field": "vorliegende_dokumente",
+        "op": "in",
+        "value": "angebot"
+      }
     },
     {
       "id": "upload_rechnungen",
       "type": "upload",
       "dataType": "file",
       "label": "Rechnungen hochladen",
-      "showIf": { "field": "vorliegende_dokumente", "op": "in", "value": "rechnungen" }
+      "desc": "Bitte lade die Rechnungen der Handwerker nach der Umsetzung hoch.<br>Diese sind notwendig für: Auszahlung der Förderung · Verwendungsnachweis bei BAFA oder KfW",
+      "optional": true,
+      "multiple": true,
+      "accept": ".pdf,.jpg,.jpeg,.png,.heic",
+      "allowDescription": true,
+      "showIf": {
+        "field": "vorliegende_dokumente",
+        "op": "in",
+        "value": "rechnungen"
+      }
     },
     {
       "id": "upload_fachunternehmer",
       "type": "upload",
       "dataType": "file",
       "label": "Fachunternehmererklärung hochladen",
-      "showIf": { "field": "vorliegende_dokumente", "op": "in", "value": "fachunternehmer" }
+      "desc": "Bitte lade die Fachunternehmererklärung des ausführenden Betriebs hoch.<br>Dieses Dokument bestätigt die fachgerechte Ausführung und ist häufig Voraussetzung für Förderprogramme.",
+      "optional": true,
+      "multiple": false,
+      "accept": ".pdf,.jpg,.jpeg,.png,.heic",
+      "allowDescription": true,
+      "showIf": {
+        "field": "vorliegende_dokumente",
+        "op": "in",
+        "value": "fachunternehmer"
+      }
     },
     {
       "id": "upload_sonstiges",
       "type": "upload",
       "dataType": "file",
-      "label": "Sonstige Dokumente hochladen",
-      "showIf": { "field": "vorliegende_dokumente", "op": "in", "value": "sonstiges" }
+      "label": "Weitere Projektunterlagen hochladen",
+      "desc": "Hier kannst du weitere wichtige Unterlagen hochladen, zum Beispiel:<br>Technische Datenblätter · Förderbescheide · Verträge · Planungsunterlagen",
+      "optional": true,
+      "multiple": true,
+      "accept": ".pdf,.jpg,.jpeg,.png,.heic",
+      "allowDescription": true,
+      "showIf": {
+        "field": "vorliegende_dokumente",
+        "op": "in",
+        "value": "sonstiges"
+      }
     },
     {
       "id": "summary",
       "type": "summary",
-      "label": "Zusammenfassung"
-    },
-    {
-      "id": "consent",
-      "type": "consent",
-      "label": "Datenschutz",
-      "required": true
+      "label": "Deine Angaben im Überblick",
+      "desc": "Prüfe deine Eingaben und sende das Projekt ab. Du kannst jede Angabe direkt bearbeiten.",
+      "showEditButtons": true,
+      "consent": true
     }
   ]
 }

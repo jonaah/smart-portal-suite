@@ -1,0 +1,287 @@
+/**
+ * Smart Portal Suite - Account-Sync Admin Stylesheet
+ * Modern, clean WordPress admin UI styles for the Account-Sync Dashboard.
+ */
+
+.sps-sync-wrap {
+	max-width: 1240px;
+	margin-top: 20px;
+}
+
+/* Status Cards Grid */
+.sps-status-cards-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	gap: 16px;
+	margin: 20px 0 24px 0;
+}
+
+.sps-status-card {
+	background: #ffffff;
+	border: 1px solid #c3c4c7;
+	border-radius: 6px;
+	padding: 16px 18px;
+	display: flex;
+	align-items: flex-start;
+	gap: 14px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.sps-status-card-icon {
+	width: 40px;
+	height: 40px;
+	border-radius: 8px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 22px;
+	flex-shrink: 0;
+}
+
+.sps-status-card-icon.icon-blue {
+	background: #e0f2fe;
+	color: #0284c7;
+}
+
+.sps-status-card-icon.icon-purple {
+	background: #ede9fe;
+	color: #7c3aed;
+}
+
+.sps-status-card-icon.icon-amber {
+	background: #fef3c7;
+	color: #d97706;
+}
+
+.sps-status-card-icon.icon-emerald {
+	background: #d1fae5;
+	color: #059669;
+}
+
+.sps-status-card-info {
+	flex: 1;
+}
+
+.sps-status-card-title {
+	font-size: 13px;
+	font-weight: 600;
+	color: #646970;
+	margin-bottom: 4px;
+}
+
+.sps-status-card-value {
+	font-size: 14px;
+	font-weight: 700;
+	color: #1d2327;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.sps-status-card-desc {
+	font-size: 12px;
+	color: #8c8f94;
+	margin-top: 4px;
+}
+
+/* Metrics Row */
+.sps-metrics-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 16px;
+	margin-bottom: 24px;
+}
+
+.sps-metric-box {
+	background: #ffffff;
+	border: 1px solid #c3c4c7;
+	border-radius: 6px;
+	padding: 16px 20px;
+	text-align: center;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.sps-metric-num {
+	font-size: 28px;
+	font-weight: 800;
+	line-height: 1.1;
+	color: #1d2327;
+}
+
+.sps-metric-label {
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: #646970;
+	margin-top: 6px;
+}
+
+.sps-metric-box.metric-synced .sps-metric-num {
+	color: #059669;
+}
+
+.sps-metric-box.metric-pending .sps-metric-num {
+	color: #d97706;
+}
+
+.sps-metric-box.metric-linked .sps-metric-num {
+	color: #0284c7;
+}
+
+/* Action Toolbar */
+.sps-sync-toolbar {
+	background: #ffffff;
+	border: 1px solid #c3c4c7;
+	border-radius: 6px;
+	padding: 14px 18px;
+	margin-bottom: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+.sps-toolbar-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.sps-toolbar-filter {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+/* Progress Box */
+.sps-batch-progress-box {
+	background: #f8fafc;
+	border: 1px solid #cbd5e1;
+	border-radius: 6px;
+	padding: 14px 18px;
+	margin-bottom: 20px;
+	display: none;
+}
+
+.sps-progress-bar-wrap {
+	height: 10px;
+	background: #e2e8f0;
+	border-radius: 5px;
+	overflow: hidden;
+	margin: 8px 0;
+}
+
+.sps-progress-bar-fill {
+	height: 100%;
+	width: 0%;
+	background: #0284c7;
+	transition: width 0.25s ease;
+}
+
+.sps-progress-text {
+	font-size: 12px;
+	color: #475569;
+	font-weight: 600;
+}
+
+/* User Table */
+.sps-users-card {
+	background: #ffffff;
+	border: 1px solid #c3c4c7;
+	border-radius: 6px;
+	overflow: hidden;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.sps-users-card .postbox-header {
+	padding: 14px 18px;
+	border-bottom: 1px solid #f0f0f1;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.sps-users-card .postbox-header h2 {
+	margin: 0;
+	font-size: 15px;
+	font-weight: 600;
+}
+
+.sps-users-table {
+	border: none !important;
+	box-shadow: none !important;
+	margin: 0 !important;
+}
+
+.sps-users-table th {
+	background: #f8fafc;
+	font-weight: 600;
+	padding: 10px 14px;
+}
+
+.sps-users-table td {
+	padding: 12px 14px;
+	vertical-align: middle;
+}
+
+/* Badges */
+.sps-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 3px 8px;
+	border-radius: 12px;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.sps-badge-success {
+	background: #d1fae5;
+	color: #065f46;
+}
+
+.sps-badge-warning {
+	background: #fef3c7;
+	color: #92400e;
+}
+
+.sps-badge-error {
+	background: #fee2e2;
+	color: #991b1b;
+}
+
+.sps-badge-muted {
+	background: #f1f5f9;
+	color: #64748b;
+}
+
+.sps-badge-info {
+	background: #e0f2fe;
+	color: #075985;
+}
+
+/* Spinner inline */
+.sps-inline-spinner {
+	display: inline-block;
+	vertical-align: middle;
+	margin-left: 4px;
+}
+
+@media (max-width: 900px) {
+	.sps-metrics-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+@media (max-width: 600px) {
+	.sps-metrics-grid {
+		grid-template-columns: 1fr;
+	}
+	.sps-sync-toolbar {
+		flex-direction: column;
+		align-items: stretch;
+	}
+}

@@ -248,7 +248,7 @@ class SPS_Ajax_Handler {
 
 		$processed = array();
 		$max_size  = 10 * 1024 * 1024; // 10 MB
-		$allowed   = array( 'pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx' );
+		$allowed   = array( 'pdf', 'jpg', 'jpeg', 'png', 'webp', 'heic', 'doc', 'docx' );
 
 		foreach ( $_FILES as $field_key => $files_data ) {
 			if ( ! is_array( $files_data['name'] ) ) {

@@ -111,14 +111,22 @@ class SPS_NC_Client {
 	public function request( $endpoint, $method = 'GET', $body = null, $custom_headers = array() ) {
 		$url = $this->base_url . '/' . ltrim( $endpoint, '/' );
 
+		$headers = array_merge( $this->get_headers(), $custom_headers );
+
 		$args = array(
 			'method'  => strtoupper( $method ),
 			'timeout' => $this->timeout,
-			'headers' => array_merge( $this->get_headers(), $custom_headers ),
+			'headers' => $headers,
 		);
 
 		if ( null !== $body ) {
-			$args['body'] = is_array( $body ) ? wp_json_encode( $body ) : $body;
+			if ( is_array( $body ) && isset( $headers['Content-Type'] ) && false !== strpos( $headers['Content-Type'], 'x-www-form-urlencoded' ) ) {
+				$args['body'] = http_build_query( $body );
+			} elseif ( is_array( $body ) ) {
+				$args['body'] = wp_json_encode( $body );
+			} else {
+				$args['body'] = $body;
+			}
 		}
 
 		$response = wp_remote_request( $url, $args );
@@ -128,5 +136,141 @@ class SPS_NC_Client {
 		}
 
 		return $response;
+	}
+
+	/**
+	 * Check if a Nextcloud user exists via OCS API.
+	 *
+	 * @param string $username Nextcloud username / email.
+	 * @return bool
+	 */
+	public function user_exists( $username ) {
+		$endpoint = 'ocs/v1.php/cloud/users/' . rawurlencode( $username ) . '?format=json';
+		$response = $this->request( $endpoint, 'GET' );
+
+		if ( is_wp_error( $response ) ) {
+			return false;
+		}
+
+		$code = wp_remote_retrieve_response_code( $response );
+		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+		$statuscode = isset( $body['ocs']['meta']['statuscode'] ) ? (int) $body['ocs']['meta']['statuscode'] : null;
+
+		return ( 200 === $code && 100 === $statuscode );
+	}
+
+	/**
+	 * Create a user in Nextcloud via OCS API.
+	 *
+	 * @param string $username Nextcloud username / email.
+	 * @param string $password Initial user password.
+	 * @param string $email User email address.
+	 * @param string $display_name User display name.
+	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 */
+	public function create_user( $username, $password, $email = '', $display_name = '' ) {
+		$endpoint = 'ocs/v1.php/cloud/users?format=json';
+		$body = array(
+			'userid'      => $username,
+			'password'    => $password,
+			'email'       => ! empty( $email ) ? $email : $username,
+			'displayName' => ! empty( $display_name ) ? $display_name : $username,
+		);
+
+		$headers = array(
+			'Content-Type' => 'application/x-www-form-urlencoded',
+		);
+
+		$response = $this->request( $endpoint, 'POST', $body, $headers );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$code = wp_remote_retrieve_response_code( $response );
+		$raw  = wp_remote_retrieve_body( $response );
+		$data = json_decode( $raw, true );
+		$statuscode = isset( $data['ocs']['meta']['statuscode'] ) ? (int) $data['ocs']['meta']['statuscode'] : null;
+		$message    = isset( $data['ocs']['meta']['message'] ) ? $data['ocs']['meta']['message'] : 'Nextcloud User creation failed';
+
+		if ( 200 === $code && 100 === $statuscode ) {
+			return true;
+		}
+
+		return new WP_Error( 'nc_user_create_failed', sprintf( '%s (HTTP %d, OCS %s)', $message, $code, var_export( $statuscode, true ) ) );
+	}
+
+	/**
+	 * Add a Nextcloud user to a specific group via OCS API.
+	 *
+	 * @param string $username Nextcloud username / email.
+	 * @param string $group_id Nextcloud group ID.
+	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 */
+	public function add_user_to_group( $username, $group_id ) {
+		$endpoint = 'ocs/v1.php/cloud/users/' . rawurlencode( $username ) . '/groups?format=json';
+		$body = array(
+			'groupid' => $group_id,
+		);
+
+		$headers = array(
+			'Content-Type' => 'application/x-www-form-urlencoded',
+		);
+
+		$response = $this->request( $endpoint, 'POST', $body, $headers );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$code = wp_remote_retrieve_response_code( $response );
+		$raw  = wp_remote_retrieve_body( $response );
+		$data = json_decode( $raw, true );
+		$statuscode = isset( $data['ocs']['meta']['statuscode'] ) ? (int) $data['ocs']['meta']['statuscode'] : null;
+		$message    = isset( $data['ocs']['meta']['message'] ) ? $data['ocs']['meta']['message'] : 'Add to group failed';
+
+		// 100 = success, 102 = already exists in group (both acceptable)
+		if ( 200 === $code && ( 100 === $statuscode || 102 === $statuscode ) ) {
+			return true;
+		}
+
+		return new WP_Error( 'nc_group_add_failed', sprintf( '%s (HTTP %d, OCS %s)', $message, $code, var_export( $statuscode, true ) ) );
+	}
+
+	/**
+	 * Set or reset password for a Nextcloud user via OCS API.
+	 *
+	 * @param string $username Nextcloud username / email.
+	 * @param string $password New password.
+	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 */
+	public function set_user_password( $username, $password ) {
+		$endpoint = 'ocs/v1.php/cloud/users/' . rawurlencode( $username ) . '?format=json';
+		$body = array(
+			'key'   => 'password',
+			'value' => $password,
+		);
+
+		$headers = array(
+			'Content-Type' => 'application/x-www-form-urlencoded',
+		);
+
+		$response = $this->request( $endpoint, 'PUT', $body, $headers );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$code = wp_remote_retrieve_response_code( $response );
+		$raw  = wp_remote_retrieve_body( $response );
+		$data = json_decode( $raw, true );
+		$statuscode = isset( $data['ocs']['meta']['statuscode'] ) ? (int) $data['ocs']['meta']['statuscode'] : null;
+		$message    = isset( $data['ocs']['meta']['message'] ) ? $data['ocs']['meta']['message'] : 'Password reset failed';
+
+		if ( 200 === $code && 100 === $statuscode ) {
+			return true;
+		}
+
+		return new WP_Error( 'nc_password_reset_failed', sprintf( '%s (HTTP %d, OCS %s)', $message, $code, var_export( $statuscode, true ) ) );
 	}
 }

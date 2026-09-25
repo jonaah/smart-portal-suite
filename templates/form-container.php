@@ -16,10 +16,23 @@ $unique_container_id = wp_unique_id( 'sps-form-' . sanitize_key( $form_id ) . '-
 $form_title = isset( $schema['title'] ) ? $schema['title'] : __( 'Formular', 'smart-portal-suite' );
 $ajax_url   = isset( $form_config['ajaxUrl'] ) ? $form_config['ajaxUrl'] : admin_url( 'admin-ajax.php' );
 $nonce      = isset( $form_config['nonce'] ) ? $form_config['nonce'] : wp_create_nonce( SPS_Ajax_Handler::NONCE_ACTION );
+
+// Extract custom CSS variables if defined in schema or customized in admin
+$container_styles = array();
+if ( ! empty( $schema['styles'] ) && is_array( $schema['styles'] ) ) {
+	foreach ( $schema['styles'] as $var_key => $var_val ) {
+		if ( 0 === strpos( $var_key, '--sps-' ) ) {
+			$container_styles[] = sanitize_key( $var_key ) . ': ' . esc_attr( $var_val );
+		}
+	}
+}
+$inline_style_str = implode( '; ', $container_styles );
+$custom_styles    = apply_filters( 'sps_form_container_styles', $inline_style_str, $form_id, $schema );
 ?>
 
 <div id="<?php echo esc_attr( $unique_container_id ); ?>" 
      class="sps-form-container" 
+     <?php if ( ! empty( $custom_styles ) ) : ?>style="<?php echo esc_attr( $custom_styles ); ?>"<?php endif; ?>
      data-sps-form-id="<?php echo esc_attr( $form_id ); ?>"
      data-sps-ajax-url="<?php echo esc_url( $ajax_url ); ?>"
      data-sps-nonce="<?php echo esc_attr( $nonce ); ?>"
