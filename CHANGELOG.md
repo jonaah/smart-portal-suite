@@ -7,6 +7,10 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 ---
 
 ## [Unreleased]
+
+---
+
+## [0.2.1] - 2026-09-25
 ### Hinzugefügt
 - **CI/CD Quality Gate (`.github/workflows/ci.yml`):**
   - PHP-Syntax-Matrix (PHP 7.4–8.3), JSON-Schema-Validierung für `config/forms/*.json`, JavaScript-Syntax-Check und Versionskonsistenz-Prüfung.
@@ -21,7 +25,7 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
   - Issue-Templates für Bug Reports und Feature Requests (`.github/ISSUE_TEMPLATE/`).
 
 ### Behoben
-- Versions-Inkonsistenz in `smart-portal-suite.php` behoben (`SPS_VERSION` auf `0.2.0` korrigiert).
+- Versions-Inkonsistenz in `smart-portal-suite.php` behoben (`SPS_VERSION` auf `0.2.0` und anschließend auf `0.2.1` synchronisiert).
 
 ---
 
