@@ -179,6 +179,102 @@ class SPS_Settings {
 			'sps_section_nextcloud'
 		);
 
+		// Sektion 1b: Nextcloud Datenbank (Social Login Sync)
+		add_settings_section(
+			'sps_section_nextcloud_db',
+			__( 'Nextcloud Datenbank (Social Login Sync)', 'smart-portal-suite' ),
+			array( $this, 'render_section_nextcloud_db_desc' ),
+			'smart-portal-suite'
+		);
+
+		add_settings_field(
+			'nc_db_host',
+			__( 'Datenbank Host', 'smart-portal-suite' ),
+			array( $this, 'render_field_nc_db_host' ),
+			'smart-portal-suite',
+			'sps_section_nextcloud_db'
+		);
+
+		add_settings_field(
+			'nc_db_port',
+			__( 'Datenbank Port', 'smart-portal-suite' ),
+			array( $this, 'render_field_nc_db_port' ),
+			'smart-portal-suite',
+			'sps_section_nextcloud_db'
+		);
+
+		add_settings_field(
+			'nc_db_name',
+			__( 'Datenbank Name', 'smart-portal-suite' ),
+			array( $this, 'render_field_nc_db_name' ),
+			'smart-portal-suite',
+			'sps_section_nextcloud_db'
+		);
+
+		add_settings_field(
+			'nc_db_user',
+			__( 'Datenbank Benutzer', 'smart-portal-suite' ),
+			array( $this, 'render_field_nc_db_user' ),
+			'smart-portal-suite',
+			'sps_section_nextcloud_db'
+		);
+
+		add_settings_field(
+			'nc_db_password',
+			__( 'Datenbank Passwort', 'smart-portal-suite' ),
+			array( $this, 'render_field_nc_db_password' ),
+			'smart-portal-suite',
+			'sps_section_nextcloud_db'
+		);
+
+		add_settings_field(
+			'nc_db_prefix',
+			__( 'Tabellenpräfix', 'smart-portal-suite' ),
+			array( $this, 'render_field_nc_db_prefix' ),
+			'smart-portal-suite',
+			'sps_section_nextcloud_db'
+		);
+
+		// Sektion 1c: Authentifizierung & Registrierung
+		add_settings_section(
+			'sps_section_auth',
+			__( 'Authentifizierung & Benutzer-Sync', 'smart-portal-suite' ),
+			array( $this, 'render_section_auth_desc' ),
+			'smart-portal-suite'
+		);
+
+		add_settings_field(
+			'login_redirect_url',
+			__( 'Login Weiterleitungs-URL', 'smart-portal-suite' ),
+			array( $this, 'render_field_login_redirect_url' ),
+			'smart-portal-suite',
+			'sps_section_auth'
+		);
+
+		add_settings_field(
+			'auth_login_url',
+			__( 'Login-Seiten URL', 'smart-portal-suite' ),
+			array( $this, 'render_field_auth_login_url' ),
+			'smart-portal-suite',
+			'sps_section_auth'
+		);
+
+		add_settings_field(
+			'auth_register_url',
+			__( 'Registrierungs-Seiten URL', 'smart-portal-suite' ),
+			array( $this, 'render_field_auth_register_url' ),
+			'smart-portal-suite',
+			'sps_section_auth'
+		);
+
+		add_settings_field(
+			'nc_sync_auto_groups',
+			__( 'Nextcloud Standardgruppen', 'smart-portal-suite' ),
+			array( $this, 'render_field_nc_sync_auto_groups' ),
+			'smart-portal-suite',
+			'sps_section_auth'
+		);
+
 		// Sektion 2: Formular & Design
 		add_settings_section(
 			'sps_section_design',
@@ -242,6 +338,14 @@ class SPS_Settings {
 		echo '<p class="description">' . esc_html__( 'Konfiguration der Nextcloud Forms API v3 Schnittstelle und WebDAV Fallback-Ablage.', 'smart-portal-suite' ) . '</p>';
 	}
 
+	public function render_section_nextcloud_db_desc() {
+		echo '<p class="description">' . esc_html__( 'Direkter Datenbankzugriff auf Nextcloud zur automatischen Verknüpfung der Social-Login-Konten (WP OAuth Server / Nextcloud Social Login). Alle Passwörter werden verschlüsselt gespeichert.', 'smart-portal-suite' ) . '</p>';
+	}
+
+	public function render_section_auth_desc() {
+		echo '<p class="description">' . esc_html__( 'Einstellungen für die Auth-Shortcodes (Header-Buttons, Magic Link Login & Registrierung) sowie die automatische Benutzer-Synchronisation.', 'smart-portal-suite' ) . '</p>';
+	}
+
 	public function render_section_design_desc() {
 		echo '<p class="description">' . esc_html__( 'Visuelle Einstellungen und rechtliche Links für die Formular-Einbindung.', 'smart-portal-suite' ) . '</p>';
 	}
@@ -293,6 +397,94 @@ class SPS_Settings {
 		?>
 		<input type="text" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[webdav_base_dir]" value="<?php echo esc_attr( $value ); ?>" class="regular-text" placeholder="SPS_Leads" />
 		<p class="description"><?php esc_html_e( 'Zielordner in Nextcloud für JSON-Fallback-Dateien (ohne führenden Schrägstrich).', 'smart-portal-suite' ); ?></p>
+		<?php
+	}
+
+	public function render_field_nc_db_host() {
+		$value = self::get_setting( 'nc_db_host', '' );
+		?>
+		<input type="text" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[nc_db_host]" value="<?php echo esc_attr( $value ); ?>" class="regular-text" placeholder="localhost oder 127.0.0.1" />
+		<p class="description"><?php esc_html_e( 'Hostname oder IP-Adresse der Nextcloud-MySQL/MariaDB-Datenbank.', 'smart-portal-suite' ); ?></p>
+		<?php
+	}
+
+	public function render_field_nc_db_port() {
+		$value = self::get_setting( 'nc_db_port', 3306 );
+		?>
+		<input type="number" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[nc_db_port]" value="<?php echo esc_attr( $value ); ?>" class="small-text" placeholder="3306" />
+		<p class="description"><?php esc_html_e( 'Standard-Port für MySQL ist 3306.', 'smart-portal-suite' ); ?></p>
+		<?php
+	}
+
+	public function render_field_nc_db_name() {
+		$value = self::get_setting( 'nc_db_name', '' );
+		?>
+		<input type="text" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[nc_db_name]" value="<?php echo esc_attr( $value ); ?>" class="regular-text" placeholder="nextcloud" />
+		<p class="description"><?php esc_html_e( 'Name der Nextcloud-Datenbank.', 'smart-portal-suite' ); ?></p>
+		<?php
+	}
+
+	public function render_field_nc_db_user() {
+		$value = self::get_setting( 'nc_db_user', '' );
+		?>
+		<input type="text" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[nc_db_user]" value="<?php echo esc_attr( $value ); ?>" class="regular-text" placeholder="nextcloud_user" autocomplete="off" />
+		<p class="description"><?php esc_html_e( 'Datenbankbenutzer mit Les- und Schreibrechten auf die Tabelle oc_sociallogin_connect.', 'smart-portal-suite' ); ?></p>
+		<?php
+	}
+
+	public function render_field_nc_db_password() {
+		$stored_encrypted = self::get_raw_setting( 'nc_db_password' );
+		$is_configured    = ! empty( $stored_encrypted );
+		?>
+		<input type="password" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[nc_db_password]" value="" class="regular-text" autocomplete="new-password" placeholder="<?php echo $is_configured ? '••••••••••••••••' : ''; ?>" />
+		<?php if ( $is_configured ) : ?>
+			<p class="description" style="color: #2e7d32;">
+				<span class="dashicons dashicons-yes-alt" style="vertical-align: text-top; font-size: 17px;"></span>
+				<?php esc_html_e( 'Passwort ist sicher verschlüsselt hinterlegt. Feld leer lassen, um das bestehende Passwort beizubehalten.', 'smart-portal-suite' ); ?>
+			</p>
+		<?php else : ?>
+			<p class="description"><?php esc_html_e( 'Datenbankpasswort für den Nextcloud-Datenbankzugriff.', 'smart-portal-suite' ); ?></p>
+		<?php endif; ?>
+		<?php
+	}
+
+	public function render_field_nc_db_prefix() {
+		$value = self::get_setting( 'nc_db_prefix', 'oc_' );
+		?>
+		<input type="text" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[nc_db_prefix]" value="<?php echo esc_attr( $value ); ?>" class="small-text" placeholder="oc_" />
+		<p class="description"><?php esc_html_e( 'Tabellenpräfix der Nextcloud-Installation (üblicherweise oc_).', 'smart-portal-suite' ); ?></p>
+		<?php
+	}
+
+	public function render_field_login_redirect_url() {
+		$value = self::get_setting( 'login_redirect_url', home_url( '/' ) );
+		?>
+		<input type="url" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[login_redirect_url]" value="<?php echo esc_attr( $value ); ?>" class="regular-text" placeholder="<?php echo esc_attr( home_url( '/' ) ); ?>" />
+		<p class="description"><?php esc_html_e( 'Standard-Zielseite nach erfolgreichem Magic Link Login.', 'smart-portal-suite' ); ?></p>
+		<?php
+	}
+
+	public function render_field_auth_login_url() {
+		$value = self::get_setting( 'auth_login_url', home_url( '/login/' ) );
+		?>
+		<input type="text" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[auth_login_url]" value="<?php echo esc_attr( $value ); ?>" class="regular-text" placeholder="/login/" />
+		<p class="description"><?php esc_html_e( 'URL oder relativer Pfad zur Login-Seite (wird in Header-Buttons und Registrierungs-Footer verwendet).', 'smart-portal-suite' ); ?></p>
+		<?php
+	}
+
+	public function render_field_auth_register_url() {
+		$value = self::get_setting( 'auth_register_url', home_url( '/registrierung/' ) );
+		?>
+		<input type="text" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[auth_register_url]" value="<?php echo esc_attr( $value ); ?>" class="regular-text" placeholder="/registrierung/" />
+		<p class="description"><?php esc_html_e( 'URL oder relativer Pfad zur Registrierungs-Seite (wird in Header-Buttons und Login-Footer verwendet).', 'smart-portal-suite' ); ?></p>
+		<?php
+	}
+
+	public function render_field_nc_sync_auto_groups() {
+		$value = self::get_setting( 'nc_sync_auto_groups', 'Hauseigner' );
+		?>
+		<input type="text" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[nc_sync_auto_groups]" value="<?php echo esc_attr( $value ); ?>" class="regular-text" placeholder="Hauseigner" />
+		<p class="description"><?php esc_html_e( 'Kommagetrennte Nextcloud-Gruppen, denen neu angelegte Benutzer automatisch zugewiesen werden.', 'smart-portal-suite' ); ?></p>
 		<?php
 	}
 
@@ -463,6 +655,27 @@ class SPS_Settings {
 			$sanitized['app_password'] = isset( $existing['app_password'] ) ? $existing['app_password'] : '';
 		}
 
+		// Nextcloud DB Zugangsdaten
+		$sanitized['nc_db_host'] = isset( $input['nc_db_host'] ) ? sanitize_text_field( trim( $input['nc_db_host'] ) ) : '';
+		$sanitized['nc_db_port'] = ( isset( $input['nc_db_port'] ) && is_numeric( $input['nc_db_port'] ) ) ? absint( $input['nc_db_port'] ) : 3306;
+		$sanitized['nc_db_name'] = isset( $input['nc_db_name'] ) ? sanitize_text_field( trim( $input['nc_db_name'] ) ) : '';
+		$sanitized['nc_db_user'] = isset( $input['nc_db_user'] ) ? sanitize_text_field( trim( $input['nc_db_user'] ) ) : '';
+
+		if ( ! empty( $input['nc_db_password'] ) ) {
+			$sanitized['nc_db_password'] = self::encrypt( trim( $input['nc_db_password'] ) );
+		} else {
+			$sanitized['nc_db_password'] = isset( $existing['nc_db_password'] ) ? $existing['nc_db_password'] : '';
+		}
+
+		$prefix = isset( $input['nc_db_prefix'] ) ? sanitize_text_field( trim( $input['nc_db_prefix'] ) ) : 'oc_';
+		$sanitized['nc_db_prefix'] = ! empty( $prefix ) ? $prefix : 'oc_';
+
+		// Authentifizierung & Weiterleitung
+		$sanitized['login_redirect_url'] = isset( $input['login_redirect_url'] ) ? esc_url_raw( trim( $input['login_redirect_url'] ) ) : home_url( '/' );
+		$sanitized['auth_login_url']     = isset( $input['auth_login_url'] ) ? sanitize_text_field( trim( $input['auth_login_url'] ) ) : '/login/';
+		$sanitized['auth_register_url']  = isset( $input['auth_register_url'] ) ? sanitize_text_field( trim( $input['auth_register_url'] ) ) : '/registrierung/';
+		$sanitized['nc_sync_auto_groups'] = isset( $input['nc_sync_auto_groups'] ) ? sanitize_text_field( trim( $input['nc_sync_auto_groups'] ) ) : 'Hauseigner';
+
 		// WebDAV Basisordner
 		$base_dir = isset( $input['webdav_base_dir'] ) ? trim( sanitize_text_field( $input['webdav_base_dir'] ), '/' ) : 'SPS_Leads';
 		$sanitized['webdav_base_dir'] = ! empty( $base_dir ) ? $base_dir : 'SPS_Leads';
@@ -499,7 +712,7 @@ class SPS_Settings {
 				<?php esc_html_e( 'Smart Portal Suite - Einstellungen', 'smart-portal-suite' ); ?>
 			</h1>
 			<p class="sps-lead-text">
-				<?php esc_html_e( 'Verwalte hier die Nextcloud-Schnittstelle, das Design der Multi-Step-Formulare sowie Fallback- und Debugging-Optionen.', 'smart-portal-suite' ); ?>
+				<?php esc_html_e( 'Verwalte hier die Nextcloud-Schnittstelle, Social-Login-Datenbankanbindung, Auth-Shortcodes und das Design der Formulare.', 'smart-portal-suite' ); ?>
 			</p>
 			<hr class="wp-header-end" />
 
@@ -519,20 +732,31 @@ class SPS_Settings {
 							<h2><?php esc_html_e( 'Shortcode Übersicht', 'smart-portal-suite' ); ?></h2>
 						</div>
 						<div class="inside">
-							<p><?php esc_html_e( 'Binde Formulare einfach über den Shortcode in deine Seiten ein:', 'smart-portal-suite' ); ?></p>
+							<p><strong><?php esc_html_e( 'Formulare:', 'smart-portal-suite' ); ?></strong></p>
 							<code>[sps_form id="gebaeude_check"]</code>
 							<br><br>
 							<code>[sps_form id="projekte_mit_mir"]</code>
+							<br><br>
+							<p><strong><?php esc_html_e( 'Authentifizierung:', 'smart-portal-suite' ); ?></strong></p>
+							<code>[sps_auth_buttons]</code>
+							<br><br>
+							<code>[sps_login]</code>
+							<br><br>
+							<code>[sps_register]</code>
 						</div>
 					</div>
 
 					<div class="postbox sps-info-box">
 						<div class="postbox-header">
-							<h2><?php esc_html_e( 'Diagnose & Tests', 'smart-portal-suite' ); ?></h2>
+							<h2><?php esc_html_e( 'Account-Sync & Diagnose', 'smart-portal-suite' ); ?></h2>
 						</div>
 						<div class="inside">
-							<p><?php esc_html_e( 'Überprüfe die Nextcloud-Anbindung und das Live-Protokoll im Diagnose-Werkzeug:', 'smart-portal-suite' ); ?></p>
-							<a href="<?php echo esc_url( admin_url( 'admin.php?page=sps-diagnostics' ) ); ?>" class="button button-secondary">
+							<p><?php esc_html_e( 'Überwache und verwalte die Nextcloud-Benutzerkonten und den Social-Login-Status:', 'smart-portal-suite' ); ?></p>
+							<a href="<?php echo esc_url( admin_url( 'admin.php?page=sps-account-sync' ) ); ?>" class="button button-primary" style="margin-bottom: 10px; display: block; text-align: center;">
+								<span class="dashicons dashicons-admin-users" style="vertical-align: text-top; font-size: 16px;"></span>
+								<?php esc_html_e( 'Zum Account-Sync Panel', 'smart-portal-suite' ); ?>
+							</a>
+							<a href="<?php echo esc_url( admin_url( 'admin.php?page=sps-diagnostics' ) ); ?>" class="button button-secondary" style="display: block; text-align: center;">
 								<span class="dashicons dashicons-dashboard" style="vertical-align: text-top; font-size: 16px;"></span>
 								<?php esc_html_e( 'Zum Diagnose-Werkzeug', 'smart-portal-suite' ); ?>
 							</a>
@@ -547,7 +771,7 @@ class SPS_Settings {
 	/* --- Getter Helper Methods --- */
 
 	/**
-	 * Retrieve a setting value. If app_password, it is automatically decrypted.
+	 * Retrieve a setting value. If password, it is automatically decrypted.
 	 *
 	 * @param string $key Setting key.
 	 * @param mixed  $default Default value.
@@ -560,8 +784,8 @@ class SPS_Settings {
 			return $default;
 		}
 
-		// Automatisches Entschlüsseln des App-Passworts
-		if ( 'app_password' === $key ) {
+		// Automatisches Entschlüsseln sensibler Passwörter
+		if ( 'app_password' === $key || 'nc_db_password' === $key ) {
 			$decrypted = self::decrypt( $options[ $key ] );
 			return ! empty( $decrypted ) ? $decrypted : $default;
 		}

@@ -1,0 +1,439 @@
+/**
+ * Smart Portal Suite - Authentication & Custom Magic Link Forms CSS
+ * Clean, responsive, and modern styling for Header Auth Buttons, Login & Registration.
+ */
+
+:root {
+	--sps-auth-primary: var(--sps-primary, #39baff);
+	--sps-auth-primary-hover: #29a0e2;
+	--sps-auth-dark: #2d3748;
+	--sps-auth-dark-hover: #1a202c;
+	--sps-auth-border: #e2e8f0;
+	--sps-auth-frame: #333333;
+	--sps-auth-bg: #f8f9fa;
+	--sps-auth-text: #1a202c;
+	--sps-auth-muted: #646970;
+	--sps-auth-radius: 8px;
+}
+
+/* ==========================================================================
+   1. Header Auth Buttons
+   ========================================================================== */
+
+.sps-header-auth-buttons {
+	display: inline-flex;
+	align-items: center;
+	gap: 14px;
+	margin: 0 10px;
+}
+
+.sps-header-auth-buttons a {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: #333333;
+	text-decoration: none;
+	transition: color 0.25s ease, transform 0.2s ease;
+	cursor: pointer;
+	padding: 4px;
+	border-radius: 4px;
+}
+
+.sps-header-auth-buttons a:hover {
+	color: var(--sps-auth-primary);
+	transform: translateY(-1px);
+}
+
+.sps-header-auth-buttons a:active {
+	transform: translateY(0);
+}
+
+.sps-header-auth-buttons svg {
+	width: 24px;
+	height: 24px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+/* ==========================================================================
+   2. Auth Wrappers & Containers
+   ========================================================================== */
+
+.sps-auth-wrapper {
+	font-family: inherit;
+	color: var(--sps-auth-text);
+	width: 100%;
+	margin: 40px auto;
+	box-sizing: border-box;
+}
+
+.sps-auth-wrapper * {
+	box-sizing: border-box;
+}
+
+.sps-login-wrapper {
+	max-width: 480px;
+}
+
+.sps-registration-wrapper {
+	max-width: 780px;
+}
+
+/* Header Titles */
+.sps-auth-header {
+	text-align: center;
+	margin-bottom: 24px;
+}
+
+.sps-auth-header h1,
+.sps-auth-header h2 {
+	margin: 0 0 10px 0;
+	font-size: 1.85rem;
+	font-weight: 700;
+	color: var(--sps-auth-text);
+	line-height: 1.25;
+}
+
+.sps-auth-header p {
+	margin: 0;
+	color: var(--sps-auth-muted);
+	font-size: 0.98rem;
+	line-height: 1.5;
+}
+
+/* Outer Border Box */
+.sps-form-box {
+	border: 2px solid var(--sps-auth-frame);
+	border-radius: var(--sps-auth-radius);
+	background-color: #ffffff;
+	width: 100%;
+	overflow: hidden;
+	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+
+.sps-registration-wrapper .sps-form-box {
+	padding: 36px 36px 0 36px;
+}
+
+.sps-login-wrapper .sps-form-box {
+	padding: 0;
+}
+
+/* ==========================================================================
+   3. Magic Login Override & Normalization
+   ========================================================================== */
+
+#magic-login-shortcode,
+#magic-login-register,
+#magic_login_registration_form {
+	width: 100% !important;
+	max-width: 100% !important;
+	margin: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	border: none !important;
+	font-family: inherit !important;
+}
+
+.sps-login-wrapper #magic-login-shortcode {
+	padding: 32px 30px !important;
+}
+
+/* Labels */
+#magic-login-shortcode label,
+#magic_login_registration_form label {
+	display: block !important;
+	font-size: 0.9rem !important;
+	font-weight: 600 !important;
+	margin-bottom: 6px !important;
+	color: #4a5568 !important;
+	text-align: left !important;
+}
+
+/* Text & Email Inputs */
+#magic-login-shortcode input:not([type="submit"]):not([type="checkbox"]):not([type="hidden"]),
+#magic_login_registration_form input[type="text"],
+#magic_login_registration_form input[type="email"] {
+	width: 100% !important;
+	padding: 12px 14px !important;
+	background-color: var(--sps-auth-bg) !important;
+	border: 1px solid var(--sps-auth-border) !important;
+	border-radius: 6px !important;
+	color: var(--sps-auth-text) !important;
+	font-size: 0.95rem !important;
+	margin-bottom: 20px !important;
+	font-family: inherit !important;
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#magic-login-shortcode input:focus,
+#magic_login_registration_form input[type="text"]:focus,
+#magic_login_registration_form input[type="email"]:focus {
+	outline: none !important;
+	border-color: var(--sps-auth-primary) !important;
+	box-shadow: 0 0 0 3px rgba(57, 186, 255, 0.2) !important;
+}
+
+/* Messages & Alerts */
+#magic-login-shortcode .message,
+#magic-login-shortcode #login_error,
+#magic-login-shortcode .login-error,
+#magic-login-shortcode .success,
+#magic_login_registration_form .message,
+#magic_login_registration_form .login-error,
+#magic_login_registration_form .success {
+	width: 100% !important;
+	padding: 12px 16px !important;
+	margin-bottom: 20px !important;
+	border-radius: 6px !important;
+	font-size: 0.92rem !important;
+	line-height: 1.4 !important;
+}
+
+#magic-login-shortcode #login_error,
+#magic_login_registration_form .login-error,
+.sps-auth-wrapper .error {
+	background-color: #fee2e2 !important;
+	border: 1px solid #f87171 !important;
+	color: #991b1b !important;
+}
+
+#magic-login-shortcode .success,
+#magic_login_registration_form .success,
+.sps-auth-wrapper .success {
+	background-color: #ecfdf5 !important;
+	border: 1px solid #34d399 !important;
+	color: #065f46 !important;
+}
+
+/* Submit Buttons */
+#magic-login-shortcode .magic-login-submit,
+#magic_login_registration_form input[type="submit"] {
+	background-color: var(--sps-auth-primary) !important;
+	color: #ffffff !important;
+	padding: 13px 28px !important;
+	border: none !important;
+	border-radius: 6px !important;
+	cursor: pointer !important;
+	font-weight: 600 !important;
+	font-size: 0.98rem !important;
+	line-height: 1.2 !important;
+	transition: background-color 0.2s, opacity 0.2s, transform 0.1s !important;
+}
+
+#magic-login-shortcode .magic-login-submit {
+	width: 100% !important;
+	display: block !important;
+	margin-top: 8px !important;
+}
+
+#magic-login-shortcode .magic-login-submit:hover,
+#magic_login_registration_form input[type="submit"]:hover {
+	background-color: var(--sps-auth-primary-hover) !important;
+	opacity: 0.95 !important;
+}
+
+#magic-login-shortcode .magic-login-submit:disabled,
+#magic_login_registration_form input[type="submit"]:disabled {
+	opacity: 0.65 !important;
+	cursor: not-allowed !important;
+	pointer-events: none !important;
+}
+
+/* ==========================================================================
+   4. Registration 2-Column Grid
+   ========================================================================== */
+
+#magic_login_registration_form {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	column-gap: 16px;
+	row-gap: 4px;
+	align-items: end;
+}
+
+#magic_login_registration_form p {
+	margin: 0;
+	padding: 0;
+}
+
+/* First & Last Name group */
+#magic_login_registration_form .form-group {
+	grid-column: 1 / 3;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	column-gap: 16px;
+	margin: 0;
+	padding: 0;
+}
+
+/* Email field */
+#magic_login_registration_form > p:nth-of-type(1) {
+	grid-column: 1 / 3;
+}
+
+/* Terms Checkbox (Bottom Left) */
+#magic_login_registration_form .magic-login-registration-terms {
+	grid-column: 1 / 2;
+	display: flex !important;
+	align-items: center !important;
+	gap: 10px !important;
+	margin-bottom: 20px !important;
+}
+
+#magic_login_registration_form .magic-login-registration-terms input[type="checkbox"] {
+	margin: 0 !important;
+	width: 18px !important;
+	height: 18px !important;
+	flex-shrink: 0 !important;
+	position: static !important;
+	accent-color: var(--sps-auth-primary);
+	cursor: pointer;
+}
+
+#magic_login_registration_form .magic-login-registration-terms label {
+	margin: 0 !important;
+	padding: 0 !important;
+	line-height: 1.35 !important;
+	font-size: 0.88rem !important;
+	color: #4a5568 !important;
+	cursor: pointer;
+	white-space: normal !important;
+}
+
+#magic_login_registration_form .magic-login-registration-terms a {
+	color: var(--sps-auth-primary);
+	text-decoration: underline;
+}
+
+/* Submit Button Wrapper (Bottom Right) */
+#magic_login_registration_form > p:last-child {
+	grid-column: 2 / 3;
+	display: flex;
+	justify-content: flex-end;
+	margin-bottom: 20px !important;
+}
+
+/* ==========================================================================
+   5. Footer Switcher Buttons (Login <-> Register)
+   ========================================================================== */
+
+.sps-auth-footer {
+	padding: 0 30px 30px 30px;
+	text-align: center;
+}
+
+.sps-registration-wrapper .sps-auth-footer {
+	padding: 0 0 36px 0;
+}
+
+.sps-auth-footer-divider {
+	border-top: 1px solid var(--sps-auth-border);
+	margin-bottom: 20px;
+}
+
+.sps-auth-footer p {
+	margin: 0 0 12px 0;
+	color: var(--sps-auth-muted);
+	font-size: 0.95rem;
+}
+
+.sps-auth-footer .sps-switch-btn {
+	display: block;
+	width: 100%;
+	background-color: var(--sps-auth-dark);
+	color: #ffffff !important;
+	padding: 13px 20px;
+	text-decoration: none !important;
+	border-radius: 6px;
+	font-weight: 600;
+	font-size: 0.95rem;
+	text-align: center;
+	transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.sps-auth-footer .sps-switch-btn:hover {
+	background-color: var(--sps-auth-dark-hover);
+	opacity: 0.95;
+}
+
+/* Already Logged-in Notice Box */
+.sps-already-logged-in {
+	text-align: center;
+	padding: 24px 20px 36px 20px;
+}
+
+.sps-already-logged-in p {
+	margin: 0 0 20px 0;
+	color: var(--sps-auth-text);
+	font-size: 1.05rem;
+}
+
+.sps-already-logged-in .sps-btn-home {
+	display: inline-block;
+	background-color: var(--sps-auth-primary);
+	color: #ffffff !important;
+	padding: 12px 30px;
+	text-decoration: none !important;
+	border-radius: 6px;
+	font-weight: 600;
+	transition: background-color 0.2s;
+}
+
+.sps-already-logged-in .sps-btn-home:hover {
+	background-color: var(--sps-auth-primary-hover);
+}
+
+/* Admin Dependency Notice */
+.sps-auth-notice {
+	background-color: #fffbeb;
+	border: 1px solid #f59e0b;
+	color: #b45309;
+	padding: 16px 20px;
+	border-radius: 6px;
+	margin: 20px auto;
+	max-width: 550px;
+	font-size: 0.95rem;
+	text-align: center;
+}
+
+/* ==========================================================================
+   6. Mobile Responsiveness
+   ========================================================================== */
+
+@media (max-width: 640px) {
+	.sps-auth-wrapper {
+		margin: 20px auto;
+		padding: 0 12px;
+	}
+
+	.sps-registration-wrapper .sps-form-box {
+		padding: 24px 20px 0 20px;
+	}
+
+	.sps-login-wrapper #magic-login-shortcode {
+		padding: 24px 20px !important;
+	}
+
+	.sps-auth-footer {
+		padding: 0 20px 24px 20px;
+	}
+
+	#magic_login_registration_form,
+	#magic_login_registration_form .form-group {
+		grid-template-columns: 1fr;
+	}
+
+	#magic_login_registration_form .magic-login-registration-terms,
+	#magic_login_registration_form > p:last-child {
+		grid-column: 1 / 2;
+		justify-content: flex-start;
+	}
+
+	#magic_login_registration_form input[type="submit"] {
+		width: 100% !important;
+	}
+}
