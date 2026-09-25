@@ -5,10 +5,10 @@ Thumbs.db
 .vscode/
 
 # Dependencies & Build Output
-node_modules/
-vendor/
-dist/
-build/
+/node_modules/
+/vendor/
+/dist/
+/build/
 *.zip
 
 # Logs

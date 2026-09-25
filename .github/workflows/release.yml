@@ -1,0 +1,95 @@
+name: Release & Packaging
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag Name for manual release (e.g. v0.3.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Package WordPress Plugin & Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine Version Tag
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag_name }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "TAG=$TAG" >> "$GITHUB_OUTPUT"
+          VERSION="${TAG#v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building release for Tag: $TAG (Version: $VERSION)"
+
+      - name: Verify Version Consistency
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          python3 -c "
+          import re, sys
+          with open('smart-portal-suite.php', 'r') as f:
+              content = f.read()
+          header_v = re.search(r'\*\s*Version:\s*([0-9\.]+)', content).group(1)
+          const_v = re.search(r'define\(\s*[\'\"]SPS_VERSION[\'\"],\s*[\'\"]([0-9\.]+)[\'\"]\s*\);', content).group(1)
+          
+          target_v = '$VERSION'
+          if header_v != target_v or const_v != target_v:
+              print(f'::error::Tag version ($VERSION) does not match plugin files (Header: {header_v}, Constant: {const_v})', file=sys.stderr)
+              sys.exit(1)
+          print('Tag and plugin version are consistent!')
+          "
+
+      - name: Package Plugin Archive
+        run: |
+          echo "Preparing clean WordPress plugin package..."
+          BUILD_DIR="build_temp/smart-portal-suite"
+          mkdir -p "$BUILD_DIR"
+          
+          # Copy production files and folders
+          cp -r smart-portal-suite.php "$BUILD_DIR/"
+          cp -r includes "$BUILD_DIR/"
+          cp -r modules "$BUILD_DIR/"
+          cp -r config "$BUILD_DIR/"
+          cp -r assets "$BUILD_DIR/"
+          cp -r templates "$BUILD_DIR/"
+          cp -r README.md "$BUILD_DIR/"
+          [ -f CHANGELOG.md ] && cp CHANGELOG.md "$BUILD_DIR/"
+
+          # Remove OS artifacts if any copied
+          find "$BUILD_DIR" -name ".DS_Store" -delete
+          find "$BUILD_DIR" -name "Thumbs.db" -delete
+
+          # Create production zip
+          cd build_temp
+          zip -r ../smart-portal-suite.zip smart-portal-suite
+          cd ..
+          
+          echo "Verifying ZIP contents..."
+          unzip -l smart-portal-suite.zip | head -n 20
+          echo "Plugin package smart-portal-suite.zip created successfully."
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.TAG }}
+          name: Smart Portal Suite ${{ steps.version.outputs.TAG }}
+          files: smart-portal-suite.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.TAG, '-rc') || contains(steps.version.outputs.TAG, '-beta') || contains(steps.version.outputs.TAG, '-alpha') }}

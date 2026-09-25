@@ -37,13 +37,16 @@ Jede Schicht ist unabhängig austauschbar: ein neues Formular braucht nur eine n
 
 ```
 smart-portal-suite/
+├── .github/                        # CI/CD Workflows, PR- & Issue-Templates
+│   ├── workflows/
+│   │   ├── ci.yml                  # PR Quality Gate (PHP 7.4-8.3 Matrix, JSON-Validator)
+│   │   └── release.yml             # Automatisches Packaging & GitHub Release
+│   ├── ISSUE_TEMPLATE/             # Standardisierte Bug- & Feature-Templates
+│   └── pull_request_template.md    # PR-Checkliste inkl. README-Pflicht
 ├── smart-portal-suite.php          # Bootstrap, Plugin-Header, require_once-Loader
-├── docs/                           # Vollständige modulare technische Dokumentation
-│   ├── README.md                   # Dokumentationsindex
-│   ├── 01-plugin-bootstrap-core.md
-│   ├── 02-einstellungen-credentials.md
-│   ├── ...                         # (17 Detail-Dokumentationen)
-│   └── 17-potenzielle-erweiterungen-ideen.md
+├── scripts/                        # Automatisierungs-Skripte
+│   └── bump-version.sh             # SemVer Version-Bumping-Tool
+├── docs/                           # Vollständige modulare technische 
 ├── config/
 │   └── forms/                      # Formular-Schemata als JSON
 │       ├── gebaeude-check.json
@@ -54,7 +57,9 @@ smart-portal-suite/
 │   ├── class-sps-form-renderer.php # Shortcode [sps_form id="..."], Asset- & Sprite-Lader
 │   ├── class-sps-form-manager.php  # Admin-Menü "Formulare", Styling-Editor & Presets
 │   ├── class-sps-diagnostics.php   # Admin-only Diagnose-Werkzeug
-│   └── class-sps-account-sync-page.php # Admin-Dashboard: Account-Sync & Status
+│   ├── class-sps-account-sync-page.php # Admin-Dashboard: Account-Sync & Status
+│   └── vendor/
+│       └── plugin-update-checker/  # In-Dashboard 1-Klick Auto-Update Engine (PUC v5)
 ├── modules/
 │   ├── nextcloud/
 │   │   ├── class-sps-nc-client.php # HTTP/OCS-Requests, OCS User API, Timeout, Logging
@@ -88,9 +93,10 @@ smart-portal-suite/
 │       └── preview-mock.php        # HTML-Mock für Live-Vorschau im Admin
 ├── tests/
 │   └── serve-test.js               # Node-Mock-Server für UI/Layout-Tests
+├── CHANGELOG.md                    # Lückenlose Versionshistorie nach Keep a Changelog
 ├── .editorconfig
 ├── .gitignore
-├── README.md
+├── README.md                       # Projektdokumentation & Entwickler-Handbuch
 └── Baseline-smart-portal-suite.md
 ```
 
@@ -451,5 +457,56 @@ Ausgewählte Highlights für kommende Versionen:
 - **v1.1:** Lokale Lead-Datenbank in WordPress mit CSV/Excel-Export, automatische Kunden-Bestätigungsmails (HTML/PDF), ausgehende Webhooks (Zapier/Make/n8n) und automatischer WebDAV-Retry-Cronjob.
 - **v1.2:** Nextcloud Deck Integration (automatische Kanban-Karten für Handwerker & Energieberater), Bildvorschau & Kamera-Direktzugriff bei Datei-Uploads, digitales Unterschriftenfeld (Signature Canvas).
 - **v2.0:** Eigenes Kundenportal via Shortcode `[sps_customer_portal]` mit Live-Projektstatus und visueller Drag-and-Drop Formular-Builder im WP-Admin.
+
+---
+
+## 13. Entwicklung, Git-Workflow & Versionsmanagement
+
+Das Projekt folgt einem hochgradig standardisierten Git- und Release-Workflow nach Best Practices:
+
+### 13.1 Branching-Modell
+- **`main`**: Repräsentiert ausschließlich den produktionsfertigen, stabilen Stand (`vX.Y.Z`). Direkte Pushes sind über Branch Protection blockiert.
+- **`Development`**: Zentraler Integrations-Branch für alle neuen Funktionen und Korrekturen.
+- **Feature-/Fix-Branches**: Werden von `Development` abgezweigt (`feat/<name>`, `fix/<name>`, `chore/<name>`) und ausschließlich via Pull Request zurückgeführt.
+- **Hotfixes**: Bei kritischen Produktionsfehlern wird von `main` ein `hotfix/<name>` abgezweigt und nach Prüfung sowohl in `main` als auch in `Development` gemergt.
+
+### 13.2 Commit-Konvention (Conventional Commits)
+Alle Commits folgen der Konvention `<typ>(<scope>): <nachricht>`:
+- `feat:` Neues Feature (erhöht ggf. MINOR-Version)
+- `fix:` Fehlerbehebung (erhöht ggf. PATCH-Version)
+- `docs:` Dokumentationsanpassungen
+- `refactor:` Code-Optimierungen ohne Verhaltensänderung
+- `style:` Styling- und Formatierungsänderungen
+- `chore:` Tooling, CI/CD, Wartungsarbeiten
+
+### 13.3 Semantische Versionierung & Bumping
+Das Plugin nutzt Semantic Versioning (`MAJOR.MINOR.PATCH`). Zur fehlerfreien Aktualisierung steht ein Skript bereit:
+```bash
+./scripts/bump-version.sh 0.3.0
+```
+Das Skript synchronisiert den Plugin-Header `Version:` und die PHP-Konstante `SPS_VERSION` in `smart-portal-suite.php` atomar und validiert die Konsistenz.
+
+### 13.4 CI/CD Automatisierung (GitHub Actions)
+1. **CI Quality Gate (`.github/workflows/ci.yml`)**:
+   - Läuft bei jedem Push und PR auf `main` und `Development`.
+   - **PHP Syntax Matrix**: Prüft alle PHP-Dateien parallel gegen PHP 7.4, 8.0, 8.1, 8.2 und 8.3.
+   - **JSON-Validierung**: Verifiziert alle Formular-Schemata unter `config/forms/*.json`.
+   - **JS-Syntax**: Syntaxprüfung aller Frontend-Skripte.
+   - **Versionskonsistenz**: Prüft, ob Plugin-Header und `SPS_VERSION` übereinstimmen.
+2. **Release Automation (`.github/workflows/release.yml`)**:
+   - Wird bei Push eines Tags (`v*.*.*`) oder manuell via `workflow_dispatch` getriggert.
+   - Erstellt ein sauberes Produktions-Archiv `smart-portal-suite.zip` (ohne `.git`, `.github`, `docs/`, `tests/` etc.).
+   - Erstellt das offizielle GitHub Release mit automatisch generierten Release Notes und Download-Asset.
+
+### 13.5 In-Dashboard 1-Klick Auto-Updates (Plugin Update Checker)
+Das Plugin integriert die schlanke Library `plugin-update-checker` (PUC v5):
+- WordPress-Installationen prüfen automatisch die GitHub Releases API von `jonaah/smart-portal-suite`.
+- Sobald ein neues Release publiziert wird, meldet WordPress im Dashboard: *„Neue Version verfügbar. Jetzt aktualisieren.“*
+- Die Aktualisierung erfolgt mit 1 Klick vollautomatisch aus dem Release-Asset `smart-portal-suite.zip`.
+- Über den Filter `sps_github_updater_token` kann bei Bedarf ein Personal Access Token für private Repositories hinterlegt werden.
+
+### 13.6 Richtlinie für Änderungen
+> **Wichtig:** Gemäß der Repository-Richtlinie muss bei jeder funktionalen oder konfigurativen Änderung die `README.md` und `CHANGELOG.md` aktualisiert werden. Das Pull-Request-Template (`.github/pull_request_template.md`) erzwingt diese Prüfung als Pflichtkriterium.
+
 
 
