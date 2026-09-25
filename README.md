@@ -46,6 +46,7 @@ smart-portal-suite/
 │   ├── class-sps-settings.php      # Einstellungsseite, Verschlüsselung
 │   ├── class-sps-ajax-handler.php  # AJAX-Endpunkt sps_submit_form, FormData & Files
 │   ├── class-sps-form-renderer.php # Shortcode [sps_form id="..."], Asset- & Sprite-Lader
+│   ├── class-sps-form-manager.php  # Admin-Menü "Formulare", Styling-Editor & Presets
 │   └── class-sps-diagnostics.php   # Admin-only Diagnose-Werkzeug
 ├── modules/
 │   └── nextcloud/
@@ -54,15 +55,23 @@ smart-portal-suite/
 │       └── class-sps-nc-webdav.php # WebDAV Fallback-Ablage (ein File pro Lead)
 ├── assets/
 │   ├── css/
-│   │   └── portal-base.css         # CSS-Styling mit --sps-* Variablen
+│   │   ├── portal-base.css         # CSS-Styling mit --sps-* Variablen
+│   │   ├── admin.css               # Admin-Styling für Einstellungen & Diagnose
+│   │   └── admin-forms.css         # Styling-Editor & Formular-Übersichtstabelle
 │   ├── js/
 │   │   ├── form-engine.js          # Universeller Formular-Renderer (instanzbasiert)
 │   │   ├── osm-autocomplete.js    # Adressvervollständigung via Nominatim
-│   │   └── calculations.js        # Formelberechnungen & Einheiten-Formatierung
+│   │   ├── calculations.js        # Formelberechnungen & Einheiten-Formatierung
+│   │   ├── admin.js               # Diagnostics Verbindungstest, Log-Steuerung
+│   │   └── admin-forms.js         # Styling-Editor, wpColorPicker, Live-Preview
 │   └── icons/
-│       └── portal-icons.svg        # Zentrales SVG-Master-Sprite
+│       ├── portal-icons.svg        # Zentrales SVG-Master-Sprite
+│       ├── gebaeude-check.svg      # Formspezifisches SVG-Sprite (Gebäude-Check)
+│       └── projekte-mit-mir.svg    # Formspezifisches SVG-Sprite (Projekte mit mir)
 ├── templates/
-│   └── form-container.php          # Generisches Formular-Template mit isolierter Instanz
+│   ├── form-container.php          # Generisches Formular-Template mit isolierter Instanz
+│   └── admin/
+│       └── preview-mock.php        # HTML-Mock für Live-Vorschau im Admin
 ├── tests/
 │   └── serve-test.js               # Node-Mock-Server für UI/Layout-Tests
 ├── .editorconfig
@@ -119,10 +128,13 @@ Jedes Formular besitzt eine JSON-Datei (z. B. `config/forms/mein-formular.json`)
 ```
 
 #### Wichtigste Schema-Attribute:
-- `form_id`: Eindeutiger technischer Bezeichner des Formulars.
+- `form_id`: Eindeutiger technischer Bezeichner des Formulars (z. B. `gebaeude_check`).
 - `form_type`: Typ-Bezeichnung für Nextcloud Forms API und WebDAV-Ordner.
 - `title`: Überschrift für Barrierefreiheit und Titelanzeige.
-- `sprite` *(optional)*: Pfad zu einer individuellen SVG-Sprite-Datei. Fehlt dieses Attribut, wird automatisch das Master-Sprite (`portal-icons.svg`) genutzt.
+- `nc_form_title` *(optional)*: Exakter Titel des Ziellisten-Formulars in Nextcloud Forms.
+- `requires_login` *(optional, bool)*: Sperrt das Formular für Gäste (`true`). Nicht angemeldeten Nutzern wird ein stilvolles Authentifizierungs-Gate mit Login- und Registrierungs-Buttons sowie automatischem Return-Redirect angezeigt.
+- `styles` *(optional, object)*: Direkte Definition von CSS-Variablen im Schema (z. B. `{ "--sps-accent": "#39baff" }`).
+- `sprite` *(optional)*: Pfad zu einer individuellen SVG-Sprite-Datei. Fehlt dieses Attribut, prüft die Engine automatisch, ob eine Datei `assets/icons/{form_id}.svg` existiert (z. B. `gebaeude-check.svg`), bevor das Master-Sprite (`portal-icons.svg`) genutzt wird.
 - `steps`: Array der einzelnen Formularschritte.
 
 ---
@@ -131,17 +143,17 @@ Jedes Formular besitzt eine JSON-Datei (z. B. `config/forms/mein-formular.json`)
 
 | Typ | Beschreibung | Besondere Optionen |
 |---|---|---|
-| `radio` | Kachelauswahl (Single Choice) | `choices`: Array mit `text`, `value`, `icon`, `subtitle` |
+| `radio` | Kachelauswahl (Single Choice) | `choices`: Array (`text`, `value`, `icon`, `subtitle`), `layout: "list"` (vertikale Stapelung) |
 | `slider` | Interaktiver Schieberegler mit Live-Werteanzeige | `min`, `max`, `step`, `value`, `suffix`, `dynamicConfig` |
-| `text` | Einzeiliges Textfeld | `placeholder`, `maxLength`, `required` |
+| `text` | Einzeiliges Textfeld | `placeholder`, `maxLength`, `showCounter`, `required` |
 | `email` | E-Mail-Feld mit Format-Validierung | `placeholder`, `required` |
 | `tel` | Telefonnummer-Eingabe | `placeholder`, `required` |
 | `textarea` | Mehrzeiliges Textfeld | `placeholder`, `maxLength`, `rows` |
 | `date` | Datumsauswahl (HTML5 Date-Picker) | `required` |
 | `group` | Gruppierte Felder in Spalten/Zeilen | `fields`: Array aus Feldern oder `{ "type": "row", "fields": [...] }` |
 | `address-full` | Vollständiges Adressfeld mit OpenStreetMap/Nominatim Autocomplete | Automatische Aufteilung in Straße, Hausnr., PLZ, Ort |
-| `checkbox-multi` | Mehrfachauswahl-Kacheln (Array als Antwort) | `choices`: Array mit `id`, `text`, `subtitle`, `icon` |
-| `upload` | Datei-Upload mit Drag & Drop (Binärübertragung) | Speichert Dateien im State und sendet sie via `FormData` |
+| `checkbox-multi` | Mehrfachauswahl-Kacheln (Array als Antwort) | `choices`: Array (`id`, `text`, `subtitle`, `icon`), `layout: "list"` |
+| `upload` | Datei-Upload mit Drag & Drop (Binärübertragung) | `accept` (unterstützt PDF, JPG, PNG, WEBP, HEIC), State-Handling via `FormData` |
 | `summary` | Übersicht aller bisher gegebenen Antworten | Rendert automatisch alle sichtbaren Antworten vor dem Absenden |
 | `consent` | DSGVO-Zustimmungs-Checkbox | `required: true`, enthält Link zur Datenschutzerklärung |
 
@@ -248,13 +260,56 @@ Um Ladezeiten zu minimieren und Darstellungsfehler bei externen SVGs (CORS, Safa
 
 ---
 
-## 6. Neues Formular in 2 Schritten erstellen
+## 6. Formular-Verwaltung & Styling-Customizer (WP-Admin)
 
+Im WordPress-Backend steht unter **Smart Portal > Formulare** ein visueller Formular-Manager zur Verfügung:
+
+1. **Formular-Übersicht:**
+   - Liste aller im System registrierten Formulare mit Titel, Shortcode, Schritt-Anzahl und Styling-Status (`Standard` vs. `Individuell`).
+   - Klickbarer Shortcode mit automatischer Zwischenablage-Kopierfunktion.
+2. **Individueller Styling-Editor:**
+   - Jedes Formular kann individuell farblich und formell an das Corporate Design angepasst werden.
+   - **Farbwähler (`wp-color-picker`):** Hintergrund (`--sps-bg-main`), Karten (`--sps-card-bg`), Primärer Akzent / Buttons (`--sps-accent`), Sekundärer Akzent (`--sps-accent-green`), Textfarben.
+   - **Radien-Schieberegler:** Eckenrundungen für Karten (`--sps-radius-card`) und Buttons (`--sps-radius-btn`).
+   - **Schnell-Themes (Presets):** Ein-Klick-Anwendung von Design-Vorlagen (*Effizientes Heim Standard*, *Clean Modern Ocean Blue*, *Minimalist Light*) sowie Zurücksetzen auf Werkseinstellungen.
+   - **Live-Vorschau:** Echtzeit-Vorschau des Formulars während der Anpassung im Admin-Panel.
+   - Speicherung erfolgt updatesicher in `wp_options` unter `sps_form_theme_{form_id}` und wird per Inline-CSS-Filter (`sps_form_container_styles`) ins Frontend injiziert.
+
+---
+
+## 7. Neues Formular erstellen & Bereitstellung
+
+Formulare können flexibel auf zwei Wegen bereitgestellt werden:
+
+### Weg A: Als Schema-Datei im Codebase (Entwickler)
 1. **JSON-Schema anlegen:**
-   Erstelle eine neue Datei `config/forms/projektanfrage.json` mit den gewünschten Schritten und Feldtypen.
-2. **Shortcode einfügen:**
-   Füge den Shortcode auf einer WordPress-Seite ein:
-   ```text
-   [sps_form id="projektanfrage"]
-   ```
+   Erstelle eine neue Datei `config/forms/meine-anfrage.json` mit den gewünschten Schritten und Feldtypen.
+2. **Optionales SVG-Sprite:**
+   Falls spezifische Icons benötigt werden, lege `assets/icons/meine-anfrage.svg` an.
+
+### Weg B: Formular-Import & Export im WordPress-Admin (Neu)
+Über die Schaltfläche **Formular importieren** unter `Smart Portal > Formulare` können Formulare direkt im Backend importiert werden:
+
+1. **ZIP-Paket-Import (`.zip`):**
+   - Enthält die Schema-Datei `{form_id}.json` und das zugehörige SVG-Icon-Sprite `{form_id}.svg`.
+   - Das Archiv wird automatisch entpackt, das SVG wird von potenziell gefährlichen Skripten bereinigt (SVG-Sanitization) und beide Dateien werden im Uploads-Ordner gespeichert.
+2. **JSON-Datei-Upload (`.json`):**
+   - Direkter Upload einzelner Schema-Dateien (für Formulare, die das globale Master-Sprite nutzen).
+3. **JSON-Code Direkteingabe (Paste):**
+   - Reinkopieren des JSON-Strings in das Eingabefeld.
+4. **Aus Nextcloud importieren (Scaffolder):**
+   - Ruft per Knopfdruck alle Formulare aus der verbundenen Nextcloud Forms API ab.
+   - Generiert automatisch ein fertiges SPS-Formular-Gerüst inklusive Fragemapping, Summary- und Consent-Schritt.
+5. **Roundtrip-Export (Download):**
+   - Jedes Formular kann über die Tabelle als `.zip` (falls formspezifisches SVG-Sprite vorhanden) oder als `.json` exportiert werden.
+6. **Updatesichere Speicherung:**
+   - Importierte Formulare und Sprites liegen in `wp-content/uploads/smart-portal-suite/forms/` bzw. `icons/`.
+   - Sie sind damit **vollständig updatesicher** und werden bei Aktualisierungen des Plugins nicht überschrieben oder gelöscht.
+   - Importierte Formulare können im Admin auch wieder gelöscht werden (System-Formulare bleiben geschützt).
+
+### Formular einbinden:
+Shortcode auf einer beliebigen WordPress-Seite einfügen:
+```text
+[sps_form id="meine-anfrage"]
+```
 Das Formular ist sofort einsatzbereit, styling-kompatibel, responsiv und an Nextcloud angebunden.

@@ -36,20 +36,27 @@ class SPS_NC_Forms {
 	public function resolve_form_id( $title ) {
 		$transient_key = 'sps_nc_form_id_' . md5( $title );
 		$cached = get_transient( $transient_key );
-		if ( $cached ) return $cached;
+		if ( $cached ) return (int) $cached;
 
 		// Use service account for resolution (creates a separate client)
 		$service_client = new SPS_NC_Client( '', null, SPS_Settings::get_setting( 'service_account' ), SPS_Settings::get_setting( 'app_password' ) );
-		$response = $service_client->request( 'ocs/v2.php/apps/forms/api/v3/forms?type=owned', 'GET' );
+		$response = $service_client->request( 'ocs/v2.php/apps/forms/api/v3/forms', 'GET' );
 
 		if ( is_wp_error( $response ) ) return $response;
 
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
-		if ( isset( $body['ocs']['data']['forms'] ) ) {
-			foreach ( $body['ocs']['data']['forms'] as $form ) {
-				if ( $form['title'] === $title ) {
-					set_transient( $transient_key, $form['id'], 15 * MINUTE_IN_SECONDS );
-					return $form['id'];
+		$forms_list = array();
+		if ( isset( $body['ocs']['data']['forms'] ) && is_array( $body['ocs']['data']['forms'] ) ) {
+			$forms_list = $body['ocs']['data']['forms'];
+		} elseif ( isset( $body['ocs']['data'] ) && is_array( $body['ocs']['data'] ) ) {
+			$forms_list = $body['ocs']['data'];
+		}
+
+		foreach ( $forms_list as $form ) {
+			if ( is_array( $form ) && isset( $form['id'] ) && isset( $form['title'] ) ) {
+				if ( strcasecmp( trim( $form['title'] ), trim( $title ) ) === 0 ) {
+					set_transient( $transient_key, (int) $form['id'], 15 * MINUTE_IN_SECONDS );
+					return (int) $form['id'];
 				}
 			}
 		}
@@ -122,20 +129,33 @@ class SPS_NC_Forms {
 				}
 			}
 
-			// For dropdowns/radios in NC, we must pass the option ID. 
+			// For dropdowns/radios in NC, we must pass the option ID.
 			// But for v3, we often pass the value or match it. The old code matched options case-insensitively.
 			if ( ! empty( $val ) && ! empty( $q['options'] ) ) {
-				$found_opt_id = null;
-				foreach ( $q['options'] as $opt ) {
-					if ( strcasecmp( trim( $opt['text'] ), trim( $val ) ) === 0 ) {
-						$found_opt_id = $opt['id'];
-						break;
+				if ( is_array( $val ) ) {
+					$matched_ids = array();
+					foreach ( $val as $val_item ) {
+						$found_id = null;
+						foreach ( $q['options'] as $opt ) {
+							if ( strcasecmp( trim( $opt['text'] ), trim( (string) $val_item ) ) === 0 ) {
+								$found_id = $opt['id'];
+								break;
+							}
+						}
+						$matched_ids[] = ( null !== $found_id ) ? $found_id : $val_item;
 					}
-				}
-				if ( $found_opt_id !== null ) {
-					$val = $found_opt_id;
+					$val = $matched_ids;
 				} else {
-					// Option mismatch handling - fallback to text or throw error
+					$found_opt_id = null;
+					foreach ( $q['options'] as $opt ) {
+						if ( strcasecmp( trim( $opt['text'] ), trim( (string) $val ) ) === 0 ) {
+							$found_opt_id = $opt['id'];
+							break;
+						}
+					}
+					if ( null !== $found_opt_id ) {
+						$val = $found_opt_id;
+					}
 				}
 			}
 

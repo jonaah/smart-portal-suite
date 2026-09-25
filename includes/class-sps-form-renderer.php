@@ -271,22 +271,45 @@ class SPS_Form_Renderer {
 		// Check for custom sprite declared in schema or dedicated form sprite file
 		if ( ! empty( $schema['sprite'] ) ) {
 			$custom_sprite_path = SPS_PLUGIN_DIR . ltrim( $schema['sprite'], '/' );
-			$this->enqueue_sprite( $custom_sprite_path );
+			if ( file_exists( $custom_sprite_path ) ) {
+				$this->enqueue_sprite( $custom_sprite_path );
+			} else {
+				$upload_sprite_path = self::get_custom_icons_dir() . basename( $schema['sprite'] );
+				if ( file_exists( $upload_sprite_path ) ) {
+					$this->enqueue_sprite( $upload_sprite_path );
+				}
+			}
 		}
 
 		// Attempt to load a form-specific SVG sprite.
-		// Normalise the form_id: try both hyphen and underscore variants so that
-		// e.g. "gebaeude_check" finds "gebaeude-check.svg" and vice versa.
+		// Normalise the form_id: try exact, hyphen and underscore variants.
 		$sprite_id_variants = array_unique( array(
 			$form_id,
 			str_replace( '-', '_', $form_id ),
 			str_replace( '_', '-', $form_id ),
 		) );
+
+		$custom_icons_dir = self::get_custom_icons_dir();
+		$sprite_loaded    = false;
+
+		// 1. Check custom uploads directory
 		foreach ( $sprite_id_variants as $variant ) {
-			$form_specific_sprite = SPS_PLUGIN_DIR . 'assets/icons/' . $variant . '.svg';
-			if ( file_exists( $form_specific_sprite ) ) {
-				$this->enqueue_sprite( $form_specific_sprite );
-				break; // Only load the first matching sprite per form
+			$upload_sprite = $custom_icons_dir . $variant . '.svg';
+			if ( file_exists( $upload_sprite ) ) {
+				$this->enqueue_sprite( $upload_sprite );
+				$sprite_loaded = true;
+				break;
+			}
+		}
+
+		// 2. Check bundled plugin assets/icons/ if not found in uploads
+		if ( ! $sprite_loaded ) {
+			foreach ( $sprite_id_variants as $variant ) {
+				$form_specific_sprite = SPS_PLUGIN_DIR . 'assets/icons/' . $variant . '.svg';
+				if ( file_exists( $form_specific_sprite ) ) {
+					$this->enqueue_sprite( $form_specific_sprite );
+					break;
+				}
 			}
 		}
 
@@ -333,9 +356,44 @@ class SPS_Form_Renderer {
 	}
 
 	/**
+	 * Get persistent directory path for custom/imported forms in wp-content/uploads.
+	 *
+	 * @return string Absolute directory path with trailing slash.
+	 */
+	public static function get_custom_forms_dir() {
+		$upload_dir = wp_upload_dir();
+		$dir        = trailingslashit( $upload_dir['basedir'] ) . 'smart-portal-suite/forms/';
+		if ( ! file_exists( $dir ) ) {
+			wp_mkdir_p( $dir );
+			if ( ! file_exists( $dir . 'index.php' ) ) {
+				@file_put_contents( $dir . 'index.php', '<?php // Silence is golden.' );
+			}
+		}
+		return $dir;
+	}
+
+	/**
+	 * Get persistent directory path for custom/imported SVG sprites in wp-content/uploads.
+	 *
+	 * @return string Absolute directory path with trailing slash.
+	 */
+	public static function get_custom_icons_dir() {
+		$upload_dir = wp_upload_dir();
+		$dir        = trailingslashit( $upload_dir['basedir'] ) . 'smart-portal-suite/icons/';
+		if ( ! file_exists( $dir ) ) {
+			wp_mkdir_p( $dir );
+			if ( ! file_exists( $dir . 'index.php' ) ) {
+				@file_put_contents( $dir . 'index.php', '<?php // Silence is golden.' );
+			}
+		}
+		return $dir;
+	}
+
+	/**
 	 * Load JSON schema for a given form ID.
 	 *
-	 * Checks exact match, underscore, and hyphen variations.
+	 * Checks custom uploads directory first, then wp_options fallback,
+	 * and finally the bundled plugin config/forms directory.
 	 *
 	 * @param string $form_id Form identifier.
 	 * @return array|null Decoded schema array or null on failure.
@@ -349,6 +407,28 @@ class SPS_Form_Renderer {
 
 		$candidates = array_unique( $candidates );
 
+		// 1. Check custom uploads directory first (allows custom forms or overriding bundled ones)
+		$custom_dir = self::get_custom_forms_dir();
+		foreach ( $candidates as $candidate ) {
+			$custom_file = $custom_dir . $candidate . '.json';
+			if ( file_exists( $custom_file ) ) {
+				$json_content = file_get_contents( $custom_file );
+				$decoded      = json_decode( $json_content, true );
+				if ( is_array( $decoded ) && ! empty( $decoded['steps'] ) ) {
+					return apply_filters( 'sps_form_schema', $decoded, $form_id );
+				}
+			}
+		}
+
+		// 2. Check wp_options fallback (if upload directory was unwriteable)
+		foreach ( $candidates as $candidate ) {
+			$db_schema = get_option( 'sps_custom_form_' . $candidate );
+			if ( ! empty( $db_schema ) && is_array( $db_schema ) && ! empty( $db_schema['steps'] ) ) {
+				return apply_filters( 'sps_form_schema', $db_schema, $form_id );
+			}
+		}
+
+		// 3. Check bundled plugin config/forms directory
 		foreach ( $candidates as $candidate ) {
 			$file_path = SPS_PLUGIN_DIR . 'config/forms/' . $candidate . '.json';
 			if ( file_exists( $file_path ) ) {
@@ -364,14 +444,15 @@ class SPS_Form_Renderer {
 	}
 
 	/**
-	 * Get list of all available forms in config/forms/ directory.
+	 * Get list of all available forms (both system-bundled and custom-imported).
 	 *
-	 * @return array Array of [ 'id' => ..., 'title' => ..., 'file' => ... ]
+	 * @return array Map of canonical form IDs to form details.
 	 */
 	public function get_available_forms() {
 		$forms = array();
-		$files = glob( SPS_PLUGIN_DIR . 'config/forms/*.json' );
 
+		// 1. Core / bundled forms in config/forms/
+		$files = glob( SPS_PLUGIN_DIR . 'config/forms/*.json' );
 		if ( ! empty( $files ) ) {
 			foreach ( $files as $file ) {
 				$json_content = file_get_contents( $file );
@@ -379,15 +460,38 @@ class SPS_Form_Renderer {
 				if ( is_array( $data ) && isset( $data['title'] ) ) {
 					$file_slug    = basename( $file, '.json' );
 					$canonical_id = isset( $data['form_id'] ) ? sanitize_key( $data['form_id'] ) : sanitize_key( $file_slug );
-					$form_entry   = array(
+					$forms[ $canonical_id ] = array(
 						'id'          => $canonical_id,
 						'file_id'     => $file_slug,
 						'form_id'     => $canonical_id,
 						'title'       => $data['title'],
 						'steps_count' => isset( $data['steps'] ) ? count( $data['steps'] ) : 0,
+						'source'      => 'system',
+						'file_path'   => $file,
 					);
-					// Primary entry by canonical form ID (unique per form)
-					$forms[ $canonical_id ] = $form_entry;
+				}
+			}
+		}
+
+		// 2. Custom / imported forms in wp-content/uploads/smart-portal-suite/forms/
+		$custom_dir   = self::get_custom_forms_dir();
+		$custom_files = glob( $custom_dir . '*.json' );
+		if ( ! empty( $custom_files ) ) {
+			foreach ( $custom_files as $file ) {
+				$json_content = file_get_contents( $file );
+				$data         = json_decode( $json_content, true );
+				if ( is_array( $data ) && isset( $data['title'] ) ) {
+					$file_slug    = basename( $file, '.json' );
+					$canonical_id = isset( $data['form_id'] ) ? sanitize_key( $data['form_id'] ) : sanitize_key( $file_slug );
+					$forms[ $canonical_id ] = array(
+						'id'          => $canonical_id,
+						'file_id'     => $file_slug,
+						'form_id'     => $canonical_id,
+						'title'       => $data['title'],
+						'steps_count' => isset( $data['steps'] ) ? count( $data['steps'] ) : 0,
+						'source'      => 'custom',
+						'file_path'   => $file,
+					);
 				}
 			}
 		}
