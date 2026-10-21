@@ -6,7 +6,7 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 
 ---
 
-## [Unreleased]
+## [0.4.0]
 ### Behoben
 - **Nextcloud-Forms-Übertragung:** Antworten werden im Format der Forms-API v3 gesendet (`{"<questionId>": [werte]}`, Auswahl als Options-ID). Das bisherige Listenformat entsprach nicht der API; Übertragungen landeten dadurch im Fallback.
 - **Feldzuordnung:** Namen werden unabhängig von Groß-/Kleinschreibung und `-`/`_` zugeordnet; zusammengesetzte Felder (`plz_ort`) nur noch, wenn kein gleichnamiges Feld existiert. Radio-Werte (z. B. Fläche 125) werden über den Auswahltext der passenden Option zugeordnet, `0` wird übertragen.
