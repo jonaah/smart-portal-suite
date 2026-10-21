@@ -30,11 +30,14 @@ define( 'SPS_PREFIX', 'sps_' );
  * Core-Klassen laden (kein Composer in v1.0, einfaches require_once).
  */
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-settings.php';
+require_once SPS_PLUGIN_DIR . 'includes/class-sps-answer-transformer.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-ajax-handler.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-form-renderer.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-form-manager.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-diagnostics.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-account-sync-page.php';
+require_once SPS_PLUGIN_DIR . 'includes/class-sps-submission.php';
+require_once SPS_PLUGIN_DIR . 'includes/class-sps-doctor.php';
 
 /**
  * Nextcloud Bridge Module laden.
@@ -50,6 +53,13 @@ require_once SPS_PLUGIN_DIR . 'modules/auth/class-sps-nc-user-sync.php';
 require_once SPS_PLUGIN_DIR . 'modules/auth/class-sps-auth-shortcodes.php';
 
 /**
+ * WP-CLI: wp sps configure | doctor | mapping | test-submit | sync-user | retry-leads
+ */
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	require_once SPS_PLUGIN_DIR . 'includes/class-sps-cli.php';
+}
+
+/**
  * Plugin Initialisierung.
  */
 function sps_init() {
@@ -62,6 +72,7 @@ function sps_init() {
 	SPS_Form_Renderer::get_instance();
 	SPS_NC_User_Sync::get_instance();
 	SPS_Auth_Shortcodes::get_instance();
+	SPS_Submission::init();
 
 	if ( is_admin() ) {
 		SPS_Form_Manager::get_instance();
@@ -70,6 +81,11 @@ function sps_init() {
 	}
 }
 add_action( 'plugins_loaded', 'sps_init' );
+
+/**
+ * Deaktivierung: geplantes Nachreichen entfernen.
+ */
+register_deactivation_hook( __FILE__, array( 'SPS_Submission', 'unschedule' ) );
 
 /**
  * Automatischer Update-Checker via GitHub Releases (PUC v5).
@@ -85,8 +101,16 @@ if ( file_exists( SPS_PLUGIN_DIR . 'includes/vendor/plugin-update-checker/plugin
 	// Release-Assets (.zip aus GitHub Actions) priorisieren
 	$sps_update_checker->getVcsApi()->enableReleaseAssets();
 	
-	// Optionaler Filter für Private Repositories oder Access-Tokens
-	$sps_auth_token = apply_filters( 'sps_github_updater_token', '' );
+	// Authentication für Private Repositories:
+	// Unterstützt WP-Konstante SPS_GITHUB_TOKEN, wp_options oder Filter
+	$sps_auth_token = '';
+	if ( defined( 'SPS_GITHUB_TOKEN' ) && ! empty( SPS_GITHUB_TOKEN ) ) {
+		$sps_auth_token = SPS_GITHUB_TOKEN;
+	} elseif ( get_option( 'sps_github_updater_token' ) ) {
+		$sps_auth_token = get_option( 'sps_github_updater_token' );
+	}
+	$sps_auth_token = apply_filters( 'sps_github_updater_token', $sps_auth_token );
+
 	if ( ! empty( $sps_auth_token ) ) {
 		$sps_update_checker->setAuthentication( $sps_auth_token );
 	}

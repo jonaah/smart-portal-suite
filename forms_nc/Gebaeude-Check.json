@@ -1,0 +1,725 @@
+{
+  "source_id": 2,
+  "source_hash": "E79k5zYBBAoZGtDj",
+  "settings": {
+    "title": "Gebaeude-Check",
+    "description": "",
+    "allowComments": false,
+    "isAnonymous": false,
+    "submitMultiple": true,
+    "allowEditSubmissions": true,
+    "expires": 0,
+    "showExpiration": false,
+    "maxSubmissions": null,
+    "submissionMessage": null,
+    "confirmationEmailEnabled": false,
+    "confirmationEmailSubject": null,
+    "confirmationEmailBody": null,
+    "fileFormat": "ods"
+  },
+  "confirmation_question_index": null,
+  "questions": [
+    {
+      "type": "short",
+      "text": "Objekt - PLZ Ort",
+      "description": "",
+      "isRequired": true,
+      "order": 1,
+      "accept": [],
+      "extraSettings": [],
+      "name": "plz_ort",
+      "options": [],
+      "_source_question_id": 61
+    },
+    {
+      "type": "short",
+      "text": "Objekt - Strasse & Hausnummer",
+      "description": "",
+      "isRequired": true,
+      "order": 2,
+      "accept": [],
+      "extraSettings": [],
+      "name": "strasse_hausnummer",
+      "options": [],
+      "_source_question_id": 60
+    },
+    {
+      "type": "dropdown",
+      "text": "Aktuelle Nutzung",
+      "description": "",
+      "isRequired": true,
+      "order": 3,
+      "accept": [],
+      "extraSettings": [],
+      "name": "nutzung",
+      "options": [
+        {
+          "order": 1,
+          "text": "Eigennutzung (ausschließlich)",
+          "optionType": "choice"
+        },
+        {
+          "order": 2,
+          "text": "Eigennutzung und Vermietung",
+          "optionType": "choice"
+        },
+        {
+          "order": 3,
+          "text": "Vermietung (ausschließlich)",
+          "optionType": "choice"
+        }
+      ],
+      "_source_question_id": 1
+    },
+    {
+      "type": "short",
+      "text": "Baujahr",
+      "description": "Baujahr bzw. ***letzte Vollsanierung*** auswählen",
+      "isRequired": false,
+      "order": 4,
+      "accept": [],
+      "extraSettings": {
+        "validationType": "number"
+      },
+      "name": "baujahr",
+      "options": [],
+      "_source_question_id": 78
+    },
+    {
+      "type": "dropdown",
+      "text": "Gebäudetyp",
+      "description": "",
+      "isRequired": true,
+      "order": 5,
+      "accept": [],
+      "extraSettings": [],
+      "name": "typ",
+      "options": [
+        {
+          "order": 1,
+          "text": "Freistehendes Haus",
+          "optionType": "choice"
+        },
+        {
+          "order": 2,
+          "text": "Reihenmittelhaus",
+          "optionType": "choice"
+        },
+        {
+          "order": 3,
+          "text": "Reihenendhaus/Doppelhaushälfte",
+          "optionType": "choice"
+        }
+      ],
+      "_source_question_id": 3
+    },
+    {
+      "type": "multiple",
+      "text": "Details zu Gebäudetyp",
+      "description": "",
+      "isRequired": false,
+      "order": 6,
+      "accept": [],
+      "extraSettings": [],
+      "name": "",
+      "options": [
+        {
+          "order": 1,
+          "text": "Denkmalschutz",
+          "optionType": "choice"
+        },
+        {
+          "order": 2,
+          "text": "Ensembleschutz",
+          "optionType": "choice"
+        }
+      ],
+      "_source_question_id": 4
+    },
+    {
+      "type": "short",
+      "text": "Anzahl Wohneinheiten",
+      "description": "",
+      "isRequired": true,
+      "order": 7,
+      "accept": [],
+      "extraSettings": {
+        "validationType": "number"
+      },
+      "name": "wohneinheiten",
+      "options": [],
+      "_source_question_id": 6
+    },
+    {
+      "type": "short",
+      "text": "Wohnfläche",
+      "description": "",
+      "isRequired": true,
+      "order": 8,
+      "accept": [],
+      "extraSettings": {
+        "validationType": "number"
+      },
+      "name": "flaeche",
+      "options": [],
+      "_source_question_id": 7
+    },
+    {
+      "type": "short",
+      "text": "Anzahl Geschosse",
+      "description": "",
+      "isRequired": true,
+      "order": 9,
+      "accept": [],
+      "extraSettings": {
+        "validationType": "number"
+      },
+      "name": "geschosse",
+      "options": [],
+      "_source_question_id": 8
+    },
+    {
+      "type": "short",
+      "text": "Geschosshöhe in m",
+      "description": "Bitte geben Sie die durchschnittliche **Raumhöhe eines Geschosses** in Metern an.\nBeispiel:  \n2.50 m oder 2.70 m\nWenn Sie es nicht genau wissen, schätzen Sie bitte ungefähr.",
+      "isRequired": true,
+      "order": 10,
+      "accept": [],
+      "extraSettings": {
+        "validationType": "number"
+      },
+      "name": "geschosshoehe",
+      "options": [],
+      "_source_question_id": 10
+    },
+    {
+      "type": "short",
+      "text": "Anzahl Vollgeschosse",
+      "description": "Bitte geben Sie an, wie viele **vollwertige Stockwerke** Ihr Gebäude hat.\nBeispiele:\n- Erdgeschoss + Obergeschoss = 2 Vollgeschosse\n- Erdgeschoss + 2 Obergeschosse = 3 Vollgeschosse\nDachgeschoss und Keller zählen nur  als Vollgeschoss, wenn sie Raumhöhe >2.30m UND Fläche >2/3 des Erdgeschosses",
+      "isRequired": true,
+      "order": 11,
+      "accept": [],
+      "extraSettings": {
+        "validationType": "number"
+      },
+      "name": "vollgeschosse",
+      "options": [],
+      "_source_question_id": 11
+    },
+    {
+      "type": "short",
+      "text": "Anzahl beheizter Geschosse",
+      "description": "",
+      "isRequired": true,
+      "order": 12,
+      "accept": [],
+      "extraSettings": {
+        "validationType": "number"
+      },
+      "name": "beheizt",
+      "options": [],
+      "_source_question_id": 12
+    },
+    {
+      "type": "short",
+      "text": "Anzahl Dachgeschosse",
+      "description": "Bitte geben Sie an, wie viele **Dachgeschosse** das Gebäude hat.\nEin Dachgeschoss ist ein Geschoss direkt unter dem Dach.\nBeispiele:\n- nicht ausgebauter Dachboden = 0 Dachgeschoss\n- ausgebautes Dachgeschoss = 1 Dachgeschoss",
+      "isRequired": true,
+      "order": 13,
+      "accept": [],
+      "extraSettings": {
+        "validationType": "number"
+      },
+      "name": "dachgeschoss",
+      "options": [],
+      "_source_question_id": 13
+    },
+    {
+      "type": "short",
+      "text": "Anzahl Kellergeschosse",
+      "description": "Ein Kellergeschoss liegt ganz oder teilweise **unter der Erde**.\nBeispiele:\n- kein Keller = 0\n- ein Keller = 1\n- zwei Kellerebenen = 2",
+      "isRequired": true,
+      "order": 14,
+      "accept": [],
+      "extraSettings": {
+        "validationType": "number"
+      },
+      "name": "keller",
+      "options": [],
+      "_source_question_id": 15
+    },
+    {
+      "type": "short",
+      "text": "Jährlicher Energieverbrauch in kWh (Haushaltsstrom)",
+      "description": "Sie finden diese Angabe meist auf Ihrer **Jahresabrechnung des Energieversorgers**.\nWenn möglich, tragen Sie den **Durchschnitt der letzten 3 Jahre** ein.",
+      "isRequired": true,
+      "order": 15,
+      "accept": [],
+      "extraSettings": {
+        "validationType": "number"
+      },
+      "name": "energieverbrauch",
+      "options": [],
+      "_source_question_id": 16
+    },
+    {
+      "type": "short",
+      "text": "Stromkosten Cent/kWh",
+      "description": "**Wieviel Cent/kWh bezahle ich für Strom?** \nEinfach die Stromrechnung der letzten Jahre nehmen und die Gesamtkosten/gesamt Stromverbrauch in kWh \n\n*dieser Wert wird im Gebäudesteckbrief zur Berechnung der Kosten verwendet",
+      "isRequired": true,
+      "order": 16,
+      "accept": [],
+      "extraSettings": {
+        "validationType": "number"
+      },
+      "name": "kosten",
+      "options": [],
+      "_source_question_id": 64
+    },
+    {
+      "type": "dropdown",
+      "text": "Wärmeenergieträger",
+      "description": "Wenn mehrere Heizsysteme vorhanden sind, wählen Sie bitte den **Hauptenergieträger**.\nBeispiele:\nGas: ca. 15.000 – 35.000 kWh/Jahr\nÖl: ca. 1.500 – 3.000 Liter/Jahr\nStrom (Wärmepumpe): ca. 3.000 – 8.000 kWh/Jahr",
+      "isRequired": true,
+      "order": 17,
+      "accept": [],
+      "extraSettings": [],
+      "name": "energietraeger",
+      "options": [
+        {
+          "order": 1,
+          "text": "Öl",
+          "optionType": "choice"
+        },
+        {
+          "order": 2,
+          "text": "Erdgas",
+          "optionType": "choice"
+        },
+        {
+          "order": 3,
+          "text": "Holzpellets",
+          "optionType": "choice"
+        },
+        {
+          "order": 4,
+          "text": "Fern-/Nahwärme",
+          "optionType": "choice"
+        },
+        {
+          "order": 5,
+          "text": "Strom",
+          "optionType": "choice"
+        },
+        {
+          "order": 6,
+          "text": "Geothermie",
+          "optionType": "choice"
+        },
+        {
+          "order": 7,
+          "text": "Biomasse",
+          "optionType": "choice"
+        },
+        {
+          "order": 8,
+          "text": "Wärmepumpe",
+          "optionType": "choice"
+        }
+      ],
+      "_source_question_id": 17
+    },
+    {
+      "type": "short",
+      "text": "Jährlicher Wärmeenergieverbrauch in kWh",
+      "description": "Bitte geben Sie den **jährlichen Energieverbrauch für Heizung und Warmwasser** in kWh an.\nDiese Angabe finden Sie auf Ihrer **Heizkostenabrechnung** oder Ihrer **Gas-/Ölrechnung**.\nHinweis:\nDieser Wert enthält **nur Wärmeenergie**, nicht den Haushaltsstrom.\nWenn möglich, verwenden Sie den **Durchschnitt der letzten 3 Jahre**.",
+      "isRequired": true,
+      "order": 18,
+      "accept": [],
+      "extraSettings": {
+        "validationType": "number"
+      },
+      "name": "waermeverbrauch",
+      "options": [],
+      "_source_question_id": 18
+    },
+    {
+      "type": "short",
+      "text": "Wärmekosten Cent/kWh ",
+      "description": "**Wieviel Cent/kWh bezahle ich für Wärme/Heizen?** \nEinfach die Wärmerechnung (Heizen&Warmwasser) der letzten Jahre nehmen und die Gesamtkosten/gesamt Wärmeverbrauch in kWh \n\n*dieser Wert wird im Gebäudesteckbrief zur Berechnung der Kosten verwendet",
+      "isRequired": true,
+      "order": 19,
+      "accept": [],
+      "extraSettings": {
+        "validationType": "number"
+      },
+      "name": "waermekosten",
+      "options": [],
+      "_source_question_id": 65
+    },
+    {
+      "type": "short",
+      "text": "kalkulatorischen Zinssatz in %",
+      "description": "**Entscheidungshilfe für Sie zur Festlegung des kalkulatorischen Zinssatzes**\nGeben Sie ihm diese drei Szenarien als Leitfaden an die Hand:\n**Szenario „Sicherheit“ (Niedriger Zins, z.B. 1-2 %)**: „Ich möchte einfach nur, dass mein Geld im Haus besser aufgehoben ist als auf dem Tagesgeldkonto.“ -> Die Sanierung erscheint schneller wirtschaftlich.\n**Szenario „Finanzierung“ (Kreditzins, z.B. 3-4 %)**: „Ich muss das Geld leihen und will wissen, ob die Ersparnis bei den Heizkosten die Zinsen der Bank deckt.“ -> Das ist der realistischste Wert für Kreditnehmer.\n**Szenario „Investment“ (Hoher Zins, z.B. 5 % +)**: „Ich investiere nur, wenn die Sanierung am Ende mehr einbringt als eine gute Geldanlage am Aktienmarkt.“ -> Die Sanierung muss sehr hohe Einsparungen liefern, um ‚wirtschaftlich‘ zu sein.\n\n*dieser Wert wird im Gebäudesteckbrief zur Berechnung der Kosten verwendet\n",
+      "isRequired": true,
+      "order": 20,
+      "accept": [],
+      "extraSettings": {
+        "validationType": "number"
+      },
+      "name": "zinssatz",
+      "options": [],
+      "_source_question_id": 66
+    },
+    {
+      "type": "short",
+      "text": "Existierende PV-Anlage",
+      "description": "Sie haben bereits eine PV Anlage? Dann können Sie hier die Leistung in kWp angeben",
+      "isRequired": false,
+      "order": 21,
+      "accept": [],
+      "extraSettings": [],
+      "name": "",
+      "options": [],
+      "_source_question_id": 79
+    },
+    {
+      "type": "short",
+      "text": "Existierende Stromspeicher",
+      "description": "Sie haben bereits eine PV Anlage? Dann können Sie hier die Leistung in kWh angeben",
+      "isRequired": false,
+      "order": 22,
+      "accept": [],
+      "extraSettings": [],
+      "name": "",
+      "options": [],
+      "_source_question_id": 80
+    },
+    {
+      "type": "long",
+      "text": "Kommentar",
+      "description": "",
+      "isRequired": false,
+      "order": 23,
+      "accept": [],
+      "extraSettings": [],
+      "name": "",
+      "options": [],
+      "_source_question_id": 19
+    },
+    {
+      "type": "dropdown",
+      "text": "Welche Außenwand hat Ihr Haus überwiegend?",
+      "description": "Bitte wählen Sie die Bauart, die bei den meisten Außenwänden passt.\nHilfen:\n\n- Zweischalig = zwei Mauerschalen mit Luftschicht oder Dämmung dazwischen\n- Massives Mauerwerk = eine dicke, durchgehende Steinwand\n- Hochlochziegel = leichter klingender Lochziegel, oft ab ca. 1950er/1960er\n- Holz/Fertighaus/Fachwerk = Wand besteht überwiegend aus Holz oder sichtbarem Fachwerk",
+      "isRequired": true,
+      "order": 24,
+      "accept": [],
+      "extraSettings": [],
+      "name": "aussenwand",
+      "options": [
+        {
+          "order": 1,
+          "text": "Zweischalige Wand mit Dämmschicht",
+          "optionType": "choice"
+        },
+        {
+          "order": 2,
+          "text": "Massivwand aus Vollziegel / Naturstein / Kalksandstein / Bims-Vollstein bis 20 cm",
+          "optionType": "choice"
+        },
+        {
+          "order": 3,
+          "text": "Zweischalige Wand ohne Dämmschicht",
+          "optionType": "choice"
+        },
+        {
+          "order": 4,
+          "text": "Massivwand aus Vollziegel / Naturstein / Kalksandstein / Bims-Vollstein 20–30 cm",
+          "optionType": "choice"
+        },
+        {
+          "order": 5,
+          "text": "Massivwand aus Vollziegel / Naturstein / Kalksandstein / Bims-Vollstein über 30 cm",
+          "optionType": "choice"
+        },
+        {
+          "order": 6,
+          "text": "Massivwand aus Hochlochziegeln / Bims-Hohlsteinen / porösem Mauerwerk",
+          "optionType": "choice"
+        },
+        {
+          "order": 7,
+          "text": "Sonstige massive Wand bis 20 cm",
+          "optionType": "choice"
+        },
+        {
+          "order": 8,
+          "text": "Sonstige massive Wand über 20 cm",
+          "optionType": "choice"
+        },
+        {
+          "order": 9,
+          "text": "Holzbau / Fertighaus / Holzrahmenbau mit dämmender Füllung",
+          "optionType": "choice"
+        },
+        {
+          "order": 10,
+          "text": "Fachwerk mit Lehm- oder Lehmziegelausfachung",
+          "optionType": "choice"
+        },
+        {
+          "order": 11,
+          "text": "Fachwerk mit Ziegel- oder Natursteinausfachung",
+          "optionType": "choice"
+        }
+      ],
+      "_source_question_id": 68
+    },
+    {
+      "type": "short",
+      "text": "In welchem Jahr wurden die Außenwände zuletzt überwiegend energetisch verbessert?",
+      "description": "Bitte das Jahr eintragen, in dem die Außenwände zuletzt gedämmt oder grundlegend verbessert wurden.\nWenn keine Außendämmung oder vergleichbare Verbesserung erfolgt ist, bitte das Baujahr/Vollsanierung des Hauses eintragen oder unbeantwortet lassen.",
+      "isRequired": false,
+      "order": 25,
+      "accept": [],
+      "extraSettings": {
+        "validationType": "number"
+      },
+      "name": "aussenwand-sanierung-jahr",
+      "options": [],
+      "_source_question_id": 74
+    },
+    {
+      "type": "dropdown",
+      "text": "Welche Fenster sind bei Ihnen überwiegend eingebaut?",
+      "description": "Bitte wählen Sie den Fenstertyp, der in Ihrem Haus am häufigsten vorkommt.\n\nHilfen zur Auswahl:\n\n- Einfach verglast = nur eine Glasscheibe je Fensterflügel, meist sehr alt\n- Holzfenster mit 2 Scheiben = ältere Holzfenster mit Isolierverglasung oder klassische ältere Doppelfenster\n- Kunststofffenster = meist weiße oder farbige Kunststoffrahmen\n- Alu-/Stahlfenster = Metallrahmen, oft schmaler als Holz oder Kunststoff",
+      "isRequired": true,
+      "order": 26,
+      "accept": [],
+      "extraSettings": [],
+      "name": "fenster",
+      "options": [
+        {
+          "order": 1,
+          "text": "Holzfenster, einfach verglast",
+          "optionType": "choice"
+        },
+        {
+          "order": 2,
+          "text": "Holzfenster, 2-Scheiben-Isolierverglasung / Kastenfenster / Verbundfenster",
+          "optionType": "choice"
+        },
+        {
+          "order": 3,
+          "text": "Kunststofffenster, Isolierverglasung",
+          "optionType": "choice"
+        },
+        {
+          "order": 4,
+          "text": "Aluminium- oder Stahlfenster, Isolierverglasung",
+          "optionType": "choice"
+        }
+      ],
+      "_source_question_id": 69
+    },
+    {
+      "type": "short",
+      "text": "In welchem Jahr wurden die Fenster zuletzt überwiegend erneuert?",
+      "description": "Bitte das Jahr eintragen, in dem die meisten Fenster eingebaut oder grundlegend erneuert wurden.\nWenn die Fenster noch ursprünglich sind, bitte das Baujahr/Vollsanierung des Hauses eintragen  oder unbeantwortet lassen.",
+      "isRequired": false,
+      "order": 27,
+      "accept": [],
+      "extraSettings": {
+        "validationType": "number"
+      },
+      "name": "fenster-sanierung-jahr",
+      "options": [],
+      "_source_question_id": 72
+    },
+    {
+      "type": "dropdown",
+      "text": "Wie ist das Dach über dem beheizten Wohnbereich überwiegend aufgebaut?",
+      "description": "Gemeint ist das Dach bzw. die Dachschräge über dem Wohnbereich.\n\nHilfen zur Auswahl:\n\nMassives Dach = Dach aus Beton oder anderer massiver Bauweise\nHolzdach = klassischer Dachstuhl aus Holz, typisch bei Einfamilienhäusern\nFlachdach = Dach fast ohne Neigung\n",
+      "isRequired": true,
+      "order": 28,
+      "accept": [],
+      "extraSettings": [],
+      "name": "dachart",
+      "options": [
+        {
+          "order": 1,
+          "text": "Dach in massiver Konstruktion",
+          "optionType": "choice"
+        },
+        {
+          "order": 2,
+          "text": "Dach in Holzkonstruktion",
+          "optionType": "choice"
+        },
+        {
+          "order": 3,
+          "text": "Flachdach",
+          "optionType": "choice"
+        }
+      ],
+      "_source_question_id": 70
+    },
+    {
+      "type": "short",
+      "text": "In welchem Jahr wurde das Dach zuletzt überwiegend saniert oder erneuert?",
+      "description": "Bitte das Jahr der letzten größeren Dachsanierung eintragen, z. B. Neueindeckung mit Dämmung oder kompletter Neuaufbau.\nWenn das Dach noch ursprünglich ist, bitte das Baujahr/Vollsanierung des Hauses eintragen  oder unbeantwortet lassen.\n",
+      "isRequired": false,
+      "order": 29,
+      "accept": [],
+      "extraSettings": {
+        "validationType": "number"
+      },
+      "name": "dach-sanierung-jahr",
+      "options": [],
+      "_source_question_id": 73
+    },
+    {
+      "type": "dropdown",
+      "text": "Wie ist die Decke über dem Keller überwiegend aufgebaut?",
+      "description": "Gemeint ist die Decke zwischen Keller und beheiztem Wohnbereich.\n\nHilfen zur Auswahl:\n\nStahlbeton = glatte, feste Betondecke\nHolzbalkendecke = ältere Decke mit Holzbalken\nZiegel-/Hohlsteindecke = gemauerte Decke mit Ziegeln oder Hohlsteinen",
+      "isRequired": true,
+      "order": 30,
+      "accept": [],
+      "extraSettings": [],
+      "name": "kellerdecke",
+      "options": [
+        {
+          "order": 1,
+          "text": "Kellerdecke aus Stahlbeton, massiv",
+          "optionType": "choice"
+        },
+        {
+          "order": 2,
+          "text": "Kellerdecke als Holzbalkendecke",
+          "optionType": "choice"
+        },
+        {
+          "order": 3,
+          "text": "Ziegel-/Hohlsteindecke",
+          "optionType": "choice"
+        }
+      ],
+      "_source_question_id": 75
+    },
+    {
+      "type": "short",
+      "text": "In welchem Jahr wurde die Kellerdecke zuletzt gedämmt oder verbessert?",
+      "description": "Bitte das Jahr der letzten Maßnahme eintragen, z. B. Dämmung an der Kellerdecke.\nWenn keine Verbesserung erfolgt ist, bitte das Baujahr/Vollsanierung des Hauses eintragen oder leer lassen.",
+      "isRequired": false,
+      "order": 31,
+      "accept": [],
+      "extraSettings": {
+        "validationType": "number"
+      },
+      "name": "keller-sanierung-jahr",
+      "options": [],
+      "_source_question_id": 76
+    },
+    {
+      "type": "file",
+      "text": "Energieabrechnungen der letzten Jahre",
+      "description": "Bitte laden Sie **Energieabrechnungen der letzten Jahre** hoch.\nZum Beispiel:\n- Gasabrechnung\n- Heizölrechnung\n- Stromabrechnung\n- Fernwärmeabrechnung\nAm besten sind **die letzten 3 Jahre**.\nDiese Informationen helfen uns, den **Energieverbrauch Ihres Gebäudes** zu analysieren.\n",
+      "isRequired": false,
+      "order": 32,
+      "accept": [
+        "x-office/document",
+        "image/*"
+      ],
+      "extraSettings": {
+        "maxAllowedFilesCount": 10,
+        "allowedFileTypes": [
+          "x-office/document",
+          "image"
+        ]
+      },
+      "name": "",
+      "options": [],
+      "_source_question_id": 46
+    },
+    {
+      "type": "file",
+      "text": "Fotos vom Gebäude",
+      "description": "Hilfreich sind zum Beispiel:\n- Außenansicht des Hauses\n- Vorderseite und Rückseite\n- Dach\n- Keller\n- Heizungsanlage\nFotos helfen uns, den **aktuellen Zustand des Gebäudes** besser zu beurteilen.\n",
+      "isRequired": false,
+      "order": 33,
+      "accept": [
+        "image/*"
+      ],
+      "extraSettings": {
+        "maxAllowedFilesCount": 10,
+        "allowedFileTypes": [
+          "image"
+        ]
+      },
+      "name": "",
+      "options": [],
+      "_source_question_id": 47
+    },
+    {
+      "type": "file",
+      "text": "Schnitte / Ansichten",
+      "description": "Falls vorhanden, laden Sie bitte **Schnittzeichnungen oder Ansichten** des Gebäudes hoch.\nZum Beispiel:\n- Gebäudeschnitt\n- Seitenansichten\n- Fassadenzeichnungen\nDiese Unterlagen helfen uns, die **Gebäudehöhe und Bauweise** besser zu verstehen.\n",
+      "isRequired": false,
+      "order": 34,
+      "accept": [
+        "image/*",
+        "x-office/document"
+      ],
+      "extraSettings": {
+        "maxAllowedFilesCount": 10,
+        "allowedFileTypes": [
+          "image",
+          "x-office/document"
+        ]
+      },
+      "name": "",
+      "options": [],
+      "_source_question_id": 45
+    },
+    {
+      "type": "file",
+      "text": "Grundrisse / Gebäudepläne",
+      "description": "Bitte laden Sie vorhandene **Grundrisse oder Baupläne** Ihres Gebäudes hoch.\nZum Beispiel:\n- Grundriss vom Erdgeschoss\n- Grundriss vom Obergeschoss\n- Grundriss vom Keller oder Dachgeschoss\nDiese Pläne helfen uns, die **Größe und Aufteilung des Gebäudes** zu verstehen.",
+      "isRequired": false,
+      "order": 35,
+      "accept": [
+        "x-office/document",
+        "image/*"
+      ],
+      "extraSettings": {
+        "allowedFileTypes": [
+          "x-office/document",
+          "image"
+        ],
+        "maxAllowedFilesCount": 10
+      },
+      "name": "",
+      "options": [],
+      "_source_question_id": 44
+    },
+    {
+      "type": "file",
+      "text": "Weitere Unterlagen",
+      "description": "Hier können Sie **weitere Dokumente** hochladen, die für Ihr Gebäude wichtig sein könnten.\n\nZum Beispiel:\n- Rechnungen von Sanierungen\n- Förderbescheide\n- Bauunterlagen\n- vorhandener iSFP\n- Energieausweis des Gebäudes\n\nWenn Sie unsicher sind, laden Sie das Dokument einfach hoch.",
+      "isRequired": false,
+      "order": 36,
+      "accept": [
+        "x-office/document"
+      ],
+      "extraSettings": {
+        "maxAllowedFilesCount": 10,
+        "allowedFileTypes": [
+          "x-office/document"
+        ]
+      },
+      "name": "",
+      "options": [],
+      "_source_question_id": 48
+    }
+  ]
+}

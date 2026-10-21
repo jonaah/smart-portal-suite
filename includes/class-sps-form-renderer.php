@@ -321,7 +321,7 @@ class SPS_Form_Renderer {
 				'nonce'     => wp_create_nonce( SPS_Ajax_Handler::NONCE_ACTION ),
 				'iconsUrl'   => SPS_PLUGIN_URL . 'assets/icons/portal-icons.svg',
 				'siteUrl'    => home_url(),
-				'privacyUrl' => SPS_Settings::get_setting( 'privacy_url', '/datenschutz' ),
+				'privacyUrl' => SPS_Settings::get_privacy_url(),
 				'i18n'       => array(
 					'required'       => __( 'Bitte füllen Sie dieses Feld aus.', 'smart-portal-suite' ),
 					'invalidEmail'   => __( 'Bitte geben Sie eine gültige E-Mail-Adresse ein.', 'smart-portal-suite' ),
