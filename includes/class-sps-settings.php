@@ -179,6 +179,22 @@ class SPS_Settings {
 			'sps_section_nextcloud'
 		);
 
+		add_settings_field(
+			'nc_form_ids',
+			__( 'Nextcloud-Formular-IDs', 'smart-portal-suite' ),
+			array( $this, 'render_field_nc_form_ids' ),
+			'smart-portal-suite',
+			'sps_section_nextcloud'
+		);
+
+		add_settings_field(
+			'submit_as_user',
+			__( 'Übertragung als Kunde', 'smart-portal-suite' ),
+			array( $this, 'render_field_submit_as_user' ),
+			'smart-portal-suite',
+			'sps_section_nextcloud'
+		);
+
 		// Sektion 1b: Nextcloud Datenbank (Social Login Sync)
 		add_settings_section(
 			'sps_section_nextcloud_db',
@@ -364,7 +380,7 @@ class SPS_Settings {
 		$value = self::get_setting( 'nextcloud_url', '' );
 		?>
 		<input type="url" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[nextcloud_url]" value="<?php echo esc_attr( $value ); ?>" class="regular-text" placeholder="https://nc.example.com" />
-		<p class="description"><?php esc_html_e( 'Vollständige URL zur Nextcloud-Instanz (z. B. https://nc.effizientes-heim.de).', 'smart-portal-suite' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Vollständige URL zur Nextcloud-Instanz des Kunden (z. B. https://nc.beispiel.de). Ohne URL findet keine Übertragung statt.', 'smart-portal-suite' ); ?></p>
 		<?php
 	}
 
@@ -397,6 +413,28 @@ class SPS_Settings {
 		?>
 		<input type="text" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[webdav_base_dir]" value="<?php echo esc_attr( $value ); ?>" class="regular-text" placeholder="SPS_Leads" />
 		<p class="description"><?php esc_html_e( 'Zielordner in Nextcloud für JSON-Fallback-Dateien (ohne führenden Schrägstrich).', 'smart-portal-suite' ); ?></p>
+		<?php
+	}
+
+	public function render_field_nc_form_ids() {
+		$map   = self::get_form_id_map();
+		$lines = array();
+		foreach ( $map as $form => $id ) {
+			$lines[] = $form . '=' . $id;
+		}
+		?>
+		<textarea name="<?php echo esc_attr( self::OPTION_NAME ); ?>[nc_form_ids]" rows="3" class="large-text code" placeholder="gebaeude_check=12"><?php echo esc_textarea( implode( "\n", $lines ) ); ?></textarea>
+		<p class="description"><?php esc_html_e( 'Eine Zeile je Formular: SPS-Formular-ID=Nextcloud-Formular-ID (z. B. target_form_id aus forms_sync). Ohne Eintrag wird über den Formulartitel gesucht.', 'smart-portal-suite' ); ?></p>
+		<?php
+	}
+
+	public function render_field_submit_as_user() {
+		$value = (int) self::get_setting( 'submit_as_user', 1 );
+		?>
+		<label>
+			<input type="checkbox" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[submit_as_user]" value="1" <?php checked( 1, $value ); ?> />
+			<?php esc_html_e( 'Eingeloggte Kunden senden mit ihrem eigenen Nextcloud-Konto (Formular muss für die Kundengruppe freigegeben sein). Besucher und Fehlerfälle laufen über den Service-Account.', 'smart-portal-suite' ); ?>
+		</label>
 		<?php
 	}
 
@@ -506,7 +544,7 @@ class SPS_Settings {
 		$value = self::get_setting( 'privacy_url', '' );
 		?>
 		<input type="url" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[privacy_url]" value="<?php echo esc_attr( $value ); ?>" class="regular-text" placeholder="https://example.com/datenschutz" />
-		<p class="description"><?php esc_html_e( 'URL zur Datenschutzerklärung. Wird im Formular-Consent-Feld verlinkt.', 'smart-portal-suite' ); ?></p>
+		<p class="description"><?php esc_html_e( 'URL zur Datenschutzerklärung. Wird im Formular-Consent-Feld verlinkt. Leer = Datenschutzseite aus WordPress (Einstellungen → Datenschutz).', 'smart-portal-suite' ); ?></p>
 		<?php
 	}
 
@@ -648,7 +686,10 @@ class SPS_Settings {
 		$sanitized['service_account'] = isset( $input['service_account'] ) ? sanitize_text_field( trim( $input['service_account'] ) ) : '';
 
 		// App Passwort: nur aktualisieren wenn neues Passwort eingegeben wurde
-		if ( ! empty( $input['app_password'] ) ) {
+		if ( ! empty( $input['app_password'] ) && isset( $existing['app_password'] ) && $input['app_password'] === $existing['app_password'] && '' !== self::decrypt( $existing['app_password'] ) ) {
+			// Bereits verschlüsselter Wert (z. B. REST/option patch mit Sanitize) – nicht erneut verschlüsseln.
+			$sanitized['app_password'] = $existing['app_password'];
+		} elseif ( ! empty( $input['app_password'] ) ) {
 			$sanitized['app_password'] = self::encrypt( trim( $input['app_password'] ) );
 		} else {
 			// Bestehendes verschlüsseltes Passwort beibehalten
@@ -661,7 +702,9 @@ class SPS_Settings {
 		$sanitized['nc_db_name'] = isset( $input['nc_db_name'] ) ? sanitize_text_field( trim( $input['nc_db_name'] ) ) : '';
 		$sanitized['nc_db_user'] = isset( $input['nc_db_user'] ) ? sanitize_text_field( trim( $input['nc_db_user'] ) ) : '';
 
-		if ( ! empty( $input['nc_db_password'] ) ) {
+		if ( ! empty( $input['nc_db_password'] ) && isset( $existing['nc_db_password'] ) && $input['nc_db_password'] === $existing['nc_db_password'] && '' !== self::decrypt( $existing['nc_db_password'] ) ) {
+			$sanitized['nc_db_password'] = $existing['nc_db_password'];
+		} elseif ( ! empty( $input['nc_db_password'] ) ) {
 			$sanitized['nc_db_password'] = self::encrypt( trim( $input['nc_db_password'] ) );
 		} else {
 			$sanitized['nc_db_password'] = isset( $existing['nc_db_password'] ) ? $existing['nc_db_password'] : '';
@@ -692,6 +735,12 @@ class SPS_Settings {
 
 		// Debug Modus
 		$sanitized['debug_mode'] = ! empty( $input['debug_mode'] ) ? 1 : 0;
+
+		// Nextcloud-Formular-IDs (Textarea "form=id" oder Array)
+		$sanitized['nc_form_ids'] = self::parse_form_id_map( isset( $input['nc_form_ids'] ) ? $input['nc_form_ids'] : array() );
+
+		// Übertragung als Kunde (Checkbox: fehlt = aus)
+		$sanitized['submit_as_user'] = ! empty( $input['submit_as_user'] ) ? 1 : 0;
 
 		return $sanitized;
 	}
@@ -791,6 +840,63 @@ class SPS_Settings {
 		}
 
 		return $options[ $key ];
+	}
+
+	/**
+	 * Zuordnung SPS-Formular-ID => Nextcloud-Formular-ID.
+	 *
+	 * @return array
+	 */
+	public static function get_form_id_map() {
+		$map = self::get_setting( 'nc_form_ids', array() );
+		return is_array( $map ) ? $map : self::parse_form_id_map( $map );
+	}
+
+	/**
+	 * "a=1\nb=2", "a=1,b=2" oder Array in Map umwandeln.
+	 *
+	 * @param mixed $raw Eingabe.
+	 * @return array
+	 */
+	public static function parse_form_id_map( $raw ) {
+		$map = array();
+		if ( is_array( $raw ) ) {
+			foreach ( $raw as $form => $id ) {
+				if ( is_numeric( $id ) && (int) $id > 0 && '' !== sanitize_key( $form ) ) {
+					$map[ sanitize_key( $form ) ] = (int) $id;
+				}
+			}
+			return $map;
+		}
+		foreach ( preg_split( '/[\r\n,;]+/', (string) $raw ) as $line ) {
+			$parts = array_map( 'trim', explode( '=', $line, 2 ) );
+			if ( 2 === count( $parts ) && is_numeric( $parts[1] ) && (int) $parts[1] > 0 && '' !== sanitize_key( $parts[0] ) ) {
+				$map[ sanitize_key( $parts[0] ) ] = (int) $parts[1];
+			}
+		}
+		return $map;
+	}
+
+	/**
+	 * URL der Datenschutzerklärung: Einstellung → WP-Datenschutzseite → /datenschutz/.
+	 *
+	 * @return string
+	 */
+	public static function get_privacy_url() {
+		$url = (string) self::get_setting( 'privacy_url', '' );
+		if ( '' === $url && function_exists( 'get_privacy_policy_url' ) ) {
+			$url = (string) get_privacy_policy_url();
+		}
+		return '' !== $url ? $url : home_url( '/datenschutz/' );
+	}
+
+	/**
+	 * Wird ein eigener Schlüssel (SPS_ENCRYPTION_KEY) verwendet?
+	 *
+	 * @return bool
+	 */
+	public static function has_dedicated_key() {
+		return defined( 'SPS_ENCRYPTION_KEY' ) && ! empty( SPS_ENCRYPTION_KEY );
 	}
 
 	/**

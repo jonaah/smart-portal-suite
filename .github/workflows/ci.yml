@@ -48,6 +48,9 @@ jobs:
           fi
           echo "All PHP files passed syntax check on PHP ${{ matrix.php-version }}."
 
+      - name: Offline-Tests (Antwort-Aufbereitung & Forms-Zuordnung)
+        run: php tests/php/test-mapping.php
+
   json-validation:
     name: Validate JSON Schemas
     runs-on: ubuntu-latest

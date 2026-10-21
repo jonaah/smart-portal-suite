@@ -2,8 +2,8 @@
 /**
  * AJAX Handler for Form Submissions
  *
- * Handles submission validation, honeypot/anti-bot protection, recursive sanitization,
- * file uploads, and Nextcloud Forms / WebDAV fallback integration.
+ * Handles submission validation, honeypot/anti-bot protection, recursive sanitization
+ * and file uploads. Die Übertragung selbst erledigt SPS_Submission.
  *
  * @package SmartPortalSuite
  */
@@ -49,6 +49,18 @@ class SPS_Ajax_Handler {
 	private function __construct() {
 		add_action( 'wp_ajax_' . self::ACTION_SUBMIT, array( $this, 'handle_submit' ) );
 		add_action( 'wp_ajax_nopriv_' . self::ACTION_SUBMIT, array( $this, 'handle_submit' ) );
+
+		// Frischer Nonce für gecachte Formularseiten.
+		add_action( 'wp_ajax_sps_refresh_nonce', array( $this, 'refresh_nonce' ) );
+		add_action( 'wp_ajax_nopriv_sps_refresh_nonce', array( $this, 'refresh_nonce' ) );
+	}
+
+	/**
+	 * Liefert einen frischen Formular-Nonce (nicht cachen).
+	 */
+	public function refresh_nonce() {
+		nocache_headers();
+		wp_send_json_success( array( 'nonce' => wp_create_nonce( self::NONCE_ACTION ) ) );
 	}
 
 	/**
@@ -60,7 +72,10 @@ class SPS_Ajax_Handler {
 		// 1. CSRF Nonce Verification
 		$nonce = isset( $payload['nonce'] ) ? $payload['nonce'] : '';
 		if ( ! wp_verify_nonce( $nonce, self::NONCE_ACTION ) ) {
-			wp_send_json_error( array( 'message' => __( 'Sicherheitsüberprüfung fehlgeschlagen. Bitte laden Sie die Seite neu.', 'smart-portal-suite' ) ), 403 );
+			wp_send_json_error( array(
+				'message' => __( 'Sicherheitsüberprüfung fehlgeschlagen. Bitte laden Sie die Seite neu.', 'smart-portal-suite' ),
+				'code'    => 'invalid_nonce',
+			), 403 );
 		}
 
 		// 2. Anti-Bot: Honeypot Check
@@ -75,8 +90,8 @@ class SPS_Ajax_Handler {
 			wp_send_json_error( array( 'message' => __( 'Formular zu schnell abgesendet.', 'smart-portal-suite' ) ), 400 );
 		}
 
-		$form_type = isset( $payload['form_type'] ) ? sanitize_text_field( $payload['form_type'] ) : '';
-		$form_id   = isset( $payload['form_id'] ) ? sanitize_key( $payload['form_id'] ) : '';
+		$form_id     = isset( $payload['form_id'] ) ? sanitize_key( $payload['form_id'] ) : '';
+		$form_type   = isset( $payload['form_type'] ) ? sanitize_text_field( $payload['form_type'] ) : '';
 		$raw_answers = isset( $payload['answers'] ) ? $payload['answers'] : array();
 
 		// Answers may be a JSON string if submitted via FormData
@@ -87,104 +102,53 @@ class SPS_Ajax_Handler {
 			}
 		}
 
-		if ( empty( $form_type ) && ! empty( $form_id ) ) {
-			$form_type = $form_id;
+		// Schema immer serverseitig laden – Zuordnung, Formular-ID und Regeln kommen von dort.
+		$renderer = SPS_Form_Renderer::get_instance();
+		$schema   = '' !== $form_id ? $renderer->load_schema( $form_id ) : null;
+		if ( ! $schema && '' !== $form_type ) {
+			$schema = $renderer->load_schema( sanitize_key( sanitize_title( $form_type ) ) );
 		}
 
-		if ( empty( $form_type ) || empty( $raw_answers ) || ! is_array( $raw_answers ) ) {
+		if ( ! is_array( $schema ) ) {
+			SPS_Diagnostics::log( sprintf( 'Übermittlung abgelehnt: Schema "%s" nicht gefunden.', $form_id ? $form_id : $form_type ), 'warning' );
+			wp_send_json_error( array( 'message' => __( 'Unbekanntes Formular.', 'smart-portal-suite' ) ), 400 );
+		}
+
+		if ( empty( $raw_answers ) || ! is_array( $raw_answers ) ) {
 			wp_send_json_error( array( 'message' => __( 'Fehlende oder unvollständige Formulardaten.', 'smart-portal-suite' ) ), 400 );
+		}
+
+		if ( ! empty( $schema['requires_login'] ) && ! is_user_logged_in() ) {
+			wp_send_json_error( array( 'message' => __( 'Bitte melden Sie sich an, um dieses Formular abzusenden.', 'smart-portal-suite' ) ), 403 );
 		}
 
 		// 4. Input Sanitization
 		$answers = $this->sanitize_answers( $raw_answers );
 
-		// 5. Handle File Uploads (if any)
+		// 5. Datei-Uploads (bleiben bis Request-Ende als tmp-Datei erhalten)
 		$uploaded_files = $this->process_uploaded_files();
-		if ( ! empty( $uploaded_files ) ) {
-			foreach ( $uploaded_files as $field_key => $file_items ) {
-				$answers[ $field_key . '_files' ] = $file_items;
+
+		$meta = array();
+		if ( ! empty( $payload['file_descriptions'] ) ) {
+			$desc = is_string( $payload['file_descriptions'] ) ? json_decode( wp_unslash( $payload['file_descriptions'] ), true ) : $payload['file_descriptions'];
+			if ( is_array( $desc ) ) {
+				$meta['file_descriptions'] = $this->sanitize_answers( $desc );
 			}
 		}
 
-		// 6. Process Nextcloud Submission
-		$nc_forms           = new SPS_NC_Forms();
-		$webdav             = new SPS_NC_WebDAV();
-		$fallback_triggered = false;
-		$error_message = '';
-		$nc_form_id = '';
+		$schema_id = sanitize_key( isset( $schema['form_id'] ) ? $schema['form_id'] : $form_id );
+		SPS_Diagnostics::log( sprintf( 'Formularübertragung gestartet: %s', $schema_id ), 'info' );
 
-		SPS_Diagnostics::log( sprintf( 'Formularübertragung gestartet: %s', $form_type ), 'info' );
-		
-		// 1. Resolve Form ID
-		$form_id_result = $nc_forms->resolve_form_id( $form_type );
-		if ( is_wp_error( $form_id_result ) ) {
-			$error_message = 'Formular ID konnte nicht aufgelöst werden: ' . $form_id_result->get_error_message();
-			SPS_Diagnostics::log( $error_message, 'warning' );
-			$fallback_triggered = true;
-		} else {
-			$nc_form_id = $form_id_result;
-			$questions  = $nc_forms->get_questions( $nc_form_id );
+		// 6. Nextcloud Forms, sonst WebDAV-Fallback
+		$result = SPS_Submission::process( $schema, $answers, $uploaded_files, get_current_user_id(), $meta );
 
-			if ( is_wp_error( $questions ) || empty( $questions ) ) {
-				$error_message = 'Formulardefinition konnte nicht geladen werden (ID: ' . $nc_form_id . ')';
-				SPS_Diagnostics::log( $error_message, 'warning' );
-				$fallback_triggered = true;
-			} else {
-				$mapped_answers = $nc_forms->map_answers( $questions, $answers );
-				if ( empty( $mapped_answers ) ) {
-					$error_message = 'Antwort-Mapping ergab leeres Payload.';
-					SPS_Diagnostics::log( $error_message, 'warning' );
-					$fallback_triggered = true;
-				} else {
-					$submit_result = $nc_forms->submit_form( $nc_form_id, $mapped_answers );
-					if ( is_wp_error( $submit_result ) ) {
-						$error_message = 'Forms API Submission fehlgeschlagen: ' . $submit_result->get_error_message();
-						SPS_Diagnostics::log( $error_message, 'warning' );
-						$fallback_triggered = true;
-					}
-				}
-			}
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => __( 'Es gab einen Fehler bei der Übermittlung. Bitte versuchen Sie es später erneut oder kontaktieren Sie uns direkt.', 'smart-portal-suite' ) ), 500 );
 		}
-
-		// WebDAV Fallback if API fails
-		if ( $fallback_triggered ) {
-			SPS_Diagnostics::log( sprintf( 'Leite WebDAV-Fallback für "%s" ein (Grund: %s)', $form_type, $error_message ), 'warning' );
-
-			$fallback_result = $webdav->store_lead_fallback( $answers, sanitize_title( $form_type ) );
-			if ( is_wp_error( $fallback_result ) ) {
-				$fatal_err = 'WebDAV Fallback fehlgeschlagen: ' . $fallback_result->get_error_message();
-				SPS_Diagnostics::log( $fatal_err, 'error' );
-				wp_send_json_error( array( 'message' => __( 'Es gab einen Fehler bei der Übermittlung. Bitte versuchen Sie es später erneut.', 'smart-portal-suite' ) ), 500 );
-			}
-			
-			SPS_Diagnostics::log( sprintf( 'Lead für "%s" erfolgreich per WebDAV gespeichert.', $form_type ), 'info' );
-
-			// Admin Benachrichtigung per E-Mail senden
-			$admin_email = SPS_Settings::get_setting( 'admin_email' );
-			if ( ! empty( $admin_email ) && is_email( $admin_email ) ) {
-				$subject = sprintf( '[%s] Warnung: Nextcloud Forms Fallback aktiv (%s)', get_bloginfo( 'name' ), $form_type );
-				$body    = sprintf(
-					"Hallo Administrator,\n\neine Formularübermittlung für \"%s\" konnte nicht direkt an die Nextcloud Forms API übergeben werden.\n\nGrund: %s\n\nDie Lead-Daten wurden sicher als JSON im WebDAV-Fallback-Verzeichnis abgelegt.\n\nZeitpunkt: %s\nWebsite: %s",
-					$form_type,
-					$error_message,
-					current_time( 'mysql' ),
-					home_url()
-				);
-				wp_mail( $admin_email, $subject, $body );
-			}
-
-			// If fallback succeeds, we can still show a success message to the user!
-			wp_send_json_success( array(
-				'message' => __( 'Formulardaten erfolgreich empfangen (Fallback).', 'smart-portal-suite' ),
-				'form_id' => $form_type,
-			) );
-		}
-
-		SPS_Diagnostics::log( sprintf( 'Formular "%s" erfolgreich an Nextcloud Forms übertragen (Form ID: %s).', $form_type, $nc_form_id ), 'info' );
 
 		wp_send_json_success( array(
 			'message' => __( 'Formulardaten erfolgreich übermittelt.', 'smart-portal-suite' ),
-			'form_id' => $nc_form_id,
+			'form_id' => $schema_id,
 		) );
 	}
 

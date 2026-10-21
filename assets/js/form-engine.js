@@ -2129,12 +2129,35 @@ window.SPS = window.SPS || {};
                 }
             });
 
-            fetch(this.ajaxUrl, {
+            const send = () => fetch(this.ajaxUrl, {
                 method: 'POST',
                 body: formData,
                 credentials: 'same-origin'
+            }).then(res => res.json());
+
+            // Abgelaufener Nonce (z. B. gecachte Seite): einmal frischen Nonce holen und erneut senden.
+            const refreshNonce = () => {
+                const fd = new FormData();
+                fd.append('action', 'sps_refresh_nonce');
+                return fetch(this.ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+                    .then(res => res.json())
+                    .then(r => {
+                        if (r && r.success && r.data && r.data.nonce) {
+                            this.nonce = r.data.nonce;
+                            formData.set('nonce', r.data.nonce);
+                            return true;
+                        }
+                        return false;
+                    });
+            };
+
+            send()
+            .then(data => {
+                if (!data.success && data.data && data.data.code === 'invalid_nonce') {
+                    return refreshNonce().then(ok => (ok ? send() : data));
+                }
+                return data;
             })
-            .then(res => res.json())
             .then(data => {
                 if (data.success) {
                     this.renderSuccess(data.data && data.data.message ? data.data.message : 'Ihre Anfrage wurde erfolgreich übermittelt.');
