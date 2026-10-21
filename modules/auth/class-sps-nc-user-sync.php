@@ -71,9 +71,11 @@ class SPS_NC_User_Sync {
 		}
 
 		$user_id        = $user->ID;
-		$already_linked = get_user_meta( $user_id, 'nextcloud_social_linked', true );
+		$linked        = '1' === get_user_meta( $user_id, 'nextcloud_linked', true );
+		$social_linked = '1' === get_user_meta( $user_id, 'nextcloud_social_linked', true );
+		$db_configured = '' !== (string) SPS_Settings::get_setting( 'nc_db_host', '' );
 
-		if ( '1' === $already_linked ) {
+		if ( $linked && ( $social_linked || ! $db_configured ) ) {
 			return;
 		}
 
@@ -154,41 +156,52 @@ class SPS_NC_User_Sync {
 			'password_set'    => false,
 		);
 
+		$groups_raw = SPS_Settings::get_setting( 'nc_sync_auto_groups', 'Hauseigner' );
+		$groups     = array_values( array_filter( array_map( 'trim', explode( ',', (string) $groups_raw ) ) ) );
+		$stored     = SPS_NC_Client::get_user_credentials( $user_id );
+		$password   = null;
+		$outside    = false;
+
 		// ---------------------------------------------------
-		// 1. Existenzprüfung in Nextcloud via OCS
+		// 1. Konto anlegen (Gruppen direkt mitgeben – Pflicht für Gruppenadmins)
 		// ---------------------------------------------------
 		$user_exists = $client->user_exists( $nc_username );
 
 		if ( ! $user_exists ) {
-			$initial_password = wp_generate_password( 24, true, true );
-			$create_res = $client->create_user( $nc_username, $initial_password, $email, $display_name );
+			$initial_password = wp_generate_password( 32, true, true );
+			$create_res       = $client->create_user( $nc_username, $initial_password, $email, $display_name, $groups );
 
-			if ( is_wp_error( $create_res ) ) {
+			if ( is_wp_error( $create_res ) && 'nc_user_exists' === $create_res->get_error_code() ) {
+				// Existiert, ist für den Service-Account (Gruppenadmin) aber nicht sichtbar.
+				SPS_Diagnostics::log( sprintf( 'Nextcloud-Konto "%s" existiert bereits außerhalb der verwalteten Gruppen.', $nc_username ), 'warning' );
+				$user_exists = true;
+				$outside     = true;
+			} elseif ( is_wp_error( $create_res ) ) {
 				$msg = sprintf( 'Nextcloud User-Anlage für "%s" fehlgeschlagen: %s', $nc_username, $create_res->get_error_message() );
 				SPS_Diagnostics::log( $msg, 'error' );
 				update_user_meta( $user_id, 'nextcloud_sync_error', $msg );
 				return array( 'success' => false, 'message' => $msg, 'details' => $details );
+			} else {
+				$details['account_created'] = true;
+				$details['groups_added']    = $groups;
+				$password                   = $initial_password;
+				SPS_Diagnostics::log( sprintf( 'Nextcloud-Konto für "%s" erstellt (Gruppen: %s).', $nc_username, implode( ', ', $groups ) ), 'info' );
 			}
-
-			$details['account_created'] = true;
-			SPS_Diagnostics::log( sprintf( 'Nextcloud-Konto für "%s" erfolgreich erstellt.', $nc_username ), 'info' );
 		} else {
 			SPS_Diagnostics::log( sprintf( 'Nextcloud-Konto für "%s" existiert bereits.', $nc_username ), 'debug' );
 		}
 
 		// ---------------------------------------------------
-		// 2. Automatische Gruppenzuweisung
+		// 2. Gruppenzuweisung für bestehende Konten
 		// ---------------------------------------------------
-		$groups_raw = SPS_Settings::get_setting( 'nc_sync_auto_groups', 'Hauseigner' );
-		$groups = array_filter( array_map( 'trim', explode( ',', $groups_raw ) ) );
-
-		foreach ( $groups as $group_id ) {
-			$group_res = $client->add_user_to_group( $nc_username, $group_id );
-			if ( ! is_wp_error( $group_res ) ) {
-				$details['groups_added'][] = $group_id;
-				SPS_Diagnostics::log( sprintf( 'Benutzer "%s" zu Nextcloud-Gruppe "%s" zugewiesen.', $nc_username, $group_id ), 'debug' );
-			} else {
-				SPS_Diagnostics::log( sprintf( 'Warnung: Zuweisung zu Gruppe "%s" fehlgeschlagen: %s', $group_id, $group_res->get_error_message() ), 'warning' );
+		if ( $user_exists ) {
+			foreach ( $groups as $group_id ) {
+				$group_res = $client->add_user_to_group( $nc_username, $group_id );
+				if ( ! is_wp_error( $group_res ) ) {
+					$details['groups_added'][] = $group_id;
+				} else {
+					SPS_Diagnostics::log( sprintf( 'Warnung: Zuweisung zu Gruppe "%s" fehlgeschlagen: %s', $group_id, $group_res->get_error_message() ), 'warning' );
+				}
 			}
 		}
 
@@ -204,33 +217,42 @@ class SPS_NC_User_Sync {
 		}
 
 		// ---------------------------------------------------
-		// 4. Passwort aktiv setzen & verschlüsselt speichern
+		// 4. Passwort für die Formularübertragung als Kunde
+		//    Neu angelegt → Initialpasswort übernehmen.
+		//    Bestehend → nur setzen, wenn keines gespeichert ist (oder $force).
 		// ---------------------------------------------------
-		$sync_password = wp_generate_password( 24, true, true );
-		$pwd_res = $client->set_user_password( $nc_username, $sync_password );
+		$needs_password = null === $password && ( $force || ! $stored || $stored['username'] !== $nc_username );
 
-		if ( is_wp_error( $pwd_res ) ) {
-			$msg = sprintf( 'Passwort-Aktualisierung für "%s" fehlgeschlagen: %s', $nc_username, $pwd_res->get_error_message() );
-			SPS_Diagnostics::log( $msg, 'error' );
-			update_user_meta( $user_id, 'nextcloud_sync_error', $msg );
-			return array( 'success' => false, 'message' => $msg, 'details' => $details );
+		if ( $needs_password ) {
+			$password = wp_generate_password( 32, true, true );
+			$pwd_res  = $client->set_user_password( $nc_username, $password );
+
+			if ( is_wp_error( $pwd_res ) ) {
+				$msg = $outside
+					? sprintf( 'Nextcloud-Konto "%s" existiert bereits außerhalb der Gruppe(n) %s – der Service-Account hat keinen Zugriff. Konto in Nextcloud der Gruppe hinzufügen und Sync wiederholen (%s).', $nc_username, implode( ', ', $groups ), $pwd_res->get_error_message() )
+					: sprintf( 'Passwort-Aktualisierung für "%s" fehlgeschlagen: %s', $nc_username, $pwd_res->get_error_message() );
+				SPS_Diagnostics::log( $msg, 'error' );
+				update_user_meta( $user_id, 'nextcloud_sync_error', $msg );
+				return array( 'success' => false, 'message' => $msg, 'details' => $details );
+			}
 		}
 
-		$encrypted = SPS_Settings::encrypt( $sync_password );
-		if ( empty( $encrypted ) ) {
-			$msg = 'Verschlüsselung des Nextcloud-Passworts fehlgeschlagen.';
-			SPS_Diagnostics::log( $msg, 'error' );
-			update_user_meta( $user_id, 'nextcloud_sync_error', $msg );
-			return array( 'success' => false, 'message' => $msg, 'details' => $details );
+		if ( null !== $password ) {
+			$encrypted = SPS_Settings::encrypt( $password );
+			if ( empty( $encrypted ) ) {
+				$msg = 'Verschlüsselung des Nextcloud-Passworts fehlgeschlagen.';
+				SPS_Diagnostics::log( $msg, 'error' );
+				update_user_meta( $user_id, 'nextcloud_sync_error', $msg );
+				return array( 'success' => false, 'message' => $msg, 'details' => $details );
+			}
+			update_user_meta( $user_id, 'nextcloud_password_enc', $encrypted );
+			$details['password_set'] = true;
 		}
 
 		update_user_meta( $user_id, 'nextcloud_username', $nc_username );
-		update_user_meta( $user_id, 'nextcloud_password_enc', $encrypted );
 		update_user_meta( $user_id, 'nextcloud_linked', '1' );
 		update_user_meta( $user_id, 'nextcloud_synced_at', current_time( 'mysql' ) );
 		delete_user_meta( $user_id, 'nextcloud_sync_error' );
-
-		$details['password_set'] = true;
 
 		$success_msg = sprintf( 'Benutzer "%s" (ID %d) erfolgreich mit Nextcloud synchronisiert.', $nc_username, $user_id );
 		SPS_Diagnostics::log( $success_msg, 'info', $details );

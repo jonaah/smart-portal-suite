@@ -7,6 +7,27 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 ---
 
 ## [Unreleased]
+### Behoben
+- **Nextcloud-Forms-Übertragung:** Antworten werden im Format der Forms-API v3 gesendet (`{"<questionId>": [werte]}`, Auswahl als Options-ID). Das bisherige Listenformat entsprach nicht der API; Übertragungen landeten dadurch im Fallback.
+- **Feldzuordnung:** Namen werden unabhängig von Groß-/Kleinschreibung und `-`/`_` zugeordnet; zusammengesetzte Felder (`plz_ort`) nur noch, wenn kein gleichnamiges Feld existiert. Radio-Werte (z. B. Fläche 125) werden über den Auswahltext der passenden Option zugeordnet, `0` wird übertragen.
+- **Gebäude-Check:** Ableitungen des bisherigen Formulars (Außenwand, Fenster, Baujahr-Detail, Sanierungsjahre, Wärmeverbrauch original/kWh) laufen wieder – serverseitig als Regeln im Schema (`submit.rules`).
+- **Formular-ID:** feste Zuordnung je Formular in den Einstellungen; die Titelsuche nutzt jetzt `nc_form_title`, `form_type` und `title` und auch geteilte Formulare.
+- **WebDAV-Fallback** prüft den HTTP-Status, legt fehlende Ordner an und speichert hochgeladene Dateien mit. Vorher meldete er auch bei Fehlern Erfolg.
+- **Datei-Uploads** werden über den Upload-Endpunkt von Forms übertragen (Session-Cookies bleiben erhalten).
+- **Kein Rückfallwert mehr auf `nc.effizientes-heim.de`**; ohne Konfiguration findet keine Übertragung statt.
+- **Migrationsreste entfernt** (`nc_decrypt`, `sync_wp_user_to_nextcloud`): eingeloggte Kunden senden mit ihrem eigenen NC-Konto, bei 401/403/404 automatisch mit dem Service-Account.
+- **Konten-Sync als Gruppenadmin:** Gruppen werden bei der Anlage mitgegeben; NC-Passwort wird nur noch gesetzt, wenn keines gespeichert ist.
+- **Datenschutz-Link:** leer = WordPress-Datenschutzseite.
+- **Abgelaufener Nonce** (gecachte Seiten): Formular holt einmal einen frischen Nonce und sendet erneut.
+- `requires_login` wird auch beim Absenden geprüft.
+
+### Hinzugefügt
+- **WP-CLI:** `wp sps configure`, `wp sps doctor`, `wp sps mapping`, `wp sps test-submit`, `wp sps sync-user`, `wp sps retry-leads`.
+- **Nachreichen:** Fallback-Leads werden stündlich (WP-Cron) erneut an Forms übertragen und danach nach `_uebertragen/` verschoben.
+- **Einstellungen:** Nextcloud-Formular-IDs, „Übertragung als Kunde“.
+- `uninstall.php` entfernt Einstellungen und gespeicherte Zugangsdaten.
+- Offline-Tests `tests/php/test-mapping.php` (auch in der CI).
+
 
 ---
 

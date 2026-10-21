@@ -3,6 +3,222 @@
   "form_type": "Gebaeude-Check",
   "title": "Gebäude-Check",
   "nc_form_title": "Gebaeudedaten",
+  "submit": {
+    "rules": [
+      {
+        "_comment": "Ableitungen wie im bisherigen Gebäude-Check (legacy/legacy-forms/gebaeude-check.txt) – Reihenfolge beachten"
+      },
+      {
+        "set": "aussenwand",
+        "value": "Holzbau / Fertighaus / Holzrahmenbau mit dämmender Füllung",
+        "when": {
+          "aussenwand_typ": "Holzbau / Fertighaus"
+        }
+      },
+      {
+        "set": "aussenwand",
+        "value": "Zweischalige Wand mit Dämmschicht",
+        "when": {
+          "aussenwand_typ": "Zweischalig",
+          "aussenwand_daemmung": "Ja"
+        }
+      },
+      {
+        "set": "aussenwand",
+        "value": "Zweischalige Wand ohne Dämmschicht",
+        "when": {
+          "aussenwand_typ": "Zweischalig",
+          "aussenwand_daemmung": "Nein"
+        }
+      },
+      {
+        "set": "aussenwand",
+        "value": "Massivwand aus Hochlochziegeln / Bims-Hohlsteinen / porösem Mauerwerk",
+        "when": {
+          "aussenwand_typ": "Massivwand",
+          "aussenwand_material": "Hochlochziegel"
+        }
+      },
+      {
+        "set": "aussenwand",
+        "value": "Massivwand aus Vollziegel / Naturstein / Kalksandstein / Bims-Vollstein bis 20 cm",
+        "when": {
+          "aussenwand_typ": "Massivwand",
+          "aussenwand_material": "Vollziegel",
+          "aussenwand_dicke_voll": "< 20 cm"
+        }
+      },
+      {
+        "set": "aussenwand",
+        "value": "Massivwand aus Vollziegel / Naturstein / Kalksandstein / Bims-Vollstein 20–30 cm",
+        "when": {
+          "aussenwand_typ": "Massivwand",
+          "aussenwand_material": "Vollziegel",
+          "aussenwand_dicke_voll": "20–30 cm"
+        }
+      },
+      {
+        "set": "aussenwand",
+        "value": "Massivwand aus Vollziegel / Naturstein / Kalksandstein / Bims-Vollstein über 30 cm",
+        "when": {
+          "aussenwand_typ": "Massivwand",
+          "aussenwand_material": "Vollziegel",
+          "aussenwand_dicke_voll": "> 30 cm"
+        }
+      },
+      {
+        "set": "aussenwand",
+        "value": "Sonstige massive Wand bis 20 cm",
+        "when": {
+          "aussenwand_typ": "Massivwand",
+          "aussenwand_material": "Sonstige",
+          "aussenwand_dicke_sonst": "< 20 cm"
+        }
+      },
+      {
+        "set": "aussenwand",
+        "value": "Sonstige massive Wand über 20 cm",
+        "when": {
+          "aussenwand_typ": "Massivwand",
+          "aussenwand_material": "Sonstige",
+          "aussenwand_dicke_sonst": "> 20 cm"
+        }
+      },
+      {
+        "set": "aussenwand",
+        "value": "Fachwerk mit Lehm- oder Lehmziegelausfachung",
+        "when": {
+          "aussenwand_typ": "Fachwerk",
+          "aussenwand_fachwerk": "Lehm"
+        }
+      },
+      {
+        "set": "aussenwand",
+        "value": "Fachwerk mit Ziegel- oder Natursteinausfachung",
+        "when": {
+          "aussenwand_typ": "Fachwerk",
+          "aussenwand_fachwerk": "Ziegel / Naturstein"
+        }
+      },
+      {
+        "set": "fenster",
+        "value": "Holzfenster, einfach verglast",
+        "when": {
+          "fenster_typ": "Holzfenster",
+          "verglasung": "Einfachverglasung"
+        }
+      },
+      {
+        "set": "fenster",
+        "value": "Holzfenster, 2-Scheiben-Isolierverglasung / Kastenfenster / Verbundfenster",
+        "when": {
+          "fenster_typ": "Holzfenster",
+          "verglasung": "Doppelverglasung"
+        }
+      },
+      {
+        "set": "fenster",
+        "value": "Kunststofffenster, Isolierverglasung",
+        "when": {
+          "fenster_typ": "Kunststofffenster"
+        }
+      },
+      {
+        "set": "fenster",
+        "value": "Aluminium- oder Stahlfenster, Isolierverglasung",
+        "when": {
+          "fenster_typ": "Aluminium-/Stahl-Fenster"
+        }
+      },
+      {
+        "set": "baujahr",
+        "from": "baujahr_detail",
+        "type": "int",
+        "when": {
+          "baujahr": {
+            "gte": 2002
+          },
+          "baujahr_detail": {
+            "exists": true
+          }
+        }
+      },
+      {
+        "set": "aussenwand_sanierung_jahr",
+        "from": "baujahr",
+        "type": "int",
+        "when": {
+          "aussenwand_sanierung": {
+            "ne": "Ja, es gab eine Sanierung"
+          },
+          "baujahr": {
+            "exists": true
+          }
+        }
+      },
+      {
+        "set": "fenster_sanierung_jahr",
+        "from": "baujahr",
+        "type": "int",
+        "when": {
+          "fenster_sanierung": {
+            "ne": "Ja, es gab eine Sanierung"
+          },
+          "baujahr": {
+            "exists": true
+          }
+        }
+      },
+      {
+        "set": "dach_sanierung_jahr",
+        "from": "baujahr",
+        "type": "int",
+        "when": {
+          "dach_sanierung": {
+            "ne": "Ja, es gab eine Sanierung"
+          },
+          "baujahr": {
+            "exists": true
+          }
+        }
+      },
+      {
+        "set": "keller_sanierung_jahr",
+        "from": "baujahr",
+        "type": "int",
+        "when": {
+          "keller_sanierung": {
+            "ne": "Ja, es gab eine Sanierung"
+          },
+          "baujahr": {
+            "exists": true
+          }
+        }
+      },
+      {
+        "convert": "waermeverbrauch",
+        "original": "waermeverbrauch-original",
+        "kwh": "waermeverbrauch-kwh"
+      },
+      {
+        "remove": [
+          "aussenwand_typ",
+          "aussenwand_material",
+          "aussenwand_dicke_voll",
+          "aussenwand_dicke_sonst",
+          "aussenwand_fachwerk",
+          "aussenwand_daemmung",
+          "aussenwand_sanierung",
+          "fenster_typ",
+          "verglasung",
+          "fenster_sanierung",
+          "dach_sanierung",
+          "keller_sanierung",
+          "baujahr_detail"
+        ]
+      }
+    ]
+  },
   "steps": [
     {
       "id": "typ",

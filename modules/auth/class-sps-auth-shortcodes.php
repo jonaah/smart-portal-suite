@@ -221,7 +221,7 @@ class SPS_Auth_Shortcodes {
 		$this->enqueue_auth_assets();
 
 		$default_login   = SPS_Settings::get_setting( 'auth_login_url', '/login/' );
-		$default_privacy = SPS_Settings::get_setting( 'privacy_url', '/datenschutzerklaerung' );
+		$default_privacy = SPS_Settings::get_privacy_url();
 
 		$args = shortcode_atts(
 			array(
