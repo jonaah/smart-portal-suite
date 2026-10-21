@@ -195,6 +195,14 @@ class SPS_Settings {
 			'sps_section_nextcloud'
 		);
 
+		add_settings_field(
+			'nc_file_mode',
+			__( 'Dateien an Nextcloud', 'smart-portal-suite' ),
+			array( $this, 'render_field_nc_file_mode' ),
+			'smart-portal-suite',
+			'sps_section_nextcloud'
+		);
+
 		// Sektion 1b: Nextcloud Datenbank (Social Login Sync)
 		add_settings_section(
 			'sps_section_nextcloud_db',
@@ -435,6 +443,21 @@ class SPS_Settings {
 			<input type="checkbox" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[submit_as_user]" value="1" <?php checked( 1, $value ); ?> />
 			<?php esc_html_e( 'Eingeloggte Kunden senden mit ihrem eigenen Nextcloud-Konto (Formular muss für die Kundengruppe freigegeben sein). Besucher und Fehlerfälle laufen über den Service-Account.', 'smart-portal-suite' ); ?>
 		</label>
+		<?php
+	}
+
+	public function render_field_nc_file_mode() {
+		$mode = self::get_setting( 'nc_file_mode', 'webdav' );
+		$dir  = self::get_setting( 'webdav_upload_dir', 'SPS_Uploads' );
+		?>
+		<select name="<?php echo esc_attr( self::OPTION_NAME ); ?>[nc_file_mode]">
+			<option value="webdav" <?php selected( 'webdav', $mode ); ?>><?php esc_html_e( 'WebDAV-Ordner (empfohlen, funktioniert auch bei Multipart-Sperre)', 'smart-portal-suite' ); ?></option>
+			<option value="forms" <?php selected( 'forms', $mode ); ?>><?php esc_html_e( 'Dateifrage in Nextcloud Forms (benötigt Multipart)', 'smart-portal-suite' ); ?></option>
+		</select>
+		<p>
+			<input type="text" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[webdav_upload_dir]" value="<?php echo esc_attr( $dir ); ?>" class="regular-text" placeholder="SPS_Uploads" />
+		</p>
+		<p class="description"><?php esc_html_e( 'Ordner im Home des Service-Accounts. Textfragen mit dem Namen des Upload-Felds erhalten Dateinamen und Ablageort, eine Frage "dateiablage" den Ordner.', 'smart-portal-suite' ); ?></p>
 		<?php
 	}
 
@@ -738,6 +761,11 @@ class SPS_Settings {
 
 		// Nextcloud-Formular-IDs (Textarea "form=id" oder Array)
 		$sanitized['nc_form_ids'] = self::parse_form_id_map( isset( $input['nc_form_ids'] ) ? $input['nc_form_ids'] : array() );
+
+		// Dateien an Nextcloud
+		$sanitized['nc_file_mode'] = ( isset( $input['nc_file_mode'] ) && 'forms' === $input['nc_file_mode'] ) ? 'forms' : 'webdav';
+		$upload_dir                = isset( $input['webdav_upload_dir'] ) ? trim( sanitize_text_field( $input['webdav_upload_dir'] ), '/' ) : 'SPS_Uploads';
+		$sanitized['webdav_upload_dir'] = '' !== $upload_dir ? $upload_dir : 'SPS_Uploads';
 
 		// Übertragung als Kunde (Checkbox: fehlt = aus)
 		$sanitized['submit_as_user'] = ! empty( $input['submit_as_user'] ) ? 1 : 0;

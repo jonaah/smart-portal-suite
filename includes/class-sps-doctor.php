@@ -192,6 +192,24 @@ class SPS_Doctor {
 		$oauth = class_exists( 'WO_Server' ) || defined( 'WPOAUTH_VERSION' ) || defined( 'WPOAUTH_FILE' );
 		$this->add( 'oauth', 'WP OAuth Server', $oauth ? 'ok' : 'warn', $oauth ? 'aktiv' : 'nicht erkannt – SSO zu Nextcloud nicht möglich' );
 
+		// Datei-Uploads (Staging ohne Multipart).
+		$staging = SPS_Upload_Staging::dir();
+		if ( is_wp_error( $staging ) ) {
+			$this->add( 'staging', 'Upload-Staging', 'error', $staging->get_error_message() );
+		} else {
+			$in_root = SPS_Upload_Staging::is_in_webroot();
+			$this->add(
+				'staging',
+				'Upload-Staging',
+				$in_root ? 'warn' : 'ok',
+				$staging . ' (max. ' . size_format( SPS_Upload_Staging::max_size() ) . ' je Datei)' . ( $in_root ? ' – liegt im Webroot (per .htaccess gesperrt). Besser: SPS_STAGING_DIR außerhalb des Webroots setzen.' : '' )
+			);
+		}
+		$mode = SPS_Submission::file_mode();
+		$this->add( 'file_mode', 'Dateien an Nextcloud', 'ok', 'webdav' === $mode
+			? 'WebDAV-Ordner ' . SPS_Settings::get_setting( 'webdav_upload_dir', 'SPS_Uploads' )
+			: 'Forms-Dateifrage (Multipart – nur wenn der Hoster es zulässt)' );
+
 		$cron = wp_next_scheduled( SPS_Submission::CRON_HOOK );
 		$this->add( 'cron', 'Nachreichen (WP-Cron)', $cron ? 'ok' : 'warn', $cron ? 'nächster Lauf ' . gmdate( 'Y-m-d H:i', $cron ) . ' UTC' : 'nicht eingeplant' );
 	}
@@ -286,7 +304,9 @@ class SPS_Doctor {
 			foreach ( $report as $row ) {
 				if ( 'FEHLT (Pflicht)' === $row['status'] ) {
 					$errors[] = $row['name'];
-				} elseif ( 'ok' !== $row['status'] && 'Datei' !== $row['status'] ) {
+				} elseif ( 0 === strpos( $row['status'], 'Pflicht-Dateifrage' ) ) {
+					$errors[] = $row['name'] . ' (Pflicht-Dateifrage: in NC optional machen oder --file-mode=forms)';
+				} elseif ( 'ok' !== $row['status'] && 'Datei' !== $row['status'] && 0 !== strpos( $row['status'], 'Datei →' ) ) {
 					$warns[] = $row['name'] . ': ' . $row['status'];
 				}
 			}
@@ -422,7 +442,13 @@ class SPS_Doctor {
 
 			if ( 'file' === $type ) {
 				$row['source'] = $key;
-				$row['status'] = in_array( $key, $keys, true ) ? 'Datei' : ( $req ? 'FEHLT (Pflicht)' : 'keine Quelle' );
+				if ( ! in_array( $key, $keys, true ) ) {
+					$row['status'] = $req ? 'FEHLT (Pflicht)' : 'keine Quelle';
+				} elseif ( 'webdav' === SPS_Settings::get_setting( 'nc_file_mode', 'webdav' ) ) {
+					$row['status'] = $req ? 'Pflicht-Dateifrage – im WebDAV-Modus nicht befüllbar' : 'Datei → WebDAV (Frage bleibt leer)';
+				} else {
+					$row['status'] = 'Datei';
+				}
 				$rows[]        = $row;
 				continue;
 			}
@@ -485,6 +511,14 @@ class SPS_Doctor {
 				foreach ( (array) $rule['remove'] as $r ) {
 					$removed[] = SPS_Answer_Transformer::norm( $r );
 				}
+			}
+		}
+
+		// WebDAV-Dateimodus stellt den Ablageordner bereit.
+		foreach ( SPS_Answer_Transformer::flatten_steps( $schema ) as $step ) {
+			if ( isset( $step['type'] ) && 'upload' === $step['type'] ) {
+				$keys[] = 'dateiablage';
+				break;
 			}
 		}
 

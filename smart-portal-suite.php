@@ -3,7 +3,7 @@
  * Plugin Name:       Smart Portal Suite
  * Plugin URI:        https://effizientes-heim.de/
  * Description:       Multi-Step Formulare für Gebäude-Check und Projektanfragen mit Nextcloud-Anbindung.
- * Version:           0.4.0
+ * Version:           0.5.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Jonah Kleimann
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin-Konstanten definieren
-define( 'SPS_VERSION', '0.4.0' );
+define( 'SPS_VERSION', '0.5.0' );
 define( 'SPS_PLUGIN_FILE', __FILE__ );
 define( 'SPS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SPS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -37,6 +37,7 @@ require_once SPS_PLUGIN_DIR . 'includes/class-sps-form-manager.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-diagnostics.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-account-sync-page.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-submission.php';
+require_once SPS_PLUGIN_DIR . 'includes/class-sps-upload-staging.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-doctor.php';
 
 /**
@@ -73,6 +74,7 @@ function sps_init() {
 	SPS_NC_User_Sync::get_instance();
 	SPS_Auth_Shortcodes::get_instance();
 	SPS_Submission::init();
+	SPS_Upload_Staging::init();
 
 	if ( is_admin() ) {
 		SPS_Form_Manager::get_instance();
@@ -86,6 +88,7 @@ add_action( 'plugins_loaded', 'sps_init' );
  * Deaktivierung: geplantes Nachreichen entfernen.
  */
 register_deactivation_hook( __FILE__, array( 'SPS_Submission', 'unschedule' ) );
+register_deactivation_hook( __FILE__, array( 'SPS_Upload_Staging', 'unschedule' ) );
 
 /**
  * Automatischer Update-Checker via GitHub Releases (PUC v5).

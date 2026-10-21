@@ -6,6 +6,15 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 
 ---
 
+## [0.5.0]
+### Behoben
+- **Absenden bei Hostern mit Multipart-Sperre (z. B. Manitu):** Das Formular sendet kein `multipart/form-data` mehr (Ergebnis dort: HTTP 403). Antworten gehen als JSON an `admin-ajax.php?action=sps_submit_form`, Dateien vorher einzeln als Rohdaten (`application/octet-stream`) an `sps_upload_file`. Die Nonce-Erneuerung läuft per GET.
+- **Dateien an Nextcloud ohne Multipart:** Standard ist jetzt die Ablage per WebDAV-PUT in `SPS_Uploads/<formular>/<datum>_<email>_<id>/<feld>/`. Textfragen mit dem Namen des Upload-Felds erhalten Dateinamen, Beschreibung und Ablageort, eine Frage `dateiablage` den Ordner. Der Upload-Endpunkt von Forms (Multipart) ist optional (`nc_file_mode=forms`).
+
+### Hinzugefügt
+- **Upload-Staging** (`SPS_Upload_Staging`): Nonce-, Endungs-, Inhaltstyp- und Größenprüfung (max. 10 MB bzw. `post_max_size`), Bindung an Formular, Feld und Benutzer, Rate-Limit je IP, Ablage außerhalb des Webroots (PHP-Temp oder `SPS_STAGING_DIR`), stündliches Aufräumen nach 2 Stunden.
+- Einstellung „Dateien an Nextcloud“ (`--file-mode`, `--upload-dir`) und Prüfungen in `wp sps doctor` (Staging, Größenlimit, Pflicht-Dateifragen).
+
 ## [0.4.0]
 ### Behoben
 - **Nextcloud-Forms-Übertragung:** Antworten werden im Format der Forms-API v3 gesendet (`{"<questionId>": [werte]}`, Auswahl als Options-ID). Das bisherige Listenformat entsprach nicht der API; Übertragungen landeten dadurch im Fallback.

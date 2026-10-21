@@ -70,6 +70,17 @@ class SPS_Submission {
 	public static function process( array $schema, array $answers, array $files, $user_id = 0, array $meta = array() ) {
 		$form_id  = isset( $schema['form_id'] ) ? sanitize_key( $schema['form_id'] ) : 'form';
 		$prepared = SPS_Answer_Transformer::apply( $answers, $schema );
+
+		// Interne Zusatzdaten (nicht als Antwort übertragen, aber im Fallback-Lead erhalten).
+		$owner = $user_id ? get_userdata( $user_id ) : null;
+		$prepared['_sps_user_email'] = $owner ? $owner->user_email : '';
+		if ( ! empty( $meta['file_descriptions'] ) && is_array( $meta['file_descriptions'] ) ) {
+			$descs = array();
+			foreach ( $meta['file_descriptions'] as $field => $list ) {
+				$descs[ SPS_Answer_Transformer::norm( $field ) ] = array_values( (array) $list );
+			}
+			$prepared['_sps_file_descriptions'] = $descs;
+		}
 		$files    = self::normalize_files( $files );
 
 		$use_user = $user_id && (int) SPS_Settings::get_setting( 'submit_as_user', 1 );
@@ -160,10 +171,40 @@ class SPS_Submission {
 			return new WP_Error( 'sps_no_questions', sprintf( 'Nextcloud-Formular %d hat keine Fragen.', $nc_form_id ) );
 		}
 
+		$mode = self::file_mode();
+
+		// Dateien per WebDAV ablegen (PUT – funktioniert auch bei Multipart-Sperre).
+		// Textfragen mit dem Namen des Upload-Felds erhalten Dateinamen + Ablageort,
+		// eine Frage "dateiablage" den Ordner.
+		if ( 'webdav' === $mode && self::has_files( $files ) ) {
+			$stored = self::store_files_webdav( $schema, $prepared, $files, $client );
+			if ( is_wp_error( $stored ) ) {
+				return $stored;
+			}
+			if ( ! isset( $prepared['dateiablage'] ) ) {
+				$prepared['dateiablage'] = $stored['folder'];
+			}
+			foreach ( $stored['fields'] as $key => $info ) {
+				$prepared[ $key ] = implode( ', ', $info['names'] ) . ' (Nextcloud: ' . $info['path'] . ')';
+			}
+		}
+
+		// Interne Schlüssel nicht an Forms übertragen.
+		foreach ( array_keys( $prepared ) as $k ) {
+			if ( 0 === strpos( (string) $k, '_sps_' ) ) {
+				unset( $prepared[ $k ] );
+			}
+		}
+
 		$built = $forms->build_submission( $questions, $prepared, $schema );
 
 		foreach ( $built['files'] as $qid => $key ) {
 			if ( empty( $files[ $key ] ) ) {
+				continue;
+			}
+			if ( 'webdav' === $mode ) {
+				// Dateifragen in Forms bleiben leer; die Dateien liegen im WebDAV-Ordner.
+				unset( $built['answers'][ (string) $qid ] );
 				continue;
 			}
 			$values = $forms->upload_files( $nc_form_id, (int) $qid, $files[ $key ] );
@@ -191,6 +232,100 @@ class SPS_Submission {
 			'warnings'   => $built['warnings'],
 			'as'         => $client->is_service_account() ? 'Service-Account' : 'Benutzer ' . $client->get_username(),
 		);
+	}
+
+	/**
+	 * Wie gelangen Dateien nach Nextcloud?
+	 *  webdav: PUT in den Upload-Ordner des Service-Accounts (Standard, funktioniert immer)
+	 *  forms:  Upload-Endpunkt der Forms-API (multipart – bei manchen Hostern gesperrt)
+	 *
+	 * @return string
+	 */
+	public static function file_mode() {
+		return 'forms' === SPS_Settings::get_setting( 'nc_file_mode', 'webdav' ) ? 'forms' : 'webdav';
+	}
+
+	/**
+	 * Gibt es Dateien?
+	 *
+	 * @param array $files Normalisierte Dateien.
+	 * @return bool
+	 */
+	protected static function has_files( array $files ) {
+		foreach ( $files as $items ) {
+			if ( ! empty( $items ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Dateien einer Übermittlung per WebDAV ablegen.
+	 *
+	 * Ordner: <webdav_upload_dir>/<formular>/<Ymd_His>_<email>_<rand>/<feld>/<NN_datei>
+	 *
+	 * @param array         $schema   Schema.
+	 * @param array         $prepared Aufbereitete Antworten.
+	 * @param array         $files    norm(feld) => Liste aus array( 'path', 'name', 'type' ).
+	 * @param SPS_NC_Client $client   Client (WebDAV nutzt immer den Service-Account).
+	 * @return array|WP_Error array( 'folder' => …, 'fields' => feld => array( 'names', 'path' ) )
+	 */
+	protected static function store_files_webdav( array $schema, array $prepared, array $files, SPS_NC_Client $client ) {
+		$webdav  = new SPS_NC_WebDAV();
+		$base    = trim( (string) SPS_Settings::get_setting( 'webdav_upload_dir', 'SPS_Uploads' ), '/' );
+		$base    = '' !== $base ? $base : 'SPS_Uploads';
+		$form_id = isset( $schema['form_id'] ) ? sanitize_key( $schema['form_id'] ) : 'formular';
+
+		$who = '';
+		foreach ( array( 'e_mail', 'email' ) as $k ) {
+			if ( ! empty( $prepared[ $k ] ) && is_string( $prepared[ $k ] ) ) {
+				$who = $prepared[ $k ];
+				break;
+			}
+		}
+		if ( '' === $who && ! empty( $prepared['_sps_user_email'] ) ) {
+			$who = (string) $prepared['_sps_user_email'];
+		}
+		$who    = '' !== $who ? str_replace( '@', '_at_', sanitize_file_name( $who ) ) : 'anonym';
+		$descs  = isset( $prepared['_sps_file_descriptions'] ) && is_array( $prepared['_sps_file_descriptions'] ) ? $prepared['_sps_file_descriptions'] : array();
+		$folder = sprintf( '%s/%s/%s_%s_%s', $base, $form_id, gmdate( 'Ymd_His' ), $who, strtolower( wp_generate_password( 4, false, false ) ) );
+
+		$result = array(
+			'folder' => $folder,
+			'fields' => array(),
+		);
+
+		foreach ( $files as $field => $items ) {
+			if ( empty( $items ) ) {
+				continue;
+			}
+			$dir = $folder . '/' . sanitize_key( $field );
+			$ok  = $webdav->ensure_dir( $dir );
+			if ( is_wp_error( $ok ) ) {
+				return $ok;
+			}
+			$names = array();
+			foreach ( array_values( $items ) as $i => $f ) {
+				if ( empty( $f['path'] ) || ! is_readable( $f['path'] ) ) {
+					return new WP_Error( 'sps_upload_missing', 'Datei nicht lesbar: ' . ( isset( $f['name'] ) ? $f['name'] : '?' ) );
+				}
+				$name = sprintf( '%02d_%s', $i + 1, sanitize_file_name( $f['name'] ) );
+				$ok   = $webdav->put( $dir . '/' . $name, file_get_contents( $f['path'] ), ! empty( $f['type'] ) ? $f['type'] : 'application/octet-stream' );
+				if ( is_wp_error( $ok ) ) {
+					return $ok;
+				}
+				$desc    = isset( $descs[ $field ][ $i ] ) ? trim( (string) $descs[ $field ][ $i ] ) : '';
+				$names[] = '' !== $desc ? $f['name'] . ' – ' . $desc : $f['name'];
+			}
+			$result['fields'][ $field ] = array(
+				'names' => $names,
+				'path'  => $dir,
+			);
+		}
+
+		SPS_Diagnostics::log( sprintf( '%d Datei-Feld(er) per WebDAV abgelegt: %s', count( $result['fields'] ), $folder ), 'info' );
+		return $result;
 	}
 
 	/**

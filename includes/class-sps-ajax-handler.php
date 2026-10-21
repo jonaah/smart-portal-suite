@@ -125,8 +125,19 @@ class SPS_Ajax_Handler {
 		// 4. Input Sanitization
 		$answers = $this->sanitize_answers( $raw_answers );
 
-		// 5. Datei-Uploads (bleiben bis Request-Ende als tmp-Datei erhalten)
-		$uploaded_files = $this->process_uploaded_files();
+		// 5. Datei-Uploads: Tokens aus dem Staging (Rohdaten-Upload, kein Multipart).
+		//    $_FILES bleibt als Weg für Umgebungen ohne Multipart-Sperre erhalten.
+		$schema_id      = sanitize_key( isset( $schema['form_id'] ) ? $schema['form_id'] : $form_id );
+		$uploaded_files = SPS_Upload_Staging::resolve( isset( $payload['file_tokens'] ) ? $payload['file_tokens'] : array(), $schema_id );
+		if ( is_wp_error( $uploaded_files ) ) {
+			SPS_Diagnostics::log( 'Übermittlung abgelehnt: ' . $uploaded_files->get_error_message(), 'warning' );
+			wp_send_json_error( array( 'message' => $uploaded_files->get_error_message() ), 400 );
+		}
+		foreach ( $this->process_uploaded_files() as $field => $items ) {
+			foreach ( $items as $item ) {
+				$uploaded_files[ $field ][] = $item;
+			}
+		}
 
 		$meta = array();
 		if ( ! empty( $payload['file_descriptions'] ) ) {
@@ -136,11 +147,13 @@ class SPS_Ajax_Handler {
 			}
 		}
 
-		$schema_id = sanitize_key( isset( $schema['form_id'] ) ? $schema['form_id'] : $form_id );
 		SPS_Diagnostics::log( sprintf( 'Formularübertragung gestartet: %s', $schema_id ), 'info' );
 
 		// 6. Nextcloud Forms, sonst WebDAV-Fallback
 		$result = SPS_Submission::process( $schema, $answers, $uploaded_files, get_current_user_id(), $meta );
+
+		// Staging-Dateien sind jetzt in Nextcloud (Forms/WebDAV) bzw. im Mail-Anhang.
+		SPS_Upload_Staging::release( $uploaded_files );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( array( 'message' => __( 'Es gab einen Fehler bei der Übermittlung. Bitte versuchen Sie es später erneut oder kontaktieren Sie uns direkt.', 'smart-portal-suite' ) ), 500 );

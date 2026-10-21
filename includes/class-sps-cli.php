@@ -38,6 +38,8 @@ class SPS_CLI {
 		'register-url'       => 'auth_register_url',
 		'primary-color'      => 'primary_color',
 		'submit-as-user'     => 'submit_as_user',
+		'file-mode'          => 'nc_file_mode',
+		'upload-dir'         => 'webdav_upload_dir',
 		'debug'              => 'debug_mode',
 	);
 
@@ -104,6 +106,12 @@ class SPS_CLI {
 	 *
 	 * [--primary-color=<hex>]
 	 * : Primärfarbe der Formulare.
+	 *
+	 * [--file-mode=<mode>]
+	 * : Dateien an Nextcloud: webdav (Standard) oder forms (benötigt Multipart).
+	 *
+	 * [--upload-dir=<dir>]
+	 * : WebDAV-Ordner für Dateien (Standard SPS_Uploads).
 	 *
 	 * [--submit-as-user=<0|1>]
 	 * : Eingeloggte Kunden senden mit eigenem NC-Konto.

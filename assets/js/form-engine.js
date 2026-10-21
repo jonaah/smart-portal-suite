@@ -15,7 +15,7 @@
  *    (e.g. heating type determining heating demand sliders).
  * 5. State Management: Centralized key-value answer dictionary (answers{}) and binary file map (files{}).
  * 6. File Uploads: Drag-and-drop dropzone, size limit enforcement (10MB), file extension filtering,
- *    and FormData binary streaming.
+ *    and raw binary uploads (no multipart).
  * 7. OpenStreetMap Integration: Live Nominatim address autocompletion with 300ms debouncing and automatic
  *    field distribution (street, house number, zip, city).
  * 8. Validation & Anti-Bot: Granular step-by-step validation, honeypot spam protection, completion duration
@@ -591,7 +591,7 @@ window.SPS = window.SPS || {};
                            aria-label="${SPS.escapeAttr(step.label || 'Dateien hochladen')}">
                     <span class="sps-upload-icon">${renderIcon(uploadIcon, 'sps-upload-svg')}</span>
                     <span class="sps-upload-label">${hasFiles ? 'Dateien ausgewählt' : (step.uploadLabel || 'Dateien auswählen oder hierher ziehen')}</span>
-                    <span class="sps-upload-hint">${acceptExt} &middot; Max. 20 MB pro Datei</span>
+                    <span class="sps-upload-hint">${acceptExt} &middot; Max. 10 MB pro Datei</span>
                 </div>
 
                 <div class="sps-upload-files-list sps-file-list" id="${form.instanceId}_filelist_${step.id}">
@@ -2084,99 +2084,182 @@ window.SPS = window.SPS || {};
         // --- Submission Flow ---
 
         /**
-         * Handles the asynchronous form submission to the WordPress backend:
-         * 1. Validates the final step.
-         * 2. Sets loading spinner state on the submit button.
-         * 3. Reads honeypot input (sps_hp) and records completion duration (sps_duration_ms).
-         * 4. Assembles a multipart/form-data payload with answers JSON and staged binary files.
-         * 5. Performs a fetch() POST request to admin-ajax.php (action: 'sps_submit_form').
-         * 6. Renders the success confirmation view or reports error messages.
+         * Baut eine admin-ajax-URL mit Query-Parametern.
+         * (admin-ajax liest `action` aus $_REQUEST; JSON-/Binär-Bodies füllen $_POST nicht.)
+         *
+         * @param {Object} params - Query-Parameter.
+         * @returns {string}
+         */
+        ajaxEndpoint(params) {
+            const url = new URL(this.ajaxUrl, window.location.href);
+            Object.keys(params).forEach(k => url.searchParams.set(k, params[k]));
+            return url.toString();
+        }
+
+        /**
+         * Holt einen frischen Nonce (z. B. bei gecachter Seite). Einfacher GET – kein Multipart.
+         *
+         * @returns {Promise<boolean>}
+         */
+        refreshNonce() {
+            return fetch(this.ajaxEndpoint({ action: 'sps_refresh_nonce', _: Date.now() }), {
+                method: 'GET',
+                credentials: 'same-origin',
+                cache: 'no-store'
+            })
+                .then(res => res.json())
+                .then(r => {
+                    if (r && r.success && r.data && r.data.nonce) {
+                        this.nonce = r.data.nonce;
+                        return true;
+                    }
+                    return false;
+                })
+                .catch(() => false);
+        }
+
+        /**
+         * Führt eine Anfrage aus und wiederholt sie einmal mit frischem Nonce,
+         * falls der Server `invalid_nonce` meldet.
+         *
+         * @param {Function} doRequest - Liefert ein Promise auf die JSON-Antwort.
+         * @returns {Promise<Object>}
+         */
+        withNonceRetry(doRequest) {
+            return doRequest().then(data => {
+                if (data && !data.success && data.data && data.data.code === 'invalid_nonce') {
+                    return this.refreshNonce().then(ok => (ok ? doRequest() : data));
+                }
+                return data;
+            });
+        }
+
+        /**
+         * JSON-Antwort lesen; HTML-Fehlerseiten (z. B. 403 vom Hoster) als Fehlerobjekt.
+         *
+         * @param {Response} res - Fetch-Antwort.
+         * @returns {Promise<Object>}
+         */
+        readJson(res) {
+            return res.text().then(text => {
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    return { success: false, data: { message: `Serverfehler (HTTP ${res.status}). Bitte später erneut versuchen.`, http: res.status } };
+                }
+            });
+        }
+
+        /**
+         * Lädt alle ausgewählten Dateien einzeln als Rohdaten hoch
+         * (Content-Type: application/octet-stream – kein Multipart, das manche Hoster sperren).
+         *
+         * @param {Function} onProgress - Callback(aktuell, gesamt).
+         * @returns {Promise<Object>} Map fieldId → Upload-Token[].
+         */
+        uploadFiles(onProgress) {
+            const jobs = [];
+            Object.keys(this.files).forEach(fieldId => {
+                (this.files[fieldId] || []).forEach(file => jobs.push({ fieldId, file }));
+            });
+
+            const tokens = {};
+            let done = 0;
+
+            return jobs.reduce((chain, job) => chain.then(() => {
+                if (onProgress) onProgress(done + 1, jobs.length);
+                const send = () => fetch(this.ajaxEndpoint({
+                    action: 'sps_upload_file',
+                    nonce: this.nonce,
+                    form_id: this.schema.form_id || this.formId,
+                    field: job.fieldId,
+                    name: job.file.name
+                }), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/octet-stream' },
+                    body: job.file,
+                    credentials: 'same-origin'
+                }).then(res => this.readJson(res));
+
+                return this.withNonceRetry(send).then(data => {
+                    if (!data || !data.success || !data.data || !data.data.token) {
+                        const msg = (data && data.data && data.data.message) ? data.data.message : 'Upload fehlgeschlagen.';
+                        throw new Error(`${job.file.name}: ${msg}`);
+                    }
+                    (tokens[job.fieldId] = tokens[job.fieldId] || []).push(data.data.token);
+                    done++;
+                });
+            }), Promise.resolve()).then(() => tokens);
+        }
+
+        /**
+         * Asynchrones Absenden:
+         * 1. Validiert den letzten Schritt, setzt Ladezustand.
+         * 2. Lädt Dateien einzeln als Rohdaten hoch (sps_upload_file) und erhält Tokens.
+         * 3. Sendet Antworten + Tokens als JSON an admin-ajax.php (action: sps_submit_form).
+         *    Kein multipart/form-data, da manche Hoster (z. B. Manitu) es per WAF sperren.
+         * 4. Zeigt Erfolg oder Fehlermeldung.
          */
         submit() {
             if (!this.validateStep(this.currentStepIndex)) return;
 
             const submitBtn = this.container.querySelector('.sps-btn-submit');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span class="sps-spinner"></span> Wird übertragen...';
-            }
+            const setBtn = (html, disabled) => {
+                if (!submitBtn) return;
+                submitBtn.disabled = disabled;
+                submitBtn.innerHTML = html;
+            };
+            setBtn('<span class="sps-spinner"></span> Wird übertragen...', true);
 
             // Anti-Bot Honeypot check
             const hpInput = this.container.querySelector('input[name="sps_hp"]');
             const hpValue = hpInput ? hpInput.value : '';
 
-            // Construct FormData (supports all data types and binary file uploads)
-            const formData = new FormData();
-            formData.append('action', 'sps_submit_form');
-            formData.append('nonce', this.nonce);
-            formData.append('form_type', this.schema.form_type || this.schema.title);
-            formData.append('form_id', this.schema.form_id || this.formId);
-            formData.append('answers', JSON.stringify(this.answers));
-            formData.append('file_descriptions', JSON.stringify(this.fileDescriptions));
-            if (this.leadId) {
-                formData.append('lead_id', this.leadId);
-            }
-            formData.append('sps_hp', hpValue);
-            formData.append('sps_duration_ms', Date.now() - this.startTime);
-
-            // Append all uploaded files
-            Object.keys(this.files).forEach(fieldId => {
-                const fileList = this.files[fieldId];
-                if (Array.isArray(fileList)) {
-                    fileList.forEach((file, idx) => {
-                        formData.append(`files_${fieldId}[${idx}]`, file, file.name);
-                    });
+            const fail = (msg) => {
+                this.showError(this.currentStepIndex, msg);
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Erneut versuchen';
                 }
-            });
-
-            const send = () => fetch(this.ajaxUrl, {
-                method: 'POST',
-                body: formData,
-                credentials: 'same-origin'
-            }).then(res => res.json());
-
-            // Abgelaufener Nonce (z. B. gecachte Seite): einmal frischen Nonce holen und erneut senden.
-            const refreshNonce = () => {
-                const fd = new FormData();
-                fd.append('action', 'sps_refresh_nonce');
-                return fetch(this.ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
-                    .then(res => res.json())
-                    .then(r => {
-                        if (r && r.success && r.data && r.data.nonce) {
-                            this.nonce = r.data.nonce;
-                            formData.set('nonce', r.data.nonce);
-                            return true;
-                        }
-                        return false;
-                    });
             };
 
-            send()
-            .then(data => {
-                if (!data.success && data.data && data.data.code === 'invalid_nonce') {
-                    return refreshNonce().then(ok => (ok ? send() : data));
-                }
-                return data;
+            this.uploadFiles((n, total) => {
+                setBtn(`<span class="sps-spinner"></span> Datei ${n} von ${total} wird hochgeladen...`, true);
+            })
+            .then(fileTokens => {
+                setBtn('<span class="sps-spinner"></span> Wird übertragen...', true);
+
+                const send = () => fetch(this.ajaxEndpoint({ action: 'sps_submit_form' }), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        nonce: this.nonce,
+                        form_type: this.schema.form_type || this.schema.title,
+                        form_id: this.schema.form_id || this.formId,
+                        answers: this.answers,
+                        file_descriptions: this.fileDescriptions,
+                        file_tokens: fileTokens,
+                        lead_id: this.leadId || '',
+                        sps_hp: hpValue,
+                        sps_duration_ms: Date.now() - this.startTime
+                    })
+                }).then(res => this.readJson(res));
+
+                return this.withNonceRetry(send);
             })
             .then(data => {
                 if (data.success) {
                     this.renderSuccess(data.data && data.data.message ? data.data.message : 'Ihre Anfrage wurde erfolgreich übermittelt.');
                 } else {
-                    const errMsg = (data.data && data.data.message) ? data.data.message : (data.data || 'Ein Fehler ist aufgetreten.');
-                    this.showError(this.currentStepIndex, errMsg);
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = 'Erneut versuchen';
-                    }
+                    fail((data.data && data.data.message) ? data.data.message : (typeof data.data === 'string' ? data.data : 'Ein Fehler ist aufgetreten.'));
                 }
             })
             .catch(err => {
                 console.error('[SPS] Form submission error:', err);
-                this.showError(this.currentStepIndex, 'Netzwerkfehler. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.');
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Erneut versuchen';
-                }
+                fail(err && err.message && err.message.indexOf(':') > 0
+                    ? err.message
+                    : 'Netzwerkfehler. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.');
             });
         }
 
