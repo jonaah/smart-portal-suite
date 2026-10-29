@@ -149,8 +149,12 @@ class SPS_Auth_Shortcodes {
 		$default_redirect = SPS_Settings::get_setting( 'login_redirect_url', home_url( '/' ) );
 		$default_register = SPS_Settings::get_setting( 'auth_register_url', '/registrierung/' );
 
-		// Falls Redirect-Cookie existiert, bevorzugt verwenden
-		if ( ! empty( $_COOKIE['sps_redirect'] ) ) {
+		// Rücksprung: ?redirect_to= (z. B. vom Login-Hinweis eines Formulars) vor Cookie.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$get_redirect = isset( $_GET['redirect_to'] ) ? wp_validate_redirect( esc_url_raw( wp_unslash( $_GET['redirect_to'] ) ), '' ) : '';
+		if ( '' !== $get_redirect ) {
+			$default_redirect = $get_redirect;
+		} elseif ( ! empty( $_COOKIE['sps_redirect'] ) ) {
 			$cookie_url = esc_url_raw( wp_unslash( $_COOKIE['sps_redirect'] ) );
 			if ( ! empty( $cookie_url ) ) {
 				$default_redirect = $cookie_url;

@@ -83,6 +83,9 @@ class SPS_CLI {
 	 * [--forms=<map>]
 	 * : Formular-Zuordnung, z. B. gebaeude_check=12,projekte_mit_mir=13 (ersetzt die bisherige Zuordnung).
 	 *
+	 * [--form-access=<map>]
+	 * : Zugang je Formular: login (nur angemeldete), public (alle) oder schema, z. B. gebaeude_check=login.
+	 *
 	 * [--groups=<groups>]
 	 * : Kundengruppen, kommagetrennt (Standard: Hauseigner).
 	 *
@@ -184,6 +187,25 @@ class SPS_CLI {
 			foreach ( $map as $id ) {
 				SPS_NC_Forms::flush_cache( $id );
 			}
+		}
+
+		if ( isset( $assoc_args['form-access'] ) ) {
+			$done = array();
+			foreach ( preg_split( '/[\r\n,;]+/', (string) $assoc_args['form-access'] ) as $pair ) {
+				$parts = array_map( 'trim', explode( '=', $pair, 2 ) );
+				if ( 2 !== count( $parts ) || '' === sanitize_key( $parts[0] ) || ! in_array( $parts[1], array( 'login', 'public', 'schema', '' ), true ) ) {
+					WP_CLI::error( 'Ungültiges Format für --form-access. Beispiel: gebaeude_check=login' );
+				}
+				$fid      = sanitize_key( $parts[0] );
+				$existing = SPS_Form_Renderer::get_access_settings( $fid );
+				SPS_Form_Renderer::save_access_settings( $fid, 'schema' === $parts[1] ? '' : $parts[1], $existing['gate_text'] );
+				$done[] = $fid . '=' . ( $parts[1] ? $parts[1] : 'schema' );
+			}
+			if ( empty( $changed ) ) {
+				WP_CLI::success( 'Zugang gespeichert: ' . implode( ', ', $done ) . ' (Seiten-Cache leeren!)' );
+				return;
+			}
+			WP_CLI::log( 'Zugang gespeichert: ' . implode( ', ', $done ) );
 		}
 
 		if ( empty( $changed ) ) {

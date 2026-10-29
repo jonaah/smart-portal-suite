@@ -54,6 +54,9 @@ class SPS_Form_Manager {
 		add_action( 'wp_ajax_sps_save_form_theme', array( $this, 'ajax_save_theme' ) );
 		add_action( 'wp_ajax_sps_reset_form_theme', array( $this, 'ajax_reset_theme' ) );
 		add_action( 'wp_ajax_sps_preview_mock', array( $this, 'ajax_preview_mock' ) );
+		add_action( 'wp_ajax_sps_save_form_access', array( $this, 'ajax_save_form_access' ) );
+		add_action( 'wp_ajax_sps_nc_form_list', array( $this, 'ajax_nc_form_list' ) );
+		add_action( 'wp_ajax_sps_nc_mapping', array( $this, 'ajax_nc_mapping' ) );
 
 		// Form Import / Export / Delete & Nextcloud Scaffolder
 		add_action( 'wp_ajax_sps_import_form', array( $this, 'ajax_import_form' ) );
@@ -478,29 +481,26 @@ class SPS_Form_Manager {
 						</div>
 					</div>
 
+					<!-- Access & Nextcloud -->
+					<?php $this->render_access_box( $canonical_id ); ?>
+
 					<!-- Color Settings -->
-					<div class="postbox">
+					<?php foreach ( self::get_color_groups() as $group_key => $group ) : ?>
+					<div class="postbox sps-color-group sps-color-group-<?php echo esc_attr( $group_key ); ?>">
 						<div class="postbox-header">
-							<h2><?php esc_html_e( 'Farben', 'smart-portal-suite' ); ?></h2>
+							<h2><?php echo esc_html( $group['title'] ); ?></h2>
 						</div>
 						<div class="inside">
+							<p class="description"><?php echo esc_html( $group['desc'] ); ?></p>
 							<table class="form-table sps-color-table">
 								<tbody>
 									<?php
-									$color_fields = array(
-										'--sps-bg-main'      => __( 'Hintergrund Hauptcontainer', 'smart-portal-suite' ),
-										'--sps-card-bg'      => __( 'Karten-Hintergrund', 'smart-portal-suite' ),
-										'--sps-accent'       => __( 'Primäre Akzentfarbe (Buttons)', 'smart-portal-suite' ),
-										'--sps-accent-green' => __( 'Sekundäre Akzentfarbe (Auswahl)', 'smart-portal-suite' ),
-										'--sps-text-main'    => __( 'Textfarbe Primär', 'smart-portal-suite' ),
-										'--sps-text-muted'   => __( 'Textfarbe Sekundär', 'smart-portal-suite' ),
-									);
-									foreach ( $color_fields as $var_name => $label ) :
-										$value = isset( $current[ $var_name ] ) ? $current[ $var_name ] : $defaults[ $var_name ];
-									?>
+									foreach ( $group['fields'] as $var_name => $field ) :
+										$value = isset( $saved_theme[ $var_name ] ) ? $saved_theme[ $var_name ] : $field[1];
+										?>
 									<tr>
 										<th scope="row">
-											<label for="sps-var-<?php echo esc_attr( $var_name ); ?>"><?php echo esc_html( $label ); ?></label>
+											<label for="sps-var-<?php echo esc_attr( $var_name ); ?>"><?php echo esc_html( $field[0] ); ?></label>
 										</th>
 										<td>
 											<input type="text"
@@ -508,7 +508,8 @@ class SPS_Form_Manager {
 												class="sps-color-picker"
 												name="<?php echo esc_attr( $var_name ); ?>"
 												value="<?php echo esc_attr( $value ); ?>"
-												data-default-color="<?php echo esc_attr( $defaults[ $var_name ] ); ?>" />
+												data-group="<?php echo esc_attr( $group_key ); ?>"
+												data-default-color="<?php echo esc_attr( $field[1] ); ?>" />
 										</td>
 									</tr>
 									<?php endforeach; ?>
@@ -516,37 +517,28 @@ class SPS_Form_Manager {
 							</table>
 						</div>
 					</div>
+					<?php endforeach; ?>
 
-					<!-- Radius Settings -->
+					<!-- Radius & Layout -->
 					<div class="postbox">
 						<div class="postbox-header">
-							<h2><?php esc_html_e( 'Formen & Radien', 'smart-portal-suite' ); ?></h2>
+							<h2><?php esc_html_e( 'Formen & Layout', 'smart-portal-suite' ); ?></h2>
 						</div>
 						<div class="inside">
 							<table class="form-table sps-radius-table">
 								<tbody>
 									<?php
 									$radius_fields = array(
-										'--sps-radius-card' => array(
-											'label' => __( 'Karten-Eckenrundung', 'smart-portal-suite' ),
-											'min'   => 0,
-											'max'   => 30,
-											'unit'  => 'px',
-										),
-										'--sps-radius-btn'  => array(
-											'label' => __( 'Button-Eckenrundung', 'smart-portal-suite' ),
-											'min'   => 0,
-											'max'   => 20,
-											'unit'  => 'px',
-										),
+										'--sps-radius-card'  => __( 'Karten-Eckenrundung', 'smart-portal-suite' ),
+										'--sps-radius-input' => __( 'Eingabefeld-Eckenrundung', 'smart-portal-suite' ),
+										'--sps-radius-btn'   => __( 'Button-Eckenrundung', 'smart-portal-suite' ),
 									);
-									foreach ( $radius_fields as $var_name => $config ) :
-										$raw_value = isset( $current[ $var_name ] ) ? $current[ $var_name ] : $defaults[ $var_name ];
-										$num_value = intval( $raw_value );
-									?>
+									foreach ( $radius_fields as $var_name => $label ) :
+										$num_value = intval( isset( $current[ $var_name ] ) ? $current[ $var_name ] : $defaults[ $var_name ] );
+										?>
 									<tr>
 										<th scope="row">
-											<label for="sps-var-<?php echo esc_attr( $var_name ); ?>"><?php echo esc_html( $config['label'] ); ?></label>
+											<label for="sps-var-<?php echo esc_attr( $var_name ); ?>"><?php echo esc_html( $label ); ?></label>
 										</th>
 										<td class="sps-radius-control">
 											<input type="range"
@@ -554,13 +546,38 @@ class SPS_Form_Manager {
 												class="sps-radius-slider"
 												name="<?php echo esc_attr( $var_name ); ?>"
 												value="<?php echo esc_attr( $num_value ); ?>"
-												min="<?php echo intval( $config['min'] ); ?>"
-												max="<?php echo intval( $config['max'] ); ?>"
-												data-unit="<?php echo esc_attr( $config['unit'] ); ?>" />
-											<span class="sps-radius-value"><?php echo intval( $num_value ); ?><?php echo esc_html( $config['unit'] ); ?></span>
+												min="0" max="30" data-unit="px" />
+											<span class="sps-radius-value"><?php echo intval( $num_value ); ?>px</span>
 										</td>
 									</tr>
 									<?php endforeach; ?>
+									<?php
+									$height_raw  = isset( $current['--sps-form-height'] ) ? $current['--sps-form-height'] : $defaults['--sps-form-height'];
+									$height_auto = ( 'auto' === $height_raw );
+									$height_num  = $height_auto ? 760 : intval( $height_raw );
+									?>
+									<tr>
+										<th scope="row">
+											<label for="sps-var---sps-form-height"><?php esc_html_e( 'Formularhöhe', 'smart-portal-suite' ); ?></label>
+										</th>
+										<td class="sps-radius-control sps-height-control">
+											<input type="range"
+												id="sps-var---sps-form-height"
+												class="sps-height-slider"
+												name="--sps-form-height"
+												value="<?php echo esc_attr( $height_num ); ?>"
+												min="480" max="1100" step="10" data-unit="px"
+												<?php disabled( $height_auto ); ?> />
+											<span class="sps-radius-value"><?php echo $height_auto ? esc_html__( 'automatisch', 'smart-portal-suite' ) : intval( $height_num ) . 'px'; ?></span>
+											<p>
+												<label>
+													<input type="checkbox" class="sps-height-auto" <?php checked( $height_auto ); ?> />
+													<?php esc_html_e( 'Automatisch (Formular wächst mit der Frage)', 'smart-portal-suite' ); ?>
+												</label>
+											</p>
+											<p class="description"><?php esc_html_e( 'Maximale Höhe auf großen Bildschirmen. Auf kleineren Bildschirmen passt sich das Formular der Fensterhöhe an. Längere Inhalte scrollen innerhalb des Rahmens, die Buttons bleiben an derselben Stelle.', 'smart-portal-suite' ); ?></p>
+										</td>
+									</tr>
 								</tbody>
 							</table>
 						</div>
@@ -583,8 +600,12 @@ class SPS_Form_Manager {
 							<h2><?php esc_html_e( 'Live-Vorschau', 'smart-portal-suite' ); ?></h2>
 						</div>
 						<div class="inside">
-							<div class="sps-preview-container sps-form-container" id="sps-preview-mock" style="<?php echo esc_attr( $this->build_inline_style( $current ) ); ?>">
-								<?php $this->render_preview_mock(); ?>
+							<p class="description sps-preview-hint"><?php esc_html_e( 'Echtes Formular – du kannst durch die Schritte klicken. In der Vorschau wird nichts gesendet.', 'smart-portal-suite' ); ?></p>
+							<div class="sps-preview-frame" id="sps-preview-frame">
+								<?php
+								// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+								echo $renderer->render_shortcode( array( 'id' => $canonical_id, 'preview' => '1' ) );
+								?>
 							</div>
 						</div>
 					</div>
@@ -592,6 +613,206 @@ class SPS_Form_Manager {
 			</div>
 		</div>
 		<?php
+	}
+
+	/* ═══════════════════════════════════════════════════════════════
+	   ZUGANG & NEXTCLOUD
+	   ═══════════════════════════════════════════════════════════════ */
+
+	/**
+	 * Kasten "Zugang & Nextcloud" im Formular-Editor.
+	 *
+	 * @param string $form_id Kanonische Formular-ID.
+	 */
+	private function render_access_box( $form_id ) {
+		$schema      = SPS_Form_Renderer::get_instance()->load_schema( $form_id );
+		$access      = SPS_Form_Renderer::get_access_settings( $form_id );
+		$schema_req  = ! empty( $schema['requires_login'] );
+		$map         = SPS_Settings::get_form_id_map();
+		$nc_id       = isset( $map[ $form_id ] ) ? (int) $map[ $form_id ] : 0;
+		$schema_nc   = ( ! empty( $schema['nc_form_id'] ) && is_numeric( $schema['nc_form_id'] ) ) ? (int) $schema['nc_form_id'] : 0;
+		?>
+		<div class="postbox sps-access-box" data-form-id="<?php echo esc_attr( $form_id ); ?>">
+			<div class="postbox-header">
+				<h2><?php esc_html_e( 'Zugang & Nextcloud', 'smart-portal-suite' ); ?></h2>
+			</div>
+			<div class="inside">
+				<table class="form-table">
+					<tbody>
+						<tr>
+							<th scope="row"><label for="sps-access-mode"><?php esc_html_e( 'Wer darf das Formular nutzen?', 'smart-portal-suite' ); ?></label></th>
+							<td>
+								<select id="sps-access-mode" name="access">
+									<option value="" <?php selected( $access['access'], '' ); ?>>
+										<?php
+										/* translators: %s: current schema setting */
+										printf( esc_html__( 'Wie im Formular-Schema (%s)', 'smart-portal-suite' ), $schema_req ? esc_html__( 'nur angemeldete', 'smart-portal-suite' ) : esc_html__( 'alle', 'smart-portal-suite' ) );
+										?>
+									</option>
+									<option value="login" <?php selected( $access['access'], 'login' ); ?>><?php esc_html_e( 'Nur angemeldete Nutzer', 'smart-portal-suite' ); ?></option>
+									<option value="public" <?php selected( $access['access'], 'public' ); ?>><?php esc_html_e( 'Alle (auch Gäste)', 'smart-portal-suite' ); ?></option>
+								</select>
+								<p class="description"><?php esc_html_e( 'Gäste sehen statt des Formulars einen Hinweis mit Anmelde- und Registrierungs-Button. Nach der Anmeldung geht es zurück zum Formular. Die Sperre gilt auch für Datei-Uploads und das Absenden.', 'smart-portal-suite' ); ?></p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row"><label for="sps-access-gate-text"><?php esc_html_e( 'Hinweis für Gäste', 'smart-portal-suite' ); ?></label></th>
+							<td>
+								<textarea id="sps-access-gate-text" name="gate_text" rows="2" class="large-text" placeholder="<?php echo esc_attr( SPS_Form_Renderer::default_gate_text() ); ?>"><?php echo esc_textarea( $access['gate_text'] ); ?></textarea>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row"><label for="sps-nc-form-id"><?php esc_html_e( 'Nextcloud-Formular', 'smart-portal-suite' ); ?></label></th>
+							<td>
+								<select id="sps-nc-form-id" name="nc_form_id" data-current="<?php echo esc_attr( $nc_id ); ?>">
+									<option value="0"><?php echo $schema_nc ? esc_html( sprintf( __( 'Aus Schema (ID %d)', 'smart-portal-suite' ), $schema_nc ) ) : esc_html__( 'Automatisch über den Titel', 'smart-portal-suite' ); ?></option>
+									<?php if ( $nc_id ) : ?>
+										<option value="<?php echo esc_attr( $nc_id ); ?>" selected><?php echo esc_html( sprintf( __( 'ID %d', 'smart-portal-suite' ), $nc_id ) ); ?></option>
+									<?php endif; ?>
+								</select>
+								<button type="button" class="button sps-nc-load-forms"><?php esc_html_e( 'Formulare laden', 'smart-portal-suite' ); ?></button>
+								<button type="button" class="button sps-nc-check-mapping"><?php esc_html_e( 'Zuordnung prüfen', 'smart-portal-suite' ); ?></button>
+								<span class="spinner sps-access-spinner" style="float:none;margin:0 4px;"></span>
+								<p class="description"><?php esc_html_e( 'Feste Zuordnung empfohlen, besonders wenn es in Nextcloud mehrere Formulare mit gleichem Titel gibt.', 'smart-portal-suite' ); ?></p>
+								<div class="sps-nc-result"></div>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<p>
+					<button type="button" class="button button-primary sps-save-access-btn"><?php esc_html_e( 'Zugang & Zuordnung speichern', 'smart-portal-suite' ); ?></button>
+					<span class="sps-access-status"></span>
+				</p>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * AJAX: Zugang und NC-Formular-Zuordnung speichern.
+	 */
+	public function ajax_save_form_access() {
+		check_ajax_referer( self::NONCE_ACTION, 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
+		}
+
+		$form_id = isset( $_POST['form_id'] ) ? sanitize_key( wp_unslash( $_POST['form_id'] ) ) : '';
+		$schema  = $form_id ? SPS_Form_Renderer::get_instance()->load_schema( $form_id ) : null;
+		if ( ! $schema ) {
+			wp_send_json_error( array( 'message' => __( 'Formular nicht gefunden.', 'smart-portal-suite' ) ), 404 );
+		}
+		$form_id = sanitize_key( ! empty( $schema['form_id'] ) ? $schema['form_id'] : $form_id );
+
+		$access    = isset( $_POST['access'] ) ? sanitize_key( wp_unslash( $_POST['access'] ) ) : '';
+		$gate_text = isset( $_POST['gate_text'] ) ? sanitize_textarea_field( wp_unslash( $_POST['gate_text'] ) ) : '';
+		SPS_Form_Renderer::save_access_settings( $form_id, $access, $gate_text );
+
+		$nc_id = isset( $_POST['nc_form_id'] ) ? absint( $_POST['nc_form_id'] ) : 0;
+		$map   = SPS_Settings::get_form_id_map();
+		if ( $nc_id > 0 ) {
+			$map[ $form_id ] = $nc_id;
+			SPS_NC_Forms::flush_cache( $nc_id );
+		} else {
+			unset( $map[ $form_id ] );
+		}
+		SPS_Settings::update_raw( 'nc_form_ids', $map );
+
+		SPS_Diagnostics::log( sprintf( 'Formular "%s": Zugang=%s, NC-Formular=%s', $form_id, $access ? $access : 'Schema', $nc_id ? $nc_id : 'automatisch' ), 'info' );
+
+		wp_send_json_success( array(
+			'message'        => __( 'Gespeichert. Seiten-Cache leeren, damit Gäste die Änderung sehen.', 'smart-portal-suite' ),
+			'requires_login' => SPS_Form_Renderer::requires_login( $schema ),
+		) );
+	}
+
+	/**
+	 * AJAX: Nextcloud-Formulare des Service-Accounts (eigene + geteilte).
+	 */
+	public function ajax_nc_form_list() {
+		check_ajax_referer( self::NONCE_ACTION, 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
+		}
+		if ( ! SPS_NC_Client::service()->is_configured() ) {
+			wp_send_json_error( array( 'message' => __( 'Nextcloud ist nicht konfiguriert (URL, Service-Account, App-Passwort).', 'smart-portal-suite' ) ) );
+		}
+
+		$forms = ( new SPS_NC_Forms() )->list_forms();
+		if ( is_wp_error( $forms ) ) {
+			wp_send_json_error( array( 'message' => $forms->get_error_message() ) );
+		}
+
+		$titles = array();
+		foreach ( $forms as $f ) {
+			$t            = strtolower( trim( isset( $f['title'] ) ? (string) $f['title'] : '' ) );
+			$titles[ $t ] = isset( $titles[ $t ] ) ? $titles[ $t ] + 1 : 1;
+		}
+
+		$out = array();
+		foreach ( $forms as $f ) {
+			$t     = isset( $f['title'] ) ? (string) $f['title'] : '';
+			$out[] = array(
+				'id'          => (int) $f['id'],
+				'title'       => $t,
+				'owner'       => isset( $f['ownerId'] ) ? (string) $f['ownerId'] : '',
+				'lastUpdated' => ! empty( $f['lastUpdated'] ) ? wp_date( 'd.m.Y H:i', (int) $f['lastUpdated'] ) : '',
+				'expired'     => ! empty( $f['expired'] ),
+				'duplicate'   => $titles[ strtolower( trim( $t ) ) ] > 1,
+			);
+		}
+		usort( $out, function ( $a, $b ) {
+			return $b['id'] - $a['id'];
+		} );
+
+		wp_send_json_success( array( 'forms' => $out ) );
+	}
+
+	/**
+	 * AJAX: Zuordnung SPS-Felder → Fragen eines NC-Formulars (wie "wp sps mapping").
+	 */
+	public function ajax_nc_mapping() {
+		check_ajax_referer( self::NONCE_ACTION, 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
+		}
+
+		$form_id = isset( $_POST['form_id'] ) ? sanitize_key( wp_unslash( $_POST['form_id'] ) ) : '';
+		$schema  = $form_id ? SPS_Form_Renderer::get_instance()->load_schema( $form_id ) : null;
+		if ( ! $schema ) {
+			wp_send_json_error( array( 'message' => __( 'Formular nicht gefunden.', 'smart-portal-suite' ) ) );
+		}
+
+		$forms = new SPS_NC_Forms();
+		$nc_id = isset( $_POST['nc_form_id'] ) ? absint( $_POST['nc_form_id'] ) : 0;
+		if ( ! $nc_id ) {
+			$nc_id = $forms->resolve_form_id( $schema );
+			if ( is_wp_error( $nc_id ) ) {
+				wp_send_json_error( array( 'message' => $nc_id->get_error_message() ) );
+			}
+		}
+
+		$questions = $forms->get_questions( $nc_id, false );
+		if ( is_wp_error( $questions ) ) {
+			wp_send_json_error( array( 'message' => sprintf( 'NC-Formular %d: %s', $nc_id, $questions->get_error_message() ) ) );
+		}
+
+		$rows = SPS_Doctor::mapping_report( $schema, $questions );
+		$used = array();
+		foreach ( $rows as $r ) {
+			foreach ( explode( '+', (string) $r['source'] ) as $k ) {
+				$used[ $k ] = true;
+			}
+		}
+		$unused = array_values( array_filter( SPS_Doctor::available_keys( $schema ), function ( $k ) use ( $used ) {
+			return ! isset( $used[ $k ] );
+		} ) );
+
+		wp_send_json_success( array(
+			'nc_form_id' => (int) $nc_id,
+			'rows'       => $rows,
+			'unused'     => $unused,
+		) );
 	}
 
 	/* ═══════════════════════════════════════════════════════════════
@@ -1176,21 +1397,100 @@ class SPS_Form_Manager {
 	}
 
 	/**
+	 * Farb-Variablen, gruppiert für den Editor.
+	 *
+	 * Grundfarben haben einen Standardwert (portal-base.css :root). Felder der
+	 * übrigen Gruppen sind standardmäßig leer: leer = automatisch aus den
+	 * Grundfarben abgeleitet bzw. Originalfarbe der Illustrationen.
+	 *
+	 * @return array
+	 */
+	public static function get_color_groups() {
+		return array(
+			'base'   => array(
+				'title'  => __( 'Grundfarben', 'smart-portal-suite' ),
+				'desc'   => __( 'Daraus werden alle übrigen Farben abgeleitet (Rahmen, Hover, Schatten, Platzhalter …).', 'smart-portal-suite' ),
+				'fields' => array(
+					'--sps-bg-main'      => array( __( 'Hintergrund Formular', 'smart-portal-suite' ), '#2b224a' ),
+					'--sps-card-bg'      => array( __( 'Karten & Eingabefelder', 'smart-portal-suite' ), '#5e41bf' ),
+					'--sps-accent'       => array( __( 'Akzentfarbe (Buttons, Fortschritt, Auswahl)', 'smart-portal-suite' ), '#39baff' ),
+					'--sps-accent-2'     => array( __( 'Akzent Verlaufsende (Buttons)', 'smart-portal-suite' ), '#2196f3' ),
+					'--sps-accent-green' => array( __( 'Bestätigungsfarbe (gewählt, Erfolg)', 'smart-portal-suite' ), '#88d95c' ),
+					'--sps-text-main'    => array( __( 'Text & Überschriften', 'smart-portal-suite' ), '#ffffff' ),
+					'--sps-text-muted'   => array( __( 'Text sekundär (Beschreibungen)', 'smart-portal-suite' ), '#deddea' ),
+					'--sps-on-accent'    => array( __( 'Schrift auf Buttons', 'smart-portal-suite' ), '#ffffff' ),
+					'--sps-on-green'     => array( __( 'Häkchen auf Bestätigungsfarbe', 'smart-portal-suite' ), '#1a3d0a' ),
+					'--sps-error-color'  => array( __( 'Fehlermeldungen', 'smart-portal-suite' ), '#ff5252' ),
+				),
+			),
+			'fine'   => array(
+				'title'  => __( 'Feinabstimmung', 'smart-portal-suite' ),
+				'desc'   => __( 'Leer = automatisch aus den Grundfarben.', 'smart-portal-suite' ),
+				'fields' => array(
+					'--sps-heading-color'     => array( __( 'Frage / Überschrift', 'smart-portal-suite' ), '' ),
+					'--sps-text-dim'          => array( __( 'Text gedämpft (Hinweise)', 'smart-portal-suite' ), '' ),
+					'--sps-card-hover'        => array( __( 'Karte bei Hover', 'smart-portal-suite' ), '' ),
+					'--sps-input-bg'          => array( __( 'Eingabefeld-Hintergrund', 'smart-portal-suite' ), '' ),
+					'--sps-border-color'      => array( __( 'Rahmen', 'smart-portal-suite' ), '' ),
+					'--sps-border-active'     => array( __( 'Rahmen bei Hover / aktiv', 'smart-portal-suite' ), '' ),
+					'--sps-placeholder-color' => array( __( 'Platzhaltertext', 'smart-portal-suite' ), '' ),
+					'--sps-progress-track'    => array( __( 'Fortschrittsbalken (Hintergrund)', 'smart-portal-suite' ), '' ),
+					'--sps-slider-track'      => array( __( 'Schieberegler-Spur', 'smart-portal-suite' ), '' ),
+					'--sps-tooltip-bg'        => array( __( 'Tooltip-Hintergrund', 'smart-portal-suite' ), '' ),
+					'--sps-success-color'     => array( __( 'Erfolgsmeldung', 'smart-portal-suite' ), '' ),
+					'--sps-shadow-color'      => array( __( 'Schattenfarbe', 'smart-portal-suite' ), '' ),
+					'--sps-overlay-bg'        => array( __( 'Overlay (Datenschutz-Dialog)', 'smart-portal-suite' ), '' ),
+				),
+			),
+			'icons'  => array(
+				'title'  => __( 'Illustrationen', 'smart-portal-suite' ),
+				'desc'   => __( 'Farben der Gebäude-Illustrationen in den Auswahlkarten. Leer = Originalfarben.', 'smart-portal-suite' ),
+				'fields' => array(
+					'--sps-icon-primary'   => array( __( 'Hauptfarbe (Gebäude)', 'smart-portal-suite' ), '' ),
+					'--sps-icon-secondary' => array( __( 'Zweitfarbe (Dach, Nachbarhäuser)', 'smart-portal-suite' ), '' ),
+					'--sps-icon-light'     => array( __( 'Fenster & Details', 'smart-portal-suite' ), '' ),
+					'--sps-icon-line'      => array( __( 'Linien & Schrift', 'smart-portal-suite' ), '' ),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Originalfarben der Illustrationen → CSS-Variable (für print_svg_sprites).
+	 *
+	 * @return array Hex (Großbuchstaben, ohne #) => Variable.
+	 */
+	public static function get_icon_color_map() {
+		return array(
+			'381D92' => '--sps-icon-primary',
+			'AFA4D3' => '--sps-icon-secondary',
+			'D9D9D9' => '--sps-icon-light',
+			'ECECEC' => '--sps-icon-light',
+			'494949' => '--sps-icon-line',
+			'2D2D2D' => '--sps-icon-line',
+			'504141' => '--sps-icon-line',
+		);
+	}
+
+	/**
 	 * Get default CSS variable values (matches portal-base.css :root).
+	 *
+	 * Leerer Wert = keine Überschreibung (automatisch).
 	 *
 	 * @return array
 	 */
 	public static function get_defaults() {
-		return array(
-			'--sps-bg-main'      => '#2b224a',
-			'--sps-card-bg'      => '#5e41bf',
-			'--sps-accent'       => '#39baff',
-			'--sps-accent-green' => '#88D95C',
-			'--sps-text-main'    => '#FFFFFF',
-			'--sps-text-muted'   => '#deddea',
-			'--sps-radius-card'  => '12px',
-			'--sps-radius-btn'   => '10px',
-		);
+		$defaults = array();
+		foreach ( self::get_color_groups() as $group ) {
+			foreach ( $group['fields'] as $var => $field ) {
+				$defaults[ $var ] = $field[1];
+			}
+		}
+		$defaults['--sps-radius-card']  = '12px';
+		$defaults['--sps-radius-btn']   = '10px';
+		$defaults['--sps-radius-input'] = '12px';
+		$defaults['--sps-form-height']  = '760px';
+		return $defaults;
 	}
 
 	/**
@@ -1206,9 +1506,12 @@ class SPS_Form_Manager {
 					'--sps-bg-main'      => '#2b224a',
 					'--sps-card-bg'      => '#5e41bf',
 					'--sps-accent'       => '#39baff',
-					'--sps-accent-green' => '#88D95C',
-					'--sps-text-main'    => '#FFFFFF',
+					'--sps-accent-2'     => '#2196f3',
+					'--sps-accent-green' => '#88d95c',
+					'--sps-text-main'    => '#ffffff',
 					'--sps-text-muted'   => '#deddea',
+					'--sps-on-accent'    => '#ffffff',
+					'--sps-on-green'     => '#1a3d0a',
 					'--sps-radius-card'  => '12px',
 					'--sps-radius-btn'   => '10px',
 				),
@@ -1219,9 +1522,14 @@ class SPS_Form_Manager {
 					'--sps-bg-main'      => '#0f1729',
 					'--sps-card-bg'      => '#1a3a5c',
 					'--sps-accent'       => '#4fc3f7',
+					'--sps-accent-2'     => '#0288d1',
 					'--sps-accent-green' => '#66bb6a',
-					'--sps-text-main'    => '#FFFFFF',
+					'--sps-text-main'    => '#ffffff',
 					'--sps-text-muted'   => '#b0bec5',
+					'--sps-on-accent'    => '#ffffff',
+					'--sps-on-green'     => '#0b2e0d',
+					'--sps-icon-primary'   => '#1a3a5c',
+					'--sps-icon-secondary' => '#6f9cc4',
 					'--sps-radius-card'  => '16px',
 					'--sps-radius-btn'   => '12px',
 				),
@@ -1232,9 +1540,16 @@ class SPS_Form_Manager {
 					'--sps-bg-main'      => '#f5f5f5',
 					'--sps-card-bg'      => '#ffffff',
 					'--sps-accent'       => '#1976d2',
+					'--sps-accent-2'     => '#1565c0',
 					'--sps-accent-green' => '#43a047',
 					'--sps-text-main'    => '#212121',
-					'--sps-text-muted'   => '#757575',
+					'--sps-text-muted'   => '#616161',
+					'--sps-on-accent'    => '#ffffff',
+					'--sps-on-green'     => '#ffffff',
+					'--sps-shadow-color' => '#9e9e9e',
+					'--sps-icon-primary'   => '#1976d2',
+					'--sps-icon-secondary' => '#90caf9',
+					'--sps-icon-light'     => '#ffffff',
 					'--sps-radius-card'  => '8px',
 					'--sps-radius-btn'   => '6px',
 				),
@@ -1331,26 +1646,46 @@ class SPS_Form_Manager {
 		$sanitized = array();
 
 		foreach ( $data as $key => $value ) {
-			// Only allow known --sps-* variables
-			if ( ! isset( $defaults[ $key ] ) ) {
+			// Nur bekannte --sps-* Variablen.
+			if ( ! array_key_exists( $key, $defaults ) ) {
 				continue;
 			}
+			$value = is_scalar( $value ) ? trim( (string) $value ) : '';
+			if ( '' === $value ) {
+				continue; // leer = automatisch / Standard
+			}
 
-			if ( strpos( $key, 'radius' ) !== false ) {
-				// Radius values: integer + unit
-				$num = intval( $value );
-				$num = max( 0, min( 30, $num ) ); // Clamp 0-30
-				$sanitized[ $key ] = $num . 'px';
+			if ( '--sps-form-height' === $key ) {
+				if ( 'auto' === $value || 0 === intval( $value ) ) {
+					$sanitized[ $key ] = 'auto';
+				} else {
+					$sanitized[ $key ] = max( 400, min( 1400, intval( $value ) ) ) . 'px';
+				}
+			} elseif ( false !== strpos( $key, 'radius' ) ) {
+				$sanitized[ $key ] = max( 0, min( 40, intval( $value ) ) ) . 'px';
 			} else {
-				// Color values
-				$color = sanitize_hex_color( $value );
-				if ( ! empty( $color ) ) {
+				$color = self::sanitize_color( $value );
+				if ( '' !== $color ) {
 					$sanitized[ $key ] = $color;
 				}
 			}
 		}
 
 		return $sanitized;
+	}
+
+	/**
+	 * Farbe prüfen: #rgb, #rrggbb oder #rrggbbaa.
+	 *
+	 * @param string $value Eingabe.
+	 * @return string Bereinigte Farbe oder ''.
+	 */
+	public static function sanitize_color( $value ) {
+		$value = strtolower( trim( (string) $value ) );
+		if ( preg_match( '/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/', $value ) ) {
+			return $value;
+		}
+		return '';
 	}
 
 	/**

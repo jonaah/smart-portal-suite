@@ -871,6 +871,26 @@ class SPS_Settings {
 	}
 
 	/**
+	 * Einen einzelnen Wert direkt speichern, ohne den Sanitize-Callback.
+	 *
+	 * Für Werte, die bereits bereinigt sind (z. B. die Formular-Zuordnung aus dem
+	 * Formular-Editor). Verschlüsselte Passwörter bleiben unverändert erhalten.
+	 *
+	 * @param string $key   Schlüssel.
+	 * @param mixed  $value Bereinigter Wert.
+	 * @return bool
+	 */
+	public static function update_raw( $key, $value ) {
+		$options = get_option( self::OPTION_NAME, array() );
+		if ( ! is_array( $options ) ) {
+			$options = array();
+		}
+		$options[ $key ] = $value;
+		remove_all_filters( 'sanitize_option_' . self::OPTION_NAME );
+		return update_option( self::OPTION_NAME, $options );
+	}
+
+	/**
 	 * Zuordnung SPS-Formular-ID => Nextcloud-Formular-ID.
 	 *
 	 * @return array

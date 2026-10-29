@@ -59,8 +59,9 @@ class SPS_Form_Renderer {
 		add_action( 'init', array( $this, 'register_assets' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_assets' ) );
 
-		// Print SVG sprites in footer
+		// Print SVG sprites in footer (Frontend und Admin-Vorschau)
 		add_action( 'wp_footer', array( $this, 'print_svg_sprites' ), 20 );
+		add_action( 'admin_footer', array( $this, 'print_svg_sprites' ), 20 );
 
 		// Apply saved form-specific theme overrides as inline CSS variables
 		add_filter( 'sps_form_container_styles', array( $this, 'apply_saved_theme_styles' ), 10, 3 );
@@ -203,9 +204,221 @@ class SPS_Form_Renderer {
 		echo '<div class="sps-svg-sprite-storage" style="display:none !important;" aria-hidden="true">';
 		foreach ( $this->enqueued_sprites as $sprite_file ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			echo file_get_contents( $sprite_file );
+			echo self::themeable_svg( (string) file_get_contents( $sprite_file ) );
 		}
 		echo "</div>\n<!-- /Smart Portal Suite SVG Sprites -->\n";
+		$this->enqueued_sprites = array();
+	}
+
+	/**
+	 * Feste Illustrationsfarben (fill/stroke) durch CSS-Variablen mit der
+	 * Originalfarbe als Fallback ersetzen, damit sie im Styling-Editor
+	 * änderbar sind. Ohne gesetzte Variable bleibt alles wie bisher.
+	 *
+	 * @param string $svg Sprite-Inhalt.
+	 * @return string
+	 */
+	public static function themeable_svg( $svg ) {
+		if ( ! class_exists( 'SPS_Form_Manager' ) ) {
+			return $svg;
+		}
+		$map = SPS_Form_Manager::get_icon_color_map();
+
+		return preg_replace_callback(
+			'/<(path|rect|circle|ellipse|polygon|polyline|line|g)\b([^>]*?)(\/?)>/i',
+			function ( $m ) use ( $map ) {
+				$attrs  = $m[2];
+				$styles = array();
+				$attrs  = preg_replace_callback(
+					'/\s(fill|stroke)="#([0-9a-fA-F]{6})"/',
+					function ( $a ) use ( $map, &$styles ) {
+						$hex = strtoupper( $a[2] );
+						if ( ! isset( $map[ $hex ] ) ) {
+							return $a[0];
+						}
+						$styles[] = $a[1] . ':var(' . $map[ $hex ] . ',#' . $hex . ')';
+						return '';
+					},
+					$attrs
+				);
+				if ( empty( $styles ) ) {
+					return $m[0];
+				}
+				if ( preg_match( '/\sstyle="([^"]*)"/', $attrs, $st ) ) {
+					$attrs = str_replace( $st[0], ' style="' . rtrim( $st[1], '; ' ) . ';' . implode( ';', $styles ) . '"', $attrs );
+				} else {
+					$attrs .= ' style="' . implode( ';', $styles ) . '"';
+				}
+				return '<' . $m[1] . $attrs . $m[3] . '>';
+			},
+			$svg
+		);
+	}
+
+	/* ═══════════════════════════════════════════════════════════════
+	   ZUGANG (nur angemeldete Nutzer)
+	   ═══════════════════════════════════════════════════════════════ */
+
+	/**
+	 * Option mit den Zugangseinstellungen je Formular.
+	 */
+	const ACCESS_OPTION = 'sps_form_access';
+
+	/**
+	 * Zugangseinstellungen eines Formulars.
+	 *
+	 * @param string $form_id Formular-ID.
+	 * @return array{access:string,gate_text:string} access: '' (Schema), 'login' oder 'public'.
+	 */
+	public static function get_access_settings( $form_id ) {
+		$all = get_option( self::ACCESS_OPTION, array() );
+		$all = is_array( $all ) ? $all : array();
+		$id  = sanitize_key( $form_id );
+		foreach ( array( $id, str_replace( '-', '_', $id ), str_replace( '_', '-', $id ) ) as $k ) {
+			if ( isset( $all[ $k ] ) && is_array( $all[ $k ] ) ) {
+				return array(
+					'access'    => isset( $all[ $k ]['access'] ) && in_array( $all[ $k ]['access'], array( 'login', 'public' ), true ) ? $all[ $k ]['access'] : '',
+					'gate_text' => isset( $all[ $k ]['gate_text'] ) ? (string) $all[ $k ]['gate_text'] : '',
+				);
+			}
+		}
+		return array(
+			'access'    => '',
+			'gate_text' => '',
+		);
+	}
+
+	/**
+	 * Zugangseinstellungen speichern.
+	 *
+	 * @param string $form_id   Formular-ID.
+	 * @param string $access    '', 'login' oder 'public'.
+	 * @param string $gate_text Hinweis für Gäste (leer = Standardtext).
+	 */
+	public static function save_access_settings( $form_id, $access, $gate_text = '' ) {
+		$all = get_option( self::ACCESS_OPTION, array() );
+		$all = is_array( $all ) ? $all : array();
+		$id  = sanitize_key( $form_id );
+		unset( $all[ str_replace( '_', '-', $id ) ], $all[ str_replace( '-', '_', $id ) ] );
+
+		$access = in_array( $access, array( 'login', 'public' ), true ) ? $access : '';
+		if ( '' === $access && '' === trim( (string) $gate_text ) ) {
+			unset( $all[ $id ] );
+		} else {
+			$all[ $id ] = array(
+				'access'    => $access,
+				'gate_text' => sanitize_textarea_field( (string) $gate_text ),
+			);
+		}
+		update_option( self::ACCESS_OPTION, $all, false );
+	}
+
+	/**
+	 * Muss man für dieses Formular angemeldet sein?
+	 *
+	 * Einstellung im Formular-Editor (bzw. "wp sps configure --form-access") hat
+	 * Vorrang vor "requires_login" im Schema.
+	 *
+	 * @param array|null $schema Schema.
+	 * @return bool
+	 */
+	public static function requires_login( $schema ) {
+		if ( ! is_array( $schema ) ) {
+			return false;
+		}
+		$form_id = isset( $schema['form_id'] ) ? $schema['form_id'] : '';
+		$access  = $form_id ? self::get_access_settings( $form_id ) : array( 'access' => '' );
+		if ( 'login' === $access['access'] ) {
+			$required = true;
+		} elseif ( 'public' === $access['access'] ) {
+			$required = false;
+		} else {
+			$required = ! empty( $schema['requires_login'] );
+		}
+		return (bool) apply_filters( 'sps_form_requires_login', $required, $schema );
+	}
+
+	/**
+	 * Standardtext des Login-Hinweises.
+	 *
+	 * @return string
+	 */
+	public static function default_gate_text() {
+		return __( 'Dieses Formular steht registrierten Kundinnen und Kunden zur Verfügung. Bitte melden Sie sich an oder registrieren Sie sich, um fortzufahren.', 'smart-portal-suite' );
+	}
+
+	/**
+	 * Login-Hinweis statt Formular.
+	 *
+	 * @param string $form_id Formular-ID.
+	 * @param array  $schema  Schema.
+	 * @return string HTML.
+	 */
+	protected function render_login_gate( $form_id, $schema ) {
+		wp_enqueue_style( 'sps-portal-base' );
+
+		$current_url = home_url( add_query_arg( array() ) );
+		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
+			$current_url = home_url( esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) );
+		}
+		$current_url = wp_validate_redirect( $current_url, home_url( '/' ) );
+
+		$login_base = (string) SPS_Settings::get_setting( 'auth_login_url', '' );
+		if ( '' !== $login_base ) {
+			$login_url = add_query_arg( 'redirect_to', rawurlencode( $current_url ), ( 0 === strpos( $login_base, 'http' ) ? $login_base : home_url( $login_base ) ) );
+		} else {
+			$login_url = wp_login_url( $current_url );
+		}
+
+		$register_base = (string) SPS_Settings::get_setting( 'auth_register_url', '' );
+		$register_url  = '';
+		if ( '' !== $register_base ) {
+			$register_url = add_query_arg( 'redirect_to', rawurlencode( $current_url ), ( 0 === strpos( $register_base, 'http' ) ? $register_base : home_url( $register_base ) ) );
+		} elseif ( get_option( 'users_can_register' ) ) {
+			$register_url = wp_registration_url();
+		}
+
+		$access = self::get_access_settings( $form_id );
+		$text   = '' !== trim( $access['gate_text'] ) ? $access['gate_text'] : self::default_gate_text();
+		$title  = isset( $schema['title'] ) ? $schema['title'] : '';
+
+		// Theme-Farben des Formulars auch für den Hinweis.
+		$styles = apply_filters( 'sps_form_container_styles', '', $form_id, $schema );
+
+		ob_start();
+		?>
+		<div class="sps-form-container sps-login-gate-container" data-sps-form-id="<?php echo esc_attr( $form_id ); ?>"<?php echo $styles ? ' style="' . esc_attr( $styles ) . '"' : ''; ?>>
+			<div class="sps-form-wrapper sps-login-gate">
+				<div class="sps-login-gate-icon" aria-hidden="true">
+					<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="2.5"></rect><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"></path></svg>
+				</div>
+				<?php if ( $title ) : ?>
+					<p class="sps-login-gate-kicker"><?php echo esc_html( $title ); ?></p>
+				<?php endif; ?>
+				<h3 class="sps-login-gate-title"><?php esc_html_e( 'Bitte melden Sie sich an', 'smart-portal-suite' ); ?></h3>
+				<p class="sps-login-gate-desc"><?php echo nl2br( esc_html( $text ) ); ?></p>
+				<div class="sps-login-gate-actions">
+					<a href="<?php echo esc_url( $login_url ); ?>" class="sps-btn sps-btn-login" data-sps-redirect="<?php echo esc_attr( $current_url ); ?>"><?php esc_html_e( 'Anmelden', 'smart-portal-suite' ); ?></a>
+					<?php if ( $register_url ) : ?>
+						<a href="<?php echo esc_url( $register_url ); ?>" class="sps-btn sps-btn-register" data-sps-redirect="<?php echo esc_attr( $current_url ); ?>"><?php esc_html_e( 'Registrieren', 'smart-portal-suite' ); ?></a>
+					<?php endif; ?>
+				</div>
+			</div>
+		</div>
+		<script>
+		(function () {
+			document.querySelectorAll('[data-sps-redirect]').forEach(function (a) {
+				a.addEventListener('click', function () {
+					try {
+						var u = a.getAttribute('data-sps-redirect');
+						document.cookie = 'sps_redirect=' + encodeURIComponent(u) + '; path=/; max-age=3600; SameSite=Lax';
+					} catch (e) {}
+				});
+			});
+		})();
+		</script>
+		<?php
+		return ob_get_clean();
 	}
 
 	/**
@@ -216,7 +429,8 @@ class SPS_Form_Renderer {
 	 */
 	public function render_shortcode( $atts ) {
 		$atts = shortcode_atts( array(
-			'id' => '',
+			'id'      => '',
+			'preview' => '',
 		), $atts, self::SHORTCODE_TAG );
 
 		$raw_id = sanitize_key( $atts['id'] );
@@ -235,29 +449,10 @@ class SPS_Form_Renderer {
 
 		$form_id = sanitize_key( isset( $schema['form_id'] ) ? $schema['form_id'] : $raw_id );
 
-		// Check for login requirement
-		if ( ! empty( $schema['requires_login'] ) && ! is_user_logged_in() ) {
-			wp_enqueue_style( 'sps-portal-base' );
-			$login_redirect = ( is_ssl() ? 'https://' : 'http://' ) . ( isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '' ) . ( isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '' );
-			$login_url    = wp_login_url( $login_redirect );
-			$register_url = wp_registration_url();
-
-			return sprintf(
-				'<div class="sps-form-wrapper sps-login-gate">
-					<div class="sps-login-gate-icon">&#128274;</div>
-					<h3 class="sps-login-gate-title">%s</h3>
-					<p class="sps-login-gate-desc">%s</p>
-					<div class="sps-login-gate-actions">
-						<a href="%s" class="sps-btn sps-btn-login">%s</a>
-						%s
-					</div>
-				</div>',
-				esc_html__( 'Anmeldung erforderlich', 'smart-portal-suite' ),
-				esc_html__( 'Dieses Formular steht exklusiv registrierten Partnern und Kunden zur Verfügung. Bitte melden Sie sich an, um fortzufahren.', 'smart-portal-suite' ),
-				esc_url( $login_url ),
-				esc_html__( 'Jetzt anmelden', 'smart-portal-suite' ),
-				get_option( 'users_can_register' ) ? sprintf( '<a href="%s" class="sps-btn sps-btn-register">%s</a>', esc_url( $register_url ), esc_html__( 'Registrieren', 'smart-portal-suite' ) ) : ''
-			);
+		// Nur für angemeldete Nutzer? (Admin-Vorschau zeigt immer das Formular)
+		$is_preview = ! empty( $atts['preview'] ) && is_admin() && current_user_can( 'manage_options' );
+		if ( ! $is_preview && self::requires_login( $schema ) && ! is_user_logged_in() ) {
+			return $this->render_login_gate( $form_id, $schema );
 		}
 
 		// Enqueue styles & scripts
@@ -345,6 +540,7 @@ class SPS_Form_Renderer {
 			'nonce'     => wp_create_nonce( SPS_Ajax_Handler::NONCE_ACTION ),
 			'iconsUrl'  => SPS_PLUGIN_URL . 'assets/icons/portal-icons.svg',
 			'schema'    => $schema,
+			'preview'   => $is_preview,
 		);
 
 		ob_start();

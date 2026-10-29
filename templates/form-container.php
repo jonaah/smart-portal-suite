@@ -36,6 +36,7 @@ $custom_styles    = apply_filters( 'sps_form_container_styles', $inline_style_st
      data-sps-form-id="<?php echo esc_attr( $form_id ); ?>"
      data-sps-ajax-url="<?php echo esc_url( $ajax_url ); ?>"
      data-sps-nonce="<?php echo esc_attr( $nonce ); ?>"
+     <?php if ( ! empty( $form_config['preview'] ) ) : ?>data-sps-preview="1"<?php endif; ?>
      role="region" 
      aria-label="<?php echo esc_attr( $form_title ); ?>">
 

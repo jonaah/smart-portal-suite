@@ -278,6 +278,16 @@ class SPS_Doctor {
 		$forms    = new SPS_NC_Forms();
 		$as_user  = (int) SPS_Settings::get_setting( 'submit_as_user', 1 );
 
+		// Gleichnamige NC-Formulare: die Titelsuche nimmt das erste – oft das falsche.
+		$titles  = array();
+		$nc_list = $forms->list_forms();
+		if ( ! is_wp_error( $nc_list ) ) {
+			foreach ( $nc_list as $f ) {
+				$t              = strtolower( trim( isset( $f['title'] ) ? (string) $f['title'] : '' ) );
+				$titles[ $t ][] = (int) $f['id'];
+			}
+		}
+
 		foreach ( $renderer->get_available_forms() as $form_id => $info ) {
 			$schema = $renderer->load_schema( $form_id );
 			if ( ! $schema ) {
@@ -285,6 +295,18 @@ class SPS_Doctor {
 			}
 			$strict = isset( $map[ $form_id ] );
 			$label  = 'Formular ' . $form_id;
+
+			$this->add( 'form_access_' . $form_id, $label . ' Zugang', 'ok', SPS_Form_Renderer::requires_login( $schema ) ? 'nur angemeldete Nutzer' : 'alle (auch Gäste)' );
+
+			if ( ! $strict ) {
+				foreach ( array( 'nc_form_title', 'form_type', 'title' ) as $k ) {
+					$t = ! empty( $schema[ $k ] ) ? strtolower( trim( (string) $schema[ $k ] ) ) : '';
+					if ( '' !== $t && isset( $titles[ $t ] ) && count( $titles[ $t ] ) > 1 ) {
+						$this->add( 'form_dup_' . $form_id, $label . ' Zuordnung', 'warn', sprintf( 'Mehrere NC-Formulare mit Titel "%s" (IDs %s) – fest zuordnen: Smart Portal → Formulare → Styling → Zugang & Nextcloud oder wp sps configure --forms=%s=<id>', $schema[ $k ], implode( ', ', $titles[ $t ] ), $form_id ) );
+						break;
+					}
+				}
+			}
 
 			$nc_id = $forms->resolve_form_id( $schema );
 			if ( is_wp_error( $nc_id ) ) {
@@ -304,6 +326,8 @@ class SPS_Doctor {
 			foreach ( $report as $row ) {
 				if ( 'FEHLT (Pflicht)' === $row['status'] ) {
 					$errors[] = $row['name'];
+				} elseif ( 'ja' === $row['required'] && 0 === strpos( $row['status'], 'Optionen fehlen' ) ) {
+					$errors[] = $row['name'] . ' (' . $row['status'] . ')';
 				} elseif ( 0 === strpos( $row['status'], 'Pflicht-Dateifrage' ) ) {
 					$errors[] = $row['name'] . ' (Pflicht-Dateifrage: in NC optional machen oder --file-mode=forms)';
 				} elseif ( 'ok' !== $row['status'] && 'Datei' !== $row['status'] && 0 !== strpos( $row['status'], 'Datei →' ) ) {

@@ -27,8 +27,10 @@
         if ($grid.length && formId) {
             initColorPickers();
             initRadiusSliders();
+            initHeightControl();
             initPresetButtons();
             initSaveButton();
+            initAccessBox();
         }
 
         // Shortcode copy-to-clipboard
@@ -53,12 +55,11 @@
 
             $input.wpColorPicker({
                 change: function(event, ui) {
-                    var color = ui.color.toString();
-                    updatePreview(varName, color);
+                    updatePreview(varName, ui.color.toString());
                 },
                 clear: function() {
-                    var defaultColor = $input.data('default-color');
-                    updatePreview(varName, defaultColor);
+                    // Leer = automatisch/Standard aus dem Stylesheet
+                    updatePreview(varName, '');
                 }
             });
         });
@@ -84,6 +85,29 @@
             // Update preview
             updatePreview(varName, value + unit);
         });
+    }
+
+    /**
+     * Formularhöhe: Schieberegler + "Automatisch".
+     */
+    function initHeightControl() {
+        var $slider = $grid.find('.sps-height-slider');
+        var $auto   = $grid.find('.sps-height-auto');
+        var $label  = $slider.siblings('.sps-radius-value');
+
+        function apply() {
+            if ($auto.is(':checked')) {
+                $slider.prop('disabled', true);
+                $label.text('automatisch');
+                updatePreview('--sps-form-height', 'auto');
+            } else {
+                $slider.prop('disabled', false);
+                $label.text($slider.val() + 'px');
+                updatePreview('--sps-form-height', $slider.val() + 'px');
+            }
+        }
+        $slider.on('input change', apply);
+        $auto.on('change', apply);
     }
 
     /* ═══════════════════════════════════════════════════════════════
@@ -120,22 +144,44 @@
      * @param {Object} values Key-value map of CSS variables.
      */
     function applyValues(values) {
+        var defaults = config.defaults || {};
+
+        // Farben: Wert aus dem Preset, sonst Standard (leer = automatisch)
+        $grid.find('.sps-color-picker').each(function() {
+            var $picker = $(this);
+            var varName = $picker.attr('name');
+            var value   = Object.prototype.hasOwnProperty.call(values, varName) ? values[varName] : (defaults[varName] || '');
+            setColor($picker, value);
+            updatePreview(varName, value);
+        });
+
         $.each(values, function(varName, varValue) {
             if (varName.indexOf('radius') !== -1) {
-                // Radius: set slider value
                 var numVal = parseInt(varValue, 10) || 0;
-                var $slider = $grid.find('.sps-radius-slider[name="' + varName + '"]');
-                $slider.val(numVal).trigger('input');
-            } else {
-                // Color: set wp-color-picker value
-                var $picker = $grid.find('.sps-color-picker[name="' + varName + '"]');
-                if ($picker.length) {
-                    $picker.wpColorPicker('color', varValue);
+                $grid.find('.sps-radius-slider[name="' + varName + '"]').val(numVal).trigger('input');
+            } else if (varName === '--sps-form-height') {
+                var $auto = $grid.find('.sps-height-auto');
+                if (varValue === 'auto') {
+                    $auto.prop('checked', true).trigger('change');
+                } else {
+                    $auto.prop('checked', false);
+                    $grid.find('.sps-height-slider').val(parseInt(varValue, 10) || 760).trigger('input');
                 }
             }
-
-            updatePreview(varName, varValue);
         });
+    }
+
+    /**
+     * Farbe in einem wp-color-picker setzen oder leeren.
+     */
+    function setColor($picker, value) {
+        if (value) {
+            $picker.wpColorPicker('color', value);
+        } else {
+            $picker.val('');
+            var $container = $picker.closest('.wp-picker-container');
+            $container.find('.wp-color-result').css('background-color', '');
+        }
     }
 
     /* ═══════════════════════════════════════════════════════════════
@@ -149,9 +195,18 @@
      * @param {string} varValue CSS variable value (e.g. '#39baff').
      */
     function updatePreview(varName, varValue) {
-        var previewEl = document.getElementById('sps-preview-mock');
-        if (previewEl) {
+        var previewEl = document.querySelector('#sps-preview-frame .sps-form-container');
+        if (!previewEl) return;
+        if (varValue === '' || varValue === null || varValue === undefined) {
+            previewEl.style.removeProperty(varName);
+        } else {
             previewEl.style.setProperty(varName, varValue);
+        }
+        // Slider-Spuren werden per JS eingefärbt
+        if (window.SPS && SPS.Calculations && SPS.Calculations.updateSliderGradient) {
+            previewEl.querySelectorAll('input[type="range"]').forEach(function(el) {
+                SPS.Calculations.updateSliderGradient(el);
+            });
         }
     }
 
@@ -245,31 +300,141 @@
     function collectCurrentValues() {
         var values = {};
 
-        // Colors
+        // Farben (leer = automatisch, wird nicht gespeichert)
         $grid.find('.sps-color-picker').each(function() {
             var $input = $(this);
-            var colorVal = '';
-            try {
-                if (typeof $input.wpColorPicker === 'function') {
-                    colorVal = $input.wpColorPicker('color');
-                }
-            } catch (e) {
-                // Fall back
-            }
-            if (!colorVal) {
-                colorVal = $input.val();
-            }
-            values[$input.attr('name')] = colorVal;
+            values[$input.attr('name')] = String($input.val() || '').trim();
         });
 
-        // Radii
+        // Radien
         $grid.find('.sps-radius-slider').each(function() {
             var $slider = $(this);
-            var unit = $slider.data('unit') || 'px';
-            values[$slider.attr('name')] = $slider.val() + unit;
+            values[$slider.attr('name')] = $slider.val() + ($slider.data('unit') || 'px');
         });
 
+        // Höhe
+        var $height = $grid.find('.sps-height-slider');
+        if ($height.length) {
+            values['--sps-form-height'] = $grid.find('.sps-height-auto').is(':checked') ? 'auto' : $height.val() + 'px';
+        }
+
         return values;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       ZUGANG & NEXTCLOUD
+       ═══════════════════════════════════════════════════════════════ */
+
+    function initAccessBox() {
+        var $box = $('.sps-access-box');
+        if (!$box.length) return;
+
+        var $select  = $box.find('#sps-nc-form-id');
+        var $result  = $box.find('.sps-nc-result');
+        var $spinner = $box.find('.sps-access-spinner');
+        var $status  = $box.find('.sps-access-status');
+
+        function esc(t) {
+            return $('<div>').text(t === undefined || t === null ? '' : String(t)).html();
+        }
+        function busy(on) {
+            $spinner.toggleClass('is-active', !!on);
+        }
+
+        $box.on('click', '.sps-nc-load-forms', function() {
+            busy(true);
+            $result.empty();
+            $.post(config.ajaxUrl, { action: 'sps_nc_form_list', nonce: config.nonce })
+                .done(function(res) {
+                    if (!res.success) {
+                        $result.html('<div class="notice notice-error inline"><p>' + esc(res.data && res.data.message) + '</p></div>');
+                        return;
+                    }
+                    var current = String($select.val() || $select.data('current') || '0');
+                    var first   = $select.find('option').first().clone();
+                    $select.empty().append(first);
+                    var dups = [];
+                    res.data.forms.forEach(function(f) {
+                        var label = '#' + f.id + ' – ' + f.title + (f.owner ? ' (' + f.owner + ')' : '') + (f.lastUpdated ? ', geändert ' + f.lastUpdated : '') + (f.expired ? ' [abgelaufen]' : '');
+                        $select.append($('<option>').val(f.id).text(label));
+                        if (f.duplicate) dups.push('#' + f.id + ' ' + f.title);
+                    });
+                    $select.val(current);
+                    if (!$select.val()) $select.val('0');
+                    if (dups.length) {
+                        $result.html('<div class="notice notice-warning inline"><p><strong>Mehrere Formulare mit gleichem Titel:</strong> ' + esc(dups.join(', ')) + '. Bitte das richtige fest auswählen und mit „Zuordnung prüfen" kontrollieren.</p></div>');
+                    } else {
+                        $result.html('<p class="description">' + res.data.forms.length + ' Formulare gefunden.</p>');
+                    }
+                })
+                .fail(function() {
+                    $result.html('<div class="notice notice-error inline"><p>Nextcloud nicht erreichbar.</p></div>');
+                })
+                .always(function() { busy(false); });
+        });
+
+        $box.on('click', '.sps-nc-check-mapping', function() {
+            busy(true);
+            $result.empty();
+            $.post(config.ajaxUrl, {
+                action: 'sps_nc_mapping',
+                nonce: config.nonce,
+                form_id: formId,
+                nc_form_id: $select.val() || 0
+            })
+                .done(function(res) {
+                    if (!res.success) {
+                        $result.html('<div class="notice notice-error inline"><p>' + esc(res.data && res.data.message) + '</p></div>');
+                        return;
+                    }
+                    var bad = 0;
+                    var rows = res.data.rows.map(function(r) {
+                        var ok = r.status === 'ok' || r.status.indexOf('WebDAV') !== -1 || r.status === 'Datei';
+                        var critical = r.status.indexOf('FEHLT') === 0 || r.status.indexOf('Optionen fehlen') === 0 || r.status.indexOf('Pflicht-Dateifrage') === 0;
+                        if (critical) bad++;
+                        return '<tr class="' + (critical ? 'sps-map-bad' : (ok ? 'sps-map-ok' : 'sps-map-warn')) + '">' +
+                            '<td>' + esc(r.name) + (r.required ? ' <strong>*</strong>' : '') + '</td>' +
+                            '<td>' + esc(r.type) + '</td>' +
+                            '<td><code>' + esc(r.source) + '</code></td>' +
+                            '<td>' + esc(r.status) + '</td></tr>';
+                    }).join('');
+                    var head = bad
+                        ? '<div class="notice notice-error inline"><p><strong>' + bad + ' Problem(e)</strong> in NC-Formular #' + res.data.nc_form_id + ' – Übertragungen dorthin scheitern, bis das behoben ist (technischen Namen bzw. Optionstexte in Nextcloud anpassen).</p></div>'
+                        : '<div class="notice notice-success inline"><p>NC-Formular #' + res.data.nc_form_id + ': alle Pflichtfragen zugeordnet.</p></div>';
+                    var unused = res.data.unused && res.data.unused.length
+                        ? '<p class="description">Antworten ohne passende NC-Frage (werden nicht übertragen): <code>' + esc(res.data.unused.join(', ')) + '</code></p>'
+                        : '';
+                    $result.html(head + '<table class="widefat striped sps-mapping-table"><thead><tr><th>NC-Frage (technischer Name)</th><th>Typ</th><th>Quelle</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table>' + unused);
+                })
+                .fail(function() {
+                    $result.html('<div class="notice notice-error inline"><p>Nextcloud nicht erreichbar.</p></div>');
+                })
+                .always(function() { busy(false); });
+        });
+
+        $box.on('click', '.sps-save-access-btn', function() {
+            var $btn = $(this).prop('disabled', true);
+            $status.text('').removeClass('sps-status-success sps-status-error');
+            $.post(config.ajaxUrl, {
+                action: 'sps_save_form_access',
+                nonce: config.nonce,
+                form_id: formId,
+                access: $box.find('#sps-access-mode').val(),
+                gate_text: $box.find('#sps-access-gate-text').val(),
+                nc_form_id: $select.val() || 0
+            })
+                .done(function(res) {
+                    if (res.success) {
+                        $status.text(res.data.message).addClass('sps-status-success');
+                    } else {
+                        $status.text((res.data && res.data.message) || 'Fehler.').addClass('sps-status-error');
+                    }
+                })
+                .fail(function() {
+                    $status.text('Fehler beim Speichern.').addClass('sps-status-error');
+                })
+                .always(function() { $btn.prop('disabled', false); });
+        });
     }
 
     /* ═══════════════════════════════════════════════════════════════

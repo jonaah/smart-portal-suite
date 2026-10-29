@@ -123,7 +123,7 @@ window.SPS = window.SPS || {};
                         <input type="radio" id="${inputId}" name="${form.instanceId}_${step.id}" value="${SPS.escapeAttr(val)}" data-index="${idx}" ${isChecked ? 'checked' : ''} class="sps-radio-input">
                         <div class="sps-radio-box"></div>
                         <div class="sps-choice-content">
-                            <div class="sps-choice-title">${SPS.escapeHtml(choice.text)}</div>
+                            <div class="sps-choice-title">${SPS.escapeHtmlWrap(choice.text)}</div>
                             ${choice.subtitle ? `<div class="sps-choice-subtitle">${SPS.escapeHtml(choice.subtitle)}</div>` : ''}
                         </div>
                         ${choice.icon ? `<div class="sps-choice-icon-wrap--list sps-choice-icon">${renderIcon(choice.icon, 'sps-choice-icon-svg')}</div>` : ''}
@@ -134,7 +134,7 @@ window.SPS = window.SPS || {};
                     <label class="sps-radio-card sps-choice-option ${isChecked ? 'selected is-selected' : ''}" id="${form.instanceId}_label_${step.id}_${idx}" for="${inputId}">
                         <input type="radio" id="${inputId}" name="${form.instanceId}_${step.id}" value="${SPS.escapeAttr(val)}" data-index="${idx}" ${isChecked ? 'checked' : ''} class="sps-radio-input">
                         ${choice.icon ? `<div class="sps-choice-icon-wrap">${renderIcon(choice.icon, 'sps-choice-icon-svg')}</div>` : ''}
-                        <div class="sps-radio-text sps-choice-title">${SPS.escapeHtml(choice.text)}</div>
+                        <div class="sps-radio-text sps-choice-title">${SPS.escapeHtmlWrap(choice.text)}</div>
                         ${choice.subtitle ? `<div class="sps-radio-subtitle sps-choice-subtitle">${SPS.escapeHtml(choice.subtitle)}</div>` : ''}
                     </label>
                 `;
@@ -537,7 +537,7 @@ window.SPS = window.SPS || {};
                         <input type="checkbox" id="${inputId}" name="${form.instanceId}_${step.id}[]" value="${SPS.escapeAttr(val)}" data-index="${idx}" ${isChecked ? 'checked' : ''} class="sps-checkbox-input">
                         <div class="sps-checkbox-box">&#10003;</div>
                         <div class="sps-choice-content">
-                            <div class="sps-choice-title">${SPS.escapeHtml(choice.text)}</div>
+                            <div class="sps-choice-title">${SPS.escapeHtmlWrap(choice.text)}</div>
                             ${choice.subtitle ? `<div class="sps-choice-subtitle">${SPS.escapeHtml(choice.subtitle)}</div>` : ''}
                         </div>
                         ${choice.icon ? `<div class="sps-choice-icon-wrap--list sps-choice-icon">${renderIcon(choice.icon, 'sps-choice-icon-svg')}</div>` : ''}
@@ -548,7 +548,7 @@ window.SPS = window.SPS || {};
                     <label class="sps-checkbox-card sps-choice-option ${isChecked ? 'selected is-selected' : ''}" id="${form.instanceId}_chk_${step.id}_${idx}" for="${inputId}">
                         <input type="checkbox" id="${inputId}" name="${form.instanceId}_${step.id}[]" value="${SPS.escapeAttr(val)}" data-index="${idx}" ${isChecked ? 'checked' : ''} class="sps-checkbox-input">
                         ${choice.icon ? `<div class="sps-choice-icon-wrap">${renderIcon(choice.icon, 'sps-choice-icon-svg')}</div>` : ''}
-                        <div class="sps-radio-text sps-choice-title">${SPS.escapeHtml(choice.text)}</div>
+                        <div class="sps-radio-text sps-choice-title">${SPS.escapeHtmlWrap(choice.text)}</div>
                         ${choice.subtitle ? `<div class="sps-radio-subtitle sps-choice-subtitle">${SPS.escapeHtml(choice.subtitle)}</div>` : ''}
                     </label>
                 `;
@@ -733,7 +733,7 @@ window.SPS = window.SPS || {};
             // Render container skeleton
             this.container.classList.add('sps-mounted');
             this.container.innerHTML = `
-                <div class="sps-form-wrapper" role="form" aria-label="${SPS.escapeAttr(this.schema.title || 'Formular')}">
+                <div class="sps-form-wrapper sps-form-shell" role="form" aria-label="${SPS.escapeAttr(this.schema.title || 'Formular')}">
                     <div class="sps-progress-header">
                         <div class="sps-progress-container" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                             <div class="sps-progress-bar" id="${this.instanceId}_progress_bar"></div>
@@ -753,6 +753,24 @@ window.SPS = window.SPS || {};
 
             // Bind global/container event delegations
             this.bindEvents();
+
+            // Scroll-Hinweise im festen Rahmen (weicher Rand oben/unten)
+            this.container.addEventListener('scroll', (e) => {
+                if (e.target && e.target.classList && e.target.classList.contains('sps-step-main')) {
+                    this.updateScrollHint(e.target);
+                }
+            }, true);
+            if (typeof ResizeObserver !== 'undefined') {
+                const ro = new ResizeObserver(() => this.updateScrollHint());
+                this.container.querySelectorAll('.sps-step-main').forEach((el) => {
+                    ro.observe(el);
+                    if (el.firstElementChild) ro.observe(el.firstElementChild);
+                    const body = el.querySelector('.sps-step-body');
+                    if (body) ro.observe(body);
+                });
+            } else {
+                window.addEventListener('resize', () => this.updateScrollHint());
+            }
 
             // Navigate to initial visible step
             const firstIdx = this.findNextVisibleStep(-1);
@@ -794,6 +812,7 @@ window.SPS = window.SPS || {};
 
             return `
                 <div class="sps-step" id="${this.instanceId}_step_${index}" data-step-index="${index}" aria-hidden="true">
+                    <div class="sps-step-main">
                     <div class="sps-step-header">
                         ${showHeaderIcon ? `<div class="sps-step-icon-wrap">${renderIcon(step.icon, 'sps-step-icon')}</div>` : ''}
                         <div class="sps-question-container">
@@ -842,6 +861,7 @@ window.SPS = window.SPS || {};
 
                     <div class="sps-step-body">
                         ${contentHtml}
+                    </div>
                     </div>
 
                     <div class="sps-error-banner" id="${this.instanceId}_err_${index}" style="display:none;" role="alert"></div>
@@ -1804,6 +1824,13 @@ window.SPS = window.SPS || {};
                 nextEl.classList.add('active');
                 nextEl.setAttribute('aria-hidden', 'false');
 
+                // Jeder Schritt beginnt oben (fester Rahmen, Inhalt scrollt innen)
+                const mainEl = nextEl.querySelector('.sps-step-main');
+                if (mainEl) {
+                    mainEl.scrollTop = 0;
+                    this.updateScrollHint(mainEl);
+                }
+
                 // Adjust Next button label if returning from summary edit
                 const nextBtn = nextEl.querySelector('.sps-btn-next');
                 if (nextBtn) {
@@ -1823,6 +1850,21 @@ window.SPS = window.SPS || {};
 
             this.updateProgress();
             this.updateSummary();
+        }
+
+        /**
+         * Setzt die Klassen für den Scroll-Hinweis (weicher Rand), wenn der Inhalt
+         * eines Schritts höher ist als der feste Rahmen.
+         *
+         * @param {HTMLElement} [mainEl] - .sps-step-main; Standard: aktiver Schritt.
+         */
+        updateScrollHint(mainEl) {
+            const el = mainEl || this.container.querySelector('.sps-step.active .sps-step-main');
+            if (!el) return;
+            const above = el.scrollTop > 2;
+            const below = el.scrollHeight - el.clientHeight - el.scrollTop > 2;
+            el.classList.toggle('sps-has-more-above', above);
+            el.classList.toggle('sps-has-more-below', below);
         }
 
         /**
@@ -2203,6 +2245,12 @@ window.SPS = window.SPS || {};
         submit() {
             if (!this.validateStep(this.currentStepIndex)) return;
 
+            // Admin-Vorschau: nichts senden, nur den Erfolgsbildschirm zeigen
+            if (this.container.dataset.spsPreview === '1') {
+                this.renderSuccess('Vorschau – es wurde nichts gesendet.');
+                return;
+            }
+
             const submitBtn = this.container.querySelector('.sps-btn-submit');
             const setBtn = (html, disabled) => {
                 if (!submitBtn) return;
@@ -2372,6 +2420,10 @@ window.SPS = window.SPS || {};
     SPS.registerField = registerField;
     SPS.renderIcon = renderIcon;
     SPS.escapeHtml = escapeHtml;
+    // Wie escapeHtml, erlaubt aber Umbrüche nach "/" (z. B. "Reihenendhaus/Doppelhaushälfte")
+    SPS.escapeHtmlWrap = function (str) {
+        return escapeHtml(str).replace(/\//g, '/<wbr>');
+    };
     SPS.escapeAttr = escapeAttr;
 
     // --- Automatic Lifecycle Hooks ---

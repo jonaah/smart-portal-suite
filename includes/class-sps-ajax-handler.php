@@ -118,7 +118,7 @@ class SPS_Ajax_Handler {
 			wp_send_json_error( array( 'message' => __( 'Fehlende oder unvollständige Formulardaten.', 'smart-portal-suite' ) ), 400 );
 		}
 
-		if ( ! empty( $schema['requires_login'] ) && ! is_user_logged_in() ) {
+		if ( SPS_Form_Renderer::requires_login( $schema ) && ! is_user_logged_in() ) {
 			wp_send_json_error( array( 'message' => __( 'Bitte melden Sie sich an, um dieses Formular abzusenden.', 'smart-portal-suite' ) ), 403 );
 		}
 

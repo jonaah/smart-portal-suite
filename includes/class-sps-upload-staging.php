@@ -239,7 +239,7 @@ class SPS_Upload_Staging {
 		if ( ! $schema || ! self::schema_has_upload_field( $schema, $field ) ) {
 			self::fail( __( 'Dieses Formular nimmt hier keine Dateien an.', 'smart-portal-suite' ) );
 		}
-		if ( ! empty( $schema['requires_login'] ) && ! is_user_logged_in() ) {
+		if ( SPS_Form_Renderer::requires_login( $schema ) && ! is_user_logged_in() ) {
 			self::fail( __( 'Bitte melden Sie sich an.', 'smart-portal-suite' ), 403 );
 		}
 

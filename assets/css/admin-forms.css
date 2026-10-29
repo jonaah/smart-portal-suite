@@ -153,7 +153,7 @@
 /* Two-Column Grid: Controls Left, Preview Right */
 .sps-styling-grid {
 	display: grid;
-	grid-template-columns: 1fr 400px;
+	grid-template-columns: minmax(420px, 1fr) minmax(420px, 560px);
 	gap: 24px;
 	margin-top: 20px;
 	align-items: start;
@@ -627,4 +627,70 @@
 	padding: 16px 24px;
 	border-top: 1px solid #e2e8f0;
 	background: #f8fafc;
+}
+
+
+/* ═══ Echte Formular-Vorschau ═══ */
+.sps-preview-hint {
+	margin: 10px 12px !important;
+}
+
+.sps-preview-frame .sps-form-container {
+	--sps-viewport-offset: 140px;
+	border-radius: 0 0 4px 4px;
+	text-align: center;
+}
+
+.sps-preview-frame .sps-form-container h3 {
+	/* WP-Admin-Styles überschreiben */
+	color: var(--sps-heading-color);
+}
+
+.sps-preview-frame .sps-question {
+	font-size: 26px;
+}
+
+/* ═══ Zugang & Nextcloud ═══ */
+.sps-access-box select {
+	min-width: 280px;
+	max-width: 100%;
+}
+
+.sps-access-box .sps-nc-result {
+	margin-top: 10px;
+}
+
+.sps-access-box .sps-nc-result .notice {
+	margin: 6px 0;
+}
+
+.sps-mapping-table td,
+.sps-mapping-table th {
+	font-size: 12px;
+	padding: 6px 8px;
+}
+
+.sps-mapping-table tr.sps-map-bad td {
+	background: #fcf0f1;
+	color: #8a2424;
+}
+
+.sps-mapping-table tr.sps-map-warn td {
+	background: #fcf9e8;
+}
+
+.sps-access-status.sps-status-success { color: #00a32a; margin-left: 8px; }
+.sps-access-status.sps-status-error { color: #d63638; margin-left: 8px; }
+
+.sps-color-group .description {
+	margin-top: 0;
+}
+
+.sps-height-control {
+	flex-wrap: wrap;
+}
+
+.sps-height-control p {
+	flex-basis: 100%;
+	margin: 4px 0 0;
 }
