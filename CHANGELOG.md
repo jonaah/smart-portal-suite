@@ -6,6 +6,20 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 
 ---
 
+## [0.5.2] - 2026-10-29
+### Behoben
+- **v0.5.0 war unvollständig:** `includes/class-sps-upload-staging.php` fehlte im Release → Fatal Error (HTTP 500) auf allen Seiten. (Tag v0.5.1 wurde ohne Versionsanpassung erstellt, dafür gibt es kein Release.)
+
+### Hinzugefügt
+- **Formular nur für angemeldete Nutzer:** pro Formular einstellbar (Smart Portal → Formulare → Styling → „Zugang & Nextcloud“ bzw. `wp sps configure --form-access=gebaeude_check=login`). Vorrang vor `requires_login` im Schema. Gäste sehen einen Hinweis im Formular-Design mit Anmelde-/Registrierungs-Button. Nach der Anmeldung geht es zurück zum Formular (`redirect_to` + Cookie). Die Sperre gilt auch für Uploads und Absenden. Der Hinweistext ist anpassbar.
+- **Nextcloud-Formular im Editor wählen:** Liste der NC-Formulare (eigene + geteilte), Warnung bei gleichnamigen Formularen und „Zuordnung prüfen“ (wie `wp sps mapping`) direkt im Admin. `wp sps doctor` warnt bei gleichnamigen NC-Formularen und meldet Pflicht-Auswahlfragen mit fehlenden Optionen als Fehler.
+- **Alle Formularfarben einstellbar:** Grundfarben (u. a. Akzent-Verlauf, Schrift auf Buttons, Häkchen, Fehler), Feinabstimmung (Rahmen, Hover, Eingabefelder, Platzhalter, Fortschritt, Slider, Tooltip, Schatten, Overlay; leer = automatisch abgeleitet) und Farben der Gebäude-Illustrationen. Keine fest kodierten Farben mehr im Formular-CSS.
+- **Echte Live-Vorschau** im Styling-Editor (das tatsächliche Formular; in der Vorschau wird nichts gesendet).
+
+### Geändert
+- **Feste, responsive Formularhöhe:** Fortschritt, Frage und Buttons stehen bei jedem Schritt an derselben Stelle. Längere Inhalte scrollen innerhalb des Rahmens, mit weichem Rand als Scroll-Hinweis. Höhe im Editor einstellbar (Standard 760 px, passt sich der Fensterhöhe an, „automatisch“ = altes Verhalten).
+- Mobil: Auswahlkacheln zweispaltig und kompakter, Zurück/Weiter nebeneinander, Fragen-Schriftgröße ab 24 px.
+
 ## [0.5.0]
 ### Behoben
 - **Absenden bei Hostern mit Multipart-Sperre (z. B. Manitu):** Das Formular sendet kein `multipart/form-data` mehr (Ergebnis dort: HTTP 403). Antworten gehen als JSON an `admin-ajax.php?action=sps_submit_form`, Dateien vorher einzeln als Rohdaten (`application/octet-stream`) an `sps_upload_file`. Die Nonce-Erneuerung läuft per GET.
