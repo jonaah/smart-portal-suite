@@ -51,12 +51,21 @@ class SPS_NC_Client {
 	protected $timeout = 20;
 
 	/**
-	 * Cookie-Jar: Nextcloud bindet z. B. Forms-Upload-Tokens an die Session.
-	 * Alle Requests eines Client-Objekts teilen sich daher die Session-Cookies.
+	 * Cookie-Jar: Nextcloud bindet Forms-Upload-Tokens an die Session.
+	 * Nur aktiv nach keep_session(): Ohne Sitzung zählt jede Anfrage als frische
+	 * Basic-Auth-Anmeldung. Das ist Voraussetzung, damit die Nextcloud-Ausnahme
+	 * "allowed_no_password_confirmation_ranges" für das Anlegen von Konten greift.
 	 *
 	 * @var WP_Http_Cookie[]
 	 */
 	protected $cookies = array();
+
+	/**
+	 * Session-Cookies mitschicken?
+	 *
+	 * @var bool
+	 */
+	protected $keep_session = false;
 
 	/**
 	 * Constructor.
@@ -206,6 +215,20 @@ class SPS_NC_Client {
 	}
 
 	/**
+	 * Session-Cookies über mehrere Requests behalten (nur für Forms-Uploads nötig).
+	 *
+	 * @param bool $on An/aus.
+	 * @return $this
+	 */
+	public function keep_session( $on = true ) {
+		$this->keep_session = (bool) $on;
+		if ( ! $this->keep_session ) {
+			$this->cookies = array();
+		}
+		return $this;
+	}
+
+	/**
 	 * Execute HTTP request to Nextcloud.
 	 *
 	 * @param string $endpoint       API endpoint path.
@@ -232,7 +255,7 @@ class SPS_NC_Client {
 			'redirection' => 0,
 		);
 
-		if ( ! empty( $this->cookies ) ) {
+		if ( $this->keep_session && ! empty( $this->cookies ) ) {
 			$args['cookies'] = $this->cookies;
 		}
 
@@ -254,7 +277,9 @@ class SPS_NC_Client {
 			return $response;
 		}
 
-		$this->remember_cookies( $response );
+		if ( $this->keep_session ) {
+			$this->remember_cookies( $response );
+		}
 
 		return $response;
 	}
@@ -330,6 +355,20 @@ class SPS_NC_Client {
 
 		if ( '' === $message ) {
 			$message = 'Nextcloud-Fehler';
+		}
+
+		// Nextcloud 33/34: Verwaltungsfunktionen (Konten anlegen, Gruppen, Passwort setzen)
+		// akzeptieren App-Passwörter nur noch mit Ausnahme für die IP des Webservers.
+		if ( false !== stripos( $message, 'Password confirmation is required' ) ) {
+			return new WP_Error(
+				'nc_password_confirmation',
+				sprintf(
+					'Nextcloud verlangt eine Passwortbestätigung (HTTP %d, OCS %s). Ab Nextcloud 33/34 sind App-Passwörter für die Kontenverwaltung gesperrt. Lösung: in der Nextcloud-config.php die IP des WordPress-Servers als Ausnahme eintragen: occ config:system:set allowed_no_password_confirmation_ranges 0 --value="<IP>/32" (Details: wp sps doctor).',
+					$code,
+					null === $status ? '-' : $status
+				),
+				array( 'http' => $code, 'ocs' => $status )
+			);
 		}
 
 		return new WP_Error(

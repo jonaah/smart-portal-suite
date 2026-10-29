@@ -566,6 +566,8 @@ class SPS_NC_Forms {
 	 * @return array|WP_Error Antwortwerte für die Submission.
 	 */
 	public function upload_files( $nc_form_id, $question_id, array $files ) {
+		// Upload-Tokens sind an die Nextcloud-Session gebunden: Upload und Absenden teilen die Cookies.
+		$this->client->keep_session( true );
 		if ( empty( $files ) ) {
 			return array();
 		}

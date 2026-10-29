@@ -6,6 +6,12 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 
 ---
 
+## [0.6.6] - 2026-10-29
+### Behoben
+- **Konten-Sync mit Nextcloud 33/34** („Password confirmation is required“, OCS 403): Nextcloud akzeptiert App-Passwörter für die Kontenverwaltung nur noch mit der Ausnahme `allowed_no_password_confirmation_ranges` (IP des WordPress-Servers) – und die greift nur bei Anfragen **ohne Sitzungs-Cookie**. Das Plugin schickt Cookies jetzt nur noch beim Forms-Datei-Upload mit, wo Nextcloud sie braucht.
+- Verständliche Fehlermeldung mit Lösungsweg statt „Password confirmation is required“.
+- `wp sps doctor` / Diagnose-MCP: Nextcloud-Version und Test „Konten anlegen“ (Probe mit ungültigen Daten, legt nichts an) inkl. fertigem occ-Befehl mit der vermuteten Server-IP.
+
 ## [0.6.5] - 2026-10-29
 ### Geändert
 - **Heizenergieverbrauch in der Einheit der Rechnung:** Öl in Litern, Gas in m³ oder kWh (umschaltbar), Pellets und Biomasse in kg, Strom-Direktheizung und Fernwärme in kWh, Wärmepumpe als Wärmepumpen-Strom in kWh. Das Formular zeigt live die Umrechnung („2.500 Liter ≈ 24.500 kWh Wärme pro Jahr · 1 Liter ≈ 9,8 kWh“, bei der Wärmepumpe „kWh Strom × Jahresarbeitszahl“) und einen Hinweis, wo die Zahl auf der Rechnung steht. An Nextcloud geht wie bisher der kWh-Wert; „waermeverbrauch-original“ enthält die Eingabe mit Einheit. Der Server rechnet aus Eingabe und Einheit selbst nach (Schema-Option `"inputUnits"`, Regel `"input"`).

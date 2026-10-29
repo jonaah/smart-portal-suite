@@ -238,6 +238,9 @@ class SPS_Doctor {
 		}
 		$this->add( 'nc_auth', 'Anmeldung Service-Account', 'ok', 'angemeldet als ' . ( isset( $me['id'] ) ? $me['id'] : $account ) );
 
+		// Version und Kontenverwaltung (Nextcloud 33/34: App-Passwörter brauchen eine IP-Ausnahme).
+		$this->check_account_management( $client );
+
 		// Rechte.
 		$groups      = (array) SPS_Settings::get_setting( 'nc_sync_auto_groups', 'Hauseigner' );
 		$auto_groups = array_values( array_filter( array_map( 'trim', explode( ',', implode( ',', $groups ) ) ) ) );
@@ -272,6 +275,51 @@ class SPS_Doctor {
 		$this->check_forms( $auto_groups );
 		$this->check_webdav( $client );
 		$this->check_social_db();
+	}
+
+	/**
+	 * Darf der Service-Account Konten anlegen? Probe mit absichtlich ungültigen
+	 * Daten: Nextcloud prüft die Passwortbestätigung vor den Eingaben, es wird
+	 * also nie ein Konto angelegt.
+	 *
+	 * @param SPS_NC_Client $client Service-Client.
+	 */
+	protected function check_account_management( SPS_NC_Client $client ) {
+		$status  = json_decode( (string) wp_remote_retrieve_body( $client->request( 'status.php' ) ), true );
+		$version = is_array( $status ) && ! empty( $status['versionstring'] ) ? (string) $status['versionstring'] : '';
+		if ( '' !== $version ) {
+			$this->add( 'nc_version', 'Nextcloud-Version', 'ok', $version );
+		}
+
+		$probe = SPS_NC_Client::parse_ocs(
+			$client->request( 'ocs/v1.php/cloud/users?format=json', 'POST', array( 'userid' => '', 'password' => '' ), array( 'Content-Type' => 'application/x-www-form-urlencoded' ) ),
+			array( 100 )
+		);
+		$ip = self::server_ip_hint();
+		if ( is_wp_error( $probe ) && 'nc_password_confirmation' === $probe->get_error_code() ) {
+			$this->add(
+				'nc_account_create',
+				'Konten anlegen',
+				'error',
+				'Nextcloud lehnt das App-Passwort für die Kontenverwaltung ab (ab Nextcloud 33/34). Registrierungen werden nicht in Nextcloud angelegt. Lösung auf dem Nextcloud-Server: php occ config:system:set allowed_no_password_confirmation_ranges 0 --value="' . ( $ip ? $ip : '<IP des WordPress-Servers>' ) . '/32"' . ( $ip ? ' (IP ermittelt aus WordPress – mit der remoteAddr im Nextcloud-Log abgleichen)' : '' ) . '.'
+			);
+		} else {
+			$this->add( 'nc_account_create', 'Konten anlegen', 'ok', 'Service-Account darf Konten anlegen (Probe ohne Anlage).' );
+		}
+	}
+
+	/**
+	 * Vermutliche IP, mit der WordPress Nextcloud anfragt.
+	 *
+	 * @return string
+	 */
+	protected static function server_ip_hint() {
+		$ip = isset( $_SERVER['SERVER_ADDR'] ) ? (string) $_SERVER['SERVER_ADDR'] : '';
+		if ( '' === $ip || '127.0.0.1' === $ip || '::1' === $ip ) {
+			$host = wp_parse_url( home_url(), PHP_URL_HOST );
+			$ip   = $host ? (string) gethostbyname( $host ) : '';
+		}
+		return filter_var( $ip, FILTER_VALIDATE_IP ) ? $ip : '';
 	}
 
 	/**
