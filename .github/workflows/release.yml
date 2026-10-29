@@ -38,6 +38,16 @@ jobs:
           echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Building release for Tag: $TAG (Version: $VERSION)"
 
+      - name: Determine Latest Flag
+        id: latest
+        run: |
+          # Nur die höchste stabile Version wird "Latest" – auch wenn mehrere Tags
+          # gleichzeitig gepusht werden und die Jobs in beliebiger Reihenfolge enden.
+          TAG="${{ steps.version.outputs.TAG }}"
+          HIGHEST=$(git tag -l 'v*' --sort=-v:refname | grep -v -- '-' | head -n 1)
+          if [ "$TAG" = "$HIGHEST" ]; then echo "MAKE_LATEST=true" >> "$GITHUB_OUTPUT"; else echo "MAKE_LATEST=false" >> "$GITHUB_OUTPUT"; fi
+          echo "Tag $TAG, höchste Version $HIGHEST"
+
       - name: Verify Version Consistency
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
@@ -92,4 +102,5 @@ jobs:
           files: smart-portal-suite.zip
           generate_release_notes: true
           draft: false
+          make_latest: ${{ steps.latest.outputs.MAKE_LATEST }}
           prerelease: ${{ contains(steps.version.outputs.TAG, '-rc') || contains(steps.version.outputs.TAG, '-beta') || contains(steps.version.outputs.TAG, '-alpha') }}
