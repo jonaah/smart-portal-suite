@@ -553,29 +553,28 @@ class SPS_Form_Manager {
 									<?php endforeach; ?>
 									<?php
 									$height_raw  = isset( $current['--sps-form-height'] ) ? $current['--sps-form-height'] : $defaults['--sps-form-height'];
-									$height_auto = ( 'auto' === $height_raw );
-									$height_num  = $height_auto ? 760 : intval( $height_raw );
+									$height_mode = in_array( $height_raw, array( 'screen', 'auto' ), true ) ? $height_raw : 'fixed';
+									$height_num  = 'fixed' === $height_mode ? intval( $height_raw ) : 760;
 									?>
 									<tr>
 										<th scope="row">
-											<label for="sps-var---sps-form-height"><?php esc_html_e( 'Formularhöhe', 'smart-portal-suite' ); ?></label>
+											<label for="sps-height-mode"><?php esc_html_e( 'Formularhöhe', 'smart-portal-suite' ); ?></label>
 										</th>
 										<td class="sps-radius-control sps-height-control">
+											<select id="sps-height-mode" class="sps-height-mode">
+												<option value="screen" <?php selected( $height_mode, 'screen' ); ?>><?php esc_html_e( 'Ein Bildschirm (Standard)', 'smart-portal-suite' ); ?></option>
+												<option value="fixed" <?php selected( $height_mode, 'fixed' ); ?>><?php esc_html_e( 'Feste Höhe', 'smart-portal-suite' ); ?></option>
+												<option value="auto" <?php selected( $height_mode, 'auto' ); ?>><?php esc_html_e( 'Automatisch (wächst mit der Frage)', 'smart-portal-suite' ); ?></option>
+											</select>
 											<input type="range"
 												id="sps-var---sps-form-height"
 												class="sps-height-slider"
 												name="--sps-form-height"
 												value="<?php echo esc_attr( $height_num ); ?>"
 												min="480" max="1100" step="10" data-unit="px"
-												<?php disabled( $height_auto ); ?> />
-											<span class="sps-radius-value"><?php echo $height_auto ? esc_html__( 'automatisch', 'smart-portal-suite' ) : intval( $height_num ) . 'px'; ?></span>
-											<p>
-												<label>
-													<input type="checkbox" class="sps-height-auto" <?php checked( $height_auto ); ?> />
-													<?php esc_html_e( 'Automatisch (Formular wächst mit der Frage)', 'smart-portal-suite' ); ?>
-												</label>
-											</p>
-											<p class="description"><?php esc_html_e( 'Maximale Höhe auf großen Bildschirmen. Auf kleineren Bildschirmen passt sich das Formular der Fensterhöhe an. Längere Inhalte scrollen innerhalb des Rahmens, die Buttons bleiben an derselben Stelle.', 'smart-portal-suite' ); ?></p>
+												<?php disabled( 'fixed' !== $height_mode ); ?> />
+											<span class="sps-radius-value"><?php echo 'fixed' === $height_mode ? intval( $height_num ) . 'px' : ''; ?></span>
+											<p class="description"><?php esc_html_e( '„Ein Bildschirm“: Das Formular füllt genau die Fensterhöhe und wird beim Öffnen der Seite in den Blick gescrollt; Header und Footer bleiben per Scrollen erreichbar. „Feste Höhe“: maximale Höhe in Pixeln. In beiden Fällen bleiben Frage und Buttons an derselben Stelle, längere Inhalte scrollen im Rahmen.', 'smart-portal-suite' ); ?></p>
 										</td>
 									</tr>
 								</tbody>
@@ -1530,7 +1529,7 @@ class SPS_Form_Manager {
 		$defaults['--sps-radius-card']  = '12px';
 		$defaults['--sps-radius-btn']   = '10px';
 		$defaults['--sps-radius-input'] = '12px';
-		$defaults['--sps-form-height']  = '760px';
+		$defaults['--sps-form-height']  = 'screen';
 		return $defaults;
 	}
 
@@ -1763,7 +1762,9 @@ class SPS_Form_Manager {
 			}
 
 			if ( '--sps-form-height' === $key ) {
-				if ( 'auto' === $value || 0 === intval( $value ) ) {
+				if ( 'screen' === $value ) {
+					$sanitized[ $key ] = 'screen';
+				} elseif ( 'auto' === $value || 0 === intval( $value ) ) {
 					$sanitized[ $key ] = 'auto';
 				} else {
 					$sanitized[ $key ] = max( 400, min( 1400, intval( $value ) ) ) . 'px';

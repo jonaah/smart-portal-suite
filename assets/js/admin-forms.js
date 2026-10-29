@@ -92,22 +92,18 @@
      */
     function initHeightControl() {
         var $slider = $grid.find('.sps-height-slider');
-        var $auto   = $grid.find('.sps-height-auto');
+        var $mode   = $grid.find('.sps-height-mode');
         var $label  = $slider.siblings('.sps-radius-value');
 
         function apply() {
-            if ($auto.is(':checked')) {
-                $slider.prop('disabled', true);
-                $label.text('automatisch');
-                updatePreview('--sps-form-height', 'auto');
-            } else {
-                $slider.prop('disabled', false);
-                $label.text($slider.val() + 'px');
-                updatePreview('--sps-form-height', $slider.val() + 'px');
-            }
+            var mode = $mode.val();
+            $slider.prop('disabled', mode !== 'fixed');
+            $label.text(mode === 'fixed' ? $slider.val() + 'px' : '');
+            // Vorschau: "Ein Bildschirm" wird im Admin mit fester Höhe angedeutet
+            updatePreview('--sps-form-height', mode === 'fixed' ? $slider.val() + 'px' : (mode === 'auto' ? 'auto' : '760px'));
         }
         $slider.on('input change', apply);
-        $auto.on('change', apply);
+        $mode.on('change', apply);
     }
 
     /* ═══════════════════════════════════════════════════════════════
@@ -160,11 +156,11 @@
                 var numVal = parseInt(varValue, 10) || 0;
                 $grid.find('.sps-radius-slider[name="' + varName + '"]').val(numVal).trigger('input');
             } else if (varName === '--sps-form-height') {
-                var $auto = $grid.find('.sps-height-auto');
-                if (varValue === 'auto') {
-                    $auto.prop('checked', true).trigger('change');
+                var $mode = $grid.find('.sps-height-mode');
+                if (varValue === 'auto' || varValue === 'screen') {
+                    $mode.val(varValue).trigger('change');
                 } else {
-                    $auto.prop('checked', false);
+                    $mode.val('fixed');
                     $grid.find('.sps-height-slider').val(parseInt(varValue, 10) || 760).trigger('input');
                 }
             }
@@ -314,8 +310,9 @@
 
         // Höhe
         var $height = $grid.find('.sps-height-slider');
+        var mode    = $grid.find('.sps-height-mode').val();
         if ($height.length) {
-            values['--sps-form-height'] = $grid.find('.sps-height-auto').is(':checked') ? 'auto' : $height.val() + 'px';
+            values['--sps-form-height'] = mode === 'fixed' ? $height.val() + 'px' : (mode || 'screen');
         }
 
         return values;

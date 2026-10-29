@@ -1743,7 +1743,8 @@ header, .site-header, .wp-block-header, .wp-block-template-part {
     min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
-    overscroll-behavior: contain;
+    /* Kein "contain": am Ende des Inhalts scrollt das Mausrad die Seite weiter. */
+    overscroll-behavior: auto;
     -webkit-overflow-scrolling: touch;
     /* Platz für Fokusringe und Kartenschatten, die sonst abgeschnitten würden */
     padding: 6px 8px;
@@ -1842,5 +1843,114 @@ header, .site-header, .wp-block-header, .wp-block-template-part {
     .sps-choice-card--list,
     .sps-checkbox-option {
         padding: 12px 14px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   19. FELDGRUPPEN (z. B. Adresse): einheitliche Breite und Abstände
+   ═══════════════════════════════════════════════════════════════ */
+.sps-group-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+.sps-group-wrapper .sps-group-row {
+    max-width: none;
+    margin: 0;
+    gap: 12px;
+}
+
+.sps-group-wrapper .sps-group-col,
+.sps-group-wrapper .sps-group-field {
+    min-width: 0;
+}
+
+.sps-group-wrapper .sps-group-field .sps-input,
+.sps-group-wrapper .sps-group-col .sps-input {
+    width: 100%;
+    margin: 0;
+}
+
+.sps-group-wrapper .sps-consent-card {
+    max-width: none;
+    margin: 4px 0 0;
+}
+
+/* Slider ohne Vorauswahl */
+.sps-slider-val.is-empty {
+    color: var(--sps-text-dim);
+    font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   20. "EIN BILDSCHIRM" (Standard): Formular füllt genau die Fensterhöhe
+   --sps-viewport-offset setzt das JS auf die Höhe fixierter Kopfzeilen
+   (Admin-Leiste, Sticky-Header), damit nichts verdeckt wird.
+   ═══════════════════════════════════════════════════════════════ */
+.sps-form-container.sps-fullview.sps-mounted {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - var(--sps-fullview-offset, 0px));
+    height: calc(100svh - var(--sps-fullview-offset, 0px));
+    min-height: var(--sps-form-min-height);
+}
+
+.sps-form-container.sps-fullview .sps-form-shell {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.sps-form-container.sps-fullview .sps-loading-skeleton,
+.sps-form-container.sps-fullview .sps-success-box {
+    height: auto;
+    min-height: calc(100svh - var(--sps-fullview-offset, 0px) - 60px);
+}
+
+.sps-form-container.sps-fullview > .sps-success-box {
+    flex: 1 1 auto;
+    margin: auto;
+}
+
+/* Zahlen-Buttons (Anzahl-Fragen): umbrechen statt aus der Karte laufen */
+.sps-slider-container {
+    min-width: 0;
+}
+
+.sps-slider-options.active {
+    grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+    max-width: 100%;
+}
+
+@media (max-width: 600px) {
+    .sps-slider-options.active {
+        grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+        gap: 8px;
+    }
+}
+
+.sps-slider-val.is-empty {
+    font-size: 22px;
+}
+
+@media (max-width: 600px) {
+    .sps-form-shell .sps-slider-hero-icon svg,
+    .sps-form-shell .sps-slider-hero-icon .sps-icon {
+        max-height: 96px;
+        width: auto;
+    }
+
+    .sps-form-shell .sps-slider-container {
+        padding: 18px 14px;
+    }
+
+    .sps-form-shell .sps-slider-val {
+        margin-bottom: 14px;
     }
 }

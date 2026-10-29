@@ -500,6 +500,8 @@
     {
       "id": "vollgeschosse",
       "type": "slider",
+      "preselect": false,
+      "buttons": true,
       "dataType": "int",
       "label": "Anzahl Vollgeschosse?",
       "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Liegen <strong>vollständig über der Geländeoberfläche</strong></li><li>Werden in der Regel als <strong>Wohn- oder Nutzgeschosse</strong> genutzt</li><li>Haben eine Raumhöhe von <strong>mind. 2,3m</strong> und eine Fläche von <strong>2/3 des Erdgeschosses</strong></li><li><strong>Wichtig:</strong> Untergeschosse zählen <strong>nicht</strong> als Vollgeschosse</li></ul>",
@@ -514,6 +516,8 @@
     {
       "id": "beheizt",
       "type": "slider",
+      "preselect": false,
+      "buttons": true,
       "dataType": "int",
       "label": "Anzahl beheizter Geschosse?",
       "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Geschosse, die über eine <strong>Heizung</strong> verfügen</li><li>Sind somit für <strong>Wohn- oder Nutzungszwecke</strong> geeignet</li><li>Das können sowohl <strong>Vollgeschosse</strong> als auch <strong>Untergeschosse</strong> (Keller) sein</li></ul>",
@@ -528,6 +532,8 @@
     {
       "id": "keller",
       "type": "slider",
+      "preselect": false,
+      "buttons": true,
       "dataType": "int",
       "label": "Anzahl der Kellergeschosse?",
       "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Ein Geschoss, das <strong>teilweise oder vollständig</strong> unter der Geländeoberfläche liegt</li></ul>",
@@ -936,6 +942,7 @@
     {
       "id": "aussenwand_sanierung_jahr",
       "type": "slider",
+      "format": "year",
       "dataType": "int",
       "label": "In welchem Jahr wurde die Außenwand zuletzt saniert?",
       "reason": "Wird benötigt, um den aktuellen Dämmstandard der Außenwand zeitlich einzuordnen.",
@@ -1017,6 +1024,7 @@
     {
       "id": "fenster_sanierung_jahr",
       "type": "slider",
+      "format": "year",
       "dataType": "int",
       "label": "In welchem Jahr wurden die Fenster zuletzt saniert?",
       "reason": "Wird benötigt, um den aktuellen Standard der Fenster zeitlich einzuordnen.",
@@ -1075,6 +1083,7 @@
     {
       "id": "dach_sanierung_jahr",
       "type": "slider",
+      "format": "year",
       "dataType": "int",
       "label": "In welchem Jahr wurde das Dach zuletzt saniert?",
       "reason": "Wird benötigt, um den aktuellen Dämmstandard des Dachs zeitlich einzuordnen.",
@@ -1143,6 +1152,7 @@
     {
       "id": "keller_sanierung_jahr",
       "type": "slider",
+      "format": "year",
       "dataType": "int",
       "label": "In welchem Jahr wurde die Kellerdecke zuletzt saniert?",
       "reason": "Wird benötigt, um den aktuellen Dämmstandard der Kellerdecke zeitlich einzuordnen.",
@@ -1190,16 +1200,23 @@
       "label": "Wo befindet sich das Objekt?",
       "fields": [
         {
-          "id": "plz",
-          "type": "number",
-          "placeholder": "Objekt PLZ (5-stellig)",
-          "required": true
-        },
-        {
-          "id": "ort",
-          "type": "text",
-          "placeholder": "Ort",
-          "required": true
+          "type": "row",
+          "fields": [
+            {
+              "id": "plz",
+              "type": "number",
+              "placeholder": "PLZ",
+              "flex": "0 0 140px",
+              "required": true
+            },
+            {
+              "id": "ort",
+              "type": "text",
+              "placeholder": "Ort",
+              "flex": "1",
+              "required": true
+            }
+          ]
         },
         {
           "type": "row",
@@ -1215,35 +1232,10 @@
               "id": "hausnummer",
               "type": "text",
               "placeholder": "Nr.",
-              "flex": "0 0 80px",
+              "flex": "0 0 100px",
               "required": true
             }
           ]
-        },
-        {
-          "type": "row",
-          "fields": [
-            {
-              "id": "Vorname",
-              "type": "text",
-              "placeholder": "Vorname",
-              "flex": "1",
-              "required": true
-            },
-            {
-              "id": "Nachname",
-              "type": "text",
-              "placeholder": "Nachname",
-              "flex": "1",
-              "required": true
-            }
-          ]
-        },
-        {
-          "id": "E-Mail",
-          "type": "email",
-          "placeholder": "E-Mail-Adresse",
-          "required": true
         },
         {
           "id": "consent",

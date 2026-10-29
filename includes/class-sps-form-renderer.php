@@ -120,6 +120,10 @@ class SPS_Form_Renderer {
 			if ( 0 !== strpos( $var_name, '--sps-' ) ) {
 				continue;
 			}
+			// "screen" ist ein Layout-Modus (Klasse sps-fullview), kein CSS-Wert.
+			if ( '--sps-form-height' === $var_name && 'screen' === $var_value ) {
+				continue;
+			}
 			$clean_name = '--' . sanitize_key( ltrim( $var_name, '-' ) );
 			$vars[] = $clean_name . ': ' . esc_attr( $var_value );
 		}
@@ -258,6 +262,17 @@ class SPS_Form_Renderer {
 	/* ═══════════════════════════════════════════════════════════════
 	   ZUGANG (nur angemeldete Nutzer)
 	   ═══════════════════════════════════════════════════════════════ */
+
+	/**
+	 * Höhenmodus eines Formulars: "screen" (Standard), "auto" oder Pixelwert.
+	 *
+	 * @param string $form_id Formular-ID.
+	 * @return string
+	 */
+	public static function height_mode( $form_id ) {
+		$theme = class_exists( 'SPS_Form_Manager' ) ? SPS_Form_Manager::get_theme( $form_id ) : array();
+		return ! empty( $theme['--sps-form-height'] ) ? (string) $theme['--sps-form-height'] : 'screen';
+	}
 
 	/**
 	 * Option mit den Zugangseinstellungen je Formular.

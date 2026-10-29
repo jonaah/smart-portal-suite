@@ -167,29 +167,29 @@ window.SPS = window.SPS || {};
         const cfg         = form.getStepConfig(step);
         const Calc        = SPS.Calculations;
         let   currentVal  = form.getAnswer(step.id);
+        // "preselect": false → keine Vorauswahl, die Person muss selbst wählen.
+        const noPreselect = step.preselect === false;
+        const unanswered  = (currentVal === undefined || currentVal === null || currentVal === '');
 
-        if (currentVal === undefined || currentVal === null) {
+        if (unanswered && !noPreselect) {
             currentVal = cfg.value !== undefined ? cfg.value : (cfg.min || 0);
             form.setAnswer(step.id, currentVal, false);
         }
+        const hasValue = !(unanswered && noPreselect);
 
-        // Determine discrete values (2–7 steps → show buttons)
+        // Determine discrete values (2–7 steps → show buttons; "buttons": true bis 12)
         const discreteValues = (Calc && Calc.getSliderStepValues)
-            ? Calc.getSliderStepValues(cfg.min, cfg.max, cfg.step)
+            ? Calc.getSliderStepValues(cfg.min, cfg.max, cfg.step, step.buttons ? 12 : undefined)
             : [];
         const isDiscrete = discreteValues.length > 0;
 
         // Compute initial display value (conversion takes priority over plain suffix)
-        let displayVal;
-        if (step.conversion && Calc && Calc.resolveConversion) {
-            displayVal = Calc.resolveConversion(currentVal, step.conversion, form.answers);
-        } else {
-            displayVal = Calc ? Calc.formatUnit(currentVal, cfg.suffix || '') : (currentVal + (cfg.suffix || ''));
-        }
+        const displayVal = hasValue ? form.formatSliderValue(step, cfg, currentVal) : 'Bitte wählen';
+        const rangeVal   = hasValue ? currentVal : (cfg.min !== undefined ? cfg.min : 0);
 
         // Compute initial reference badge text (e.g. "Ø 3 Personen")
         let badgeText = '';
-        if (step.referenceBadge && Calc && Calc.calculateReferenceBadge) {
+        if (hasValue && step.referenceBadge && Calc && Calc.calculateReferenceBadge) {
             badgeText = Calc.calculateReferenceBadge(currentVal, step.referenceBadge) || '';
         }
 
@@ -198,7 +198,7 @@ window.SPS = window.SPS || {};
         if (isDiscrete) {
             discreteHtml = `<div class="sps-slider-options active" data-target="${escapeAttr(step.id)}" role="group" aria-label="Wertauswahl">`;
             discreteValues.forEach(val => {
-                const isActive = Math.abs(Number(currentVal) - val) < 1e-9;
+                const isActive = hasValue && Math.abs(Number(currentVal) - val) < 1e-9;
                 discreteHtml += `<button type="button" class="sps-slider-option${isActive ? ' active' : ''}" data-slider-id="${escapeAttr(step.id)}" data-value="${val}">${val}</button>`;
             });
             discreteHtml += '</div>';
@@ -209,18 +209,18 @@ window.SPS = window.SPS || {};
                 ${step.icon ? `<div class="sps-slider-hero-icon">${renderIcon(step.icon, 'sps-hero-svg')}</div>` : ''}
                 <div class="sps-slider-container">
                     ${badgeText ? `<div class="sps-slider-badge" id="${escapeAttr(form.instanceId)}_badge_${escapeAttr(step.id)}" aria-live="polite">${SPS.escapeHtml(badgeText)}</div>` : ''}
-                    <span class="sps-slider-val" id="${escapeAttr(form.instanceId)}_val_${escapeAttr(step.id)}">${SPS.escapeHtml(displayVal)}</span>
+                    <span class="sps-slider-val${hasValue ? '' : ' is-empty'}" id="${escapeAttr(form.instanceId)}_val_${escapeAttr(step.id)}">${SPS.escapeHtml(displayVal)}</span>
                     <input type="range"
                            id="${escapeAttr(form.instanceId)}_input_${escapeAttr(step.id)}"
                            class="sps-slider${isDiscrete ? ' is-hidden' : ''}"
                            min="${cfg.min !== undefined ? cfg.min : 0}"
                            max="${cfg.max !== undefined ? cfg.max : 100}"
                            step="${cfg.step !== undefined ? cfg.step : 1}"
-                           value="${currentVal}"
+                           value="${rangeVal}"
                            aria-label="${SPS.escapeAttr(step.label || '')}"
                            aria-valuemin="${cfg.min !== undefined ? cfg.min : 0}"
                            aria-valuemax="${cfg.max !== undefined ? cfg.max : 100}"
-                           aria-valuenow="${currentVal}">
+                           aria-valuenow="${rangeVal}">
                     ${isDiscrete ? discreteHtml : `<div class="sps-slider-options" data-target="${escapeAttr(step.id)}"></div>`}
                     ${step.conversion ? `<div class="sps-slider-conversion" id="${escapeAttr(form.instanceId)}_conv_${escapeAttr(step.id)}" aria-live="polite"></div>` : ''}
                 </div>
@@ -1202,15 +1202,8 @@ window.SPS = window.SPS || {};
             // 1. Main value display
             const valEl = document.getElementById(`${this.instanceId}_val_${step.id}`);
             if (valEl) {
-                let displayVal;
-                if (step.conversion && Calc && Calc.resolveConversion) {
-                    displayVal = Calc.resolveConversion(value, step.conversion, this.answers);
-                } else if (Calc && Calc.formatUnit) {
-                    displayVal = Calc.formatUnit(value, cfg.suffix || '');
-                } else {
-                    displayVal = value + (cfg.suffix || '');
-                }
-                valEl.textContent = displayVal;
+                valEl.textContent = this.formatSliderValue(step, cfg, value);
+                valEl.classList.remove('is-empty');
             }
 
             // 2. Reference badge (e.g. "Ø 3 Personen") — deklarativ aus step.referenceBadge
@@ -1607,6 +1600,44 @@ window.SPS = window.SPS || {};
         }
 
         /**
+         * Ist der Slider eine Jahreszahl? Schema "format": "year" oder
+         * ganzzahliger Bereich zwischen 1800 und 2100 ohne Einheit.
+         *
+         * @param {Object} step - Schritt.
+         * @param {Object} cfg  - Effektive Konfiguration.
+         * @returns {boolean}
+         */
+        isYearSlider(step, cfg) {
+            if (step.format === 'year') return true;
+            if (step.format) return false;
+            const min = Number(cfg.min), max = Number(cfg.max), st = Number(cfg.step || 1);
+            return !cfg.suffix && st === 1 && min >= 1800 && max <= 2100;
+        }
+
+        /**
+         * Anzeigewert eines Sliders: Jahreszahlen ohne Tausenderpunkt (1990 statt 1.990),
+         * sonst deutsches Zahlenformat mit Einheit bzw. Umrechnung.
+         *
+         * @param {Object} step  - Schritt.
+         * @param {Object} cfg   - Effektive Konfiguration.
+         * @param {number} value - Wert.
+         * @returns {string}
+         */
+        formatSliderValue(step, cfg, value) {
+            const Calc = SPS.Calculations;
+            if (this.isYearSlider(step, cfg)) {
+                return String(Math.round(Number(value))) + (cfg.suffix || '');
+            }
+            if (step.conversion && Calc && Calc.resolveConversion) {
+                return Calc.resolveConversion(value, step.conversion, this.answers);
+            }
+            if (Calc && Calc.formatUnit) {
+                return Calc.formatUnit(value, cfg.suffix || '');
+            }
+            return value + (cfg.suffix || '');
+        }
+
+        /**
          * Resolves dynamic step configurations based on prior answers.
          * If a step defines "dynamicConfig" with a "dependsOn" field (e.g. heating type),
          * this method looks up the chosen option and merges the specific overrides (e.g. min, max, step, suffix).
@@ -1645,10 +1676,8 @@ window.SPS = window.SPS || {};
                         if (cur > cfg.max) cur = cfg.max;
 
                         sliderEl.value = cur;
-                        if (valEl) {
-                            valEl.textContent = (SPS.Calculations && SPS.Calculations.formatUnit) 
-                                ? SPS.Calculations.formatUnit(cur, cfg.suffix || '') 
-                                : cur + (cfg.suffix || '');
+                        if (valEl && !valEl.classList.contains('is-empty')) {
+                            valEl.textContent = this.formatSliderValue(step, cfg, cur);
                         }
                     }
                 }
@@ -2067,7 +2096,8 @@ window.SPS = window.SPS || {};
             if (step.required && step.type !== 'group' && step.type !== 'consent' && step.type !== 'upload' && step.type !== 'addressFull' && step.type !== 'address-full') {
                 const val = this.answers[step.id];
                 if (val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0)) {
-                    this.showError(index, 'Bitte füllen Sie dieses Feld aus.');
+                    const choose = ['slider', 'radio', 'radio-list', 'checkbox-multi', 'select'].indexOf(step.type) !== -1;
+                    this.showError(index, choose ? 'Bitte wählen Sie eine Antwort aus.' : 'Bitte füllen Sie dieses Feld aus.');
                     return false;
                 }
             }
@@ -2362,7 +2392,63 @@ window.SPS = window.SPS || {};
         if (!container || container.classList.contains('sps-mounted')) return null;
         const instance = new FormInstance(container);
         instances[instance.instanceId] = instance;
+        if (container.classList.contains('sps-fullview')) {
+            setupFullview(container);
+        }
         return instance;
+    }
+
+    /**
+     * Höhe fixierter/klebender Elemente am oberen Rand (Admin-Leiste, Sticky-Header).
+     *
+     * @returns {number} Pixel.
+     */
+    function topOverlayHeight() {
+        let bottom = 0;
+        const candidates = document.querySelectorAll('#wpadminbar, header, .site-header, [class*="sticky"], [class*="fixed"]');
+        candidates.forEach(el => {
+            if (el.closest('.sps-form-container')) return;
+            const cs = window.getComputedStyle(el);
+            if (cs.position !== 'fixed' && cs.position !== 'sticky') return;
+            if (cs.display === 'none' || cs.visibility === 'hidden') return;
+            const r = el.getBoundingClientRect();
+            // nur Leisten, die oben kleben und nicht den halben Bildschirm füllen
+            if (r.height > 0 && r.height < window.innerHeight * 0.4 && r.top <= 1 && r.bottom > 0) {
+                bottom = Math.max(bottom, r.bottom);
+            }
+        });
+        return Math.round(bottom);
+    }
+
+    /**
+     * "Ein Bildschirm": Formular so hoch wie das Fenster (abzüglich fixierter Kopfzeilen)
+     * und beim Laden einmal in den Blick scrollen. Danach scrollt die Seite normal.
+     *
+     * @param {HTMLElement} container - Formular-Container.
+     */
+    function setupFullview(container) {
+        const applyOffset = () => {
+            container.style.setProperty('--sps-fullview-offset', topOverlayHeight() + 'px');
+        };
+        applyOffset();
+        window.addEventListener('resize', applyOffset);
+
+        // Nur beim ersten Formular der Seite, nicht bei Sprungmarken oder wenn schon gescrollt wurde.
+        if (window.__spsFullviewScrolled || window.location.hash || window.scrollY > 40) return;
+        window.__spsFullviewScrolled = true;
+        const doScroll = () => {
+            applyOffset();
+            const offset = topOverlayHeight();
+            const top    = container.getBoundingClientRect().top + window.scrollY - offset;
+            if (top > 0) {
+                window.scrollTo({ top: top, behavior: 'auto' });
+            }
+        };
+        if (document.readyState === 'complete') {
+            requestAnimationFrame(doScroll);
+        } else {
+            window.addEventListener('load', () => requestAnimationFrame(doScroll), { once: true });
+        }
     }
 
     /**

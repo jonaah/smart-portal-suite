@@ -234,7 +234,7 @@ class SPS_Abilities {
 			),
 			'update-form-theme'      => array(
 				'label'       => 'Formular-Design ändern',
-				'description' => 'Setzt Farben (#rgb, #rrggbb oder #rrggbbaa), Eckenrundungen (Pixel) und die Formularhöhe ("auto" oder 480–1100 px) eines Formulars. Schlüssel sind die CSS-Variablen aus get-form-theme, z. B. "--sps-accent". Leerer String oder null entfernt eine Überschreibung. Mit "preset" wird zuerst eine Vorlage angewendet, mit "reset" alles auf Standard gesetzt. Gibt ungültige Schlüssel/Werte in "rejected" zurück.',
+				'description' => 'Setzt Farben (#rgb, #rrggbb oder #rrggbbaa), Eckenrundungen (Pixel) und die Formularhöhe ("screen", "auto" oder 480–1100 px) eines Formulars. Schlüssel sind die CSS-Variablen aus get-form-theme, z. B. "--sps-accent". Leerer String oder null entfernt eine Überschreibung. Mit "preset" wird zuerst eine Vorlage angewendet, mit "reset" alles auf Standard gesetzt. Gibt ungültige Schlüssel/Werte in "rejected" zurück.',
 				'readonly'    => false,
 				'idempotent'  => true,
 				'input'       => array(
@@ -243,7 +243,7 @@ class SPS_Abilities {
 						'form_id' => self::form_id_prop(),
 						'values'  => array(
 							'type'                 => 'object',
-							'description'          => 'CSS-Variable => Wert, z. B. {"--sps-accent": "#1976d2", "--sps-form-height": "720px"}.',
+							'description'          => 'CSS-Variable => Wert, z. B. {"--sps-accent": "#1976d2", "--sps-form-height": "screen"}.',
 							'additionalProperties' => array( 'type' => array( 'string', 'null' ) ),
 						),
 						'preset'  => array(
@@ -677,7 +677,7 @@ class SPS_Abilities {
 			'--sps-radius-card'  => 'Karten-Eckenrundung (px)',
 			'--sps-radius-input' => 'Eingabefeld-Eckenrundung (px)',
 			'--sps-radius-btn'   => 'Button-Eckenrundung (px)',
-			'--sps-form-height'  => 'Formularhöhe: "auto" oder 480–1100px (feste Höhe, Inhalt scrollt im Rahmen)',
+			'--sps-form-height'  => 'Formularhöhe: "screen" (Standard: genau ein Bildschirm, wird beim Laden in den Blick gescrollt), 480–1100px (feste Höhe) oder "auto"',
 		) as $var => $label ) {
 			$variables[] = array(
 				'variable' => $var,

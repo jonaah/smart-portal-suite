@@ -28,10 +28,14 @@ if ( ! empty( $schema['styles'] ) && is_array( $schema['styles'] ) ) {
 }
 $inline_style_str = implode( '; ', $container_styles );
 $custom_styles    = apply_filters( 'sps_form_container_styles', $inline_style_str, $form_id, $schema );
+$container_class  = 'sps-form-container';
+if ( empty( $form_config['preview'] ) && 'screen' === SPS_Form_Renderer::height_mode( $form_id ) ) {
+	$container_class .= ' sps-fullview';
+}
 ?>
 
 <div id="<?php echo esc_attr( $unique_container_id ); ?>" 
-     class="sps-form-container" 
+     class="<?php echo esc_attr( $container_class ); ?>" 
      <?php if ( ! empty( $custom_styles ) ) : ?>style="<?php echo esc_attr( $custom_styles ); ?>"<?php endif; ?>
      data-sps-form-id="<?php echo esc_attr( $form_id ); ?>"
      data-sps-ajax-url="<?php echo esc_url( $ajax_url ); ?>"

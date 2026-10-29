@@ -6,6 +6,14 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 
 ---
 
+## [0.6.2] - 2026-10-29
+### Geändert
+- **„Ein Bildschirm“ als Standard:** Das Formular füllt genau die Fensterhöhe (abzüglich Admin-Leiste/Sticky-Header) und wird beim Öffnen der Seite in den Blick gescrollt. Header und Footer bleiben erreichbar: Das Mausrad über dem Formular scrollt am Ende des Inhalts die Seite weiter (vorher nur über die Scrollleiste). Im Styling-Editor wählbar: „Ein Bildschirm“, „Feste Höhe“, „Automatisch“. Formulare mit bereits gespeicherter fester Höhe behalten diese.
+- **Keine Vorauswahl bei Anzahl-Fragen:** Vollgeschosse, beheizte Geschosse und Kellergeschosse zeigen Zahlen-Buttons ohne Vorauswahl („Bitte wählen“); „Weiter“ verlangt eine Auswahl. Schema-Optionen `"preselect": false` und `"buttons": true`. Regler für kWh, Cent und Jahre behalten ihren Startwert.
+- **Jahreszahlen ohne Tausenderpunkt:** Sanierungsjahre zeigen „1990“ statt „1.990“ (`"format": "year"`, sonst automatisch bei Bereichen 1800–2100).
+- **Adressschritt:** Vorname, Nachname und E-Mail entfallen (Kunden sind angemeldet). PLZ/Ort und Straße/Nr. je in einer Zeile, einheitliche Breite.
+- Zahlen-Buttons brechen um statt aus der Karte zu laufen; mobil kleinere Illustration bei Regler-Fragen.
+
 ## [0.6.1] - 2026-10-29
 ### Behoben
 - **Gebäude-Check → Nextcloud-Formular:** Energieträger „Gas“, Dachart „Holzdach“/„Massives Dach“ und Kellerdecke „Holz“/„Massiv“/„Kappendecke“ werden beim Absenden auf die festen Optionen des NC-Formulars übersetzt („Erdgas“, „Dach in Holzkonstruktion“, „Dach in massiver Konstruktion“, „Kellerdecke als Holzbalkendecke“, „Kellerdecke aus Stahlbeton, massiv“, „Ziegel-/Hohlsteindecke“). Vorher scheiterte jede Übertragung mit HTTP 400 an diesen Pflichtfragen. Die Auswahl im Formular und das NC-Formular bleiben unverändert.
