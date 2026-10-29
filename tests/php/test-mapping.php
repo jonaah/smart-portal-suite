@@ -184,7 +184,8 @@ $qid = 0;
 foreach ( $nc['questions'] as &$nq ) {
 	$nq['id'] = ++$qid;
 	$oid = 0;
-	foreach ( (array) $nq['options'] as &$no ) {
+	$nq['options'] = isset( $nq['options'] ) && is_array( $nq['options'] ) ? $nq['options'] : array();
+	foreach ( $nq['options'] as &$no ) {
 		$no['id'] = $qid * 100 + ( ++$oid );
 	}
 	unset( $no );
@@ -202,6 +203,69 @@ check( 'Alter Lead: Werte übersetzt', 'Erdgas' === $re['energietraeger'] && 'Da
 check( 'Alter Lead: Ableitungen unverändert', 2000 === $re['aussenwand_sanierung_jahr'] && '1.714 kWh (Strom)' === $re['waermeverbrauch_original'] );
 check( 'Übersetzung wiederholbar', $re === SPS_Answer_Transformer::apply_value_translations( $re, $schema ) );
 check( 'Alle Pflichtfragen des NC-Formulars passen (' . implode( '; ', $bad ) . ')', empty( $bad ) );
+
+echo "Alle Antwortwege gegen das NC-Formular (Pflichtfragen befüllt?)\n";
+$base = array(
+	'typ' => 'Freistehendes Haus', 'nutzung' => 'Eigennutzung (ausschließlich)', 'flaeche' => 125, 'wohneinheiten' => 1,
+	'geschosse' => 3, 'baujahr' => 1963, 'geschosshoehe' => 2.6, 'vollgeschosse' => 2, 'dachgeschoss' => 1, 'beheizt' => 3,
+	'energieverbrauch' => 4000, 'kosten' => 32, 'waermeverbrauch' => 18000, 'waermekosten' => 11, 'umrechnungsquote' => 3.5,
+	'dachart' => 'Holzdach', 'zinssatz' => 3.5, 'plz' => '73760', 'ort' => 'Ostfildern', 'strasse' => 'Hauptstraße', 'hausnummer' => '1', 'consent' => true,
+);
+$walls = array(
+	array( 'aussenwand_typ' => 'Zweischalig', 'aussenwand_daemmung' => 'Ja' ),
+	array( 'aussenwand_typ' => 'Zweischalig', 'aussenwand_daemmung' => 'Nein' ),
+	array( 'aussenwand_typ' => 'Massivwand', 'aussenwand_material' => 'Hochlochziegel' ),
+	array( 'aussenwand_typ' => 'Massivwand', 'aussenwand_material' => 'Vollziegel', 'aussenwand_dicke_voll' => '< 20 cm' ),
+	array( 'aussenwand_typ' => 'Massivwand', 'aussenwand_material' => 'Vollziegel', 'aussenwand_dicke_voll' => '20–30 cm' ),
+	array( 'aussenwand_typ' => 'Massivwand', 'aussenwand_material' => 'Vollziegel', 'aussenwand_dicke_voll' => '> 30 cm' ),
+	array( 'aussenwand_typ' => 'Massivwand', 'aussenwand_material' => 'Sonstige', 'aussenwand_dicke_sonst' => '< 20 cm' ),
+	array( 'aussenwand_typ' => 'Massivwand', 'aussenwand_material' => 'Sonstige', 'aussenwand_dicke_sonst' => '> 20 cm' ),
+	array( 'aussenwand_typ' => 'Fachwerk', 'aussenwand_fachwerk' => 'Lehm' ),
+	array( 'aussenwand_typ' => 'Fachwerk', 'aussenwand_fachwerk' => 'Ziegel / Naturstein' ),
+	array( 'aussenwand_typ' => 'Holzbau / Fertighaus' ),
+);
+$windows = array(
+	array( 'fenster_typ' => 'Holzfenster', 'verglasung' => 'Einfachverglasung' ),
+	array( 'fenster_typ' => 'Holzfenster', 'verglasung' => 'Doppelverglasung' ),
+	array( 'fenster_typ' => 'Kunststofffenster' ),
+	array( 'fenster_typ' => 'Aluminium-/Stahl-Fenster' ),
+);
+$cellars = array(
+	array( 'keller' => 0 ),
+	array( 'keller' => 1, 'kellerdecke' => 'Holz', 'keller_sanierung' => 'Nein, es gab keine Sanierung' ),
+	array( 'keller' => 1, 'kellerdecke' => 'Massiv', 'keller_sanierung' => 'Ja, es gab eine Sanierung', 'keller_sanierung_jahr' => 1990 ),
+	array( 'keller' => 2, 'kellerdecke' => 'Kappendecke' ),
+);
+$carriers = array();
+foreach ( $schema['steps'] as $st ) {
+	if ( 'energietraeger' === $st['id'] ) {
+		foreach ( $st['choices'] as $c ) { $carriers[] = $c['text']; }
+	}
+}
+$fails_paths = array();
+$n           = 0;
+foreach ( $walls as $w ) {
+	foreach ( $windows as $win ) {
+		foreach ( $cellars as $cel ) {
+			foreach ( $carriers as $et ) {
+				foreach ( array( 'Holzdach', 'Massives Dach', 'Flachdach' ) as $dach ) {
+					$n++;
+					$a   = array_merge( $base, $w, $win, $cel, array( 'energietraeger' => $et, 'dachart' => $dach ) );
+					$pr  = SPS_Answer_Transformer::apply( $a, $schema );
+					$res = $forms->build_submission( $nc['questions'], $pr, $schema );
+					foreach ( $res['report'] as $r ) {
+						if ( ! empty( $r['required'] ) && 'ok' !== $r['status'] ) {
+							$fails_paths[ $r['name'] . ': ' . $r['status'] ] = json_encode( array_merge( $w, $win, $cel, array( 'et' => $et, 'dach' => $dach ) ) );
+						}
+					}
+				}
+			}
+		}
+	}
+}
+check( sprintf( '%d Antwortwege, alle Pflichtfragen befüllt%s', $n, $fails_paths ? ' – ' . implode( ' | ', array_slice( array_map( function ( $k, $v ) { return "$k ($v)"; }, array_keys( $fails_paths ), $fails_paths ), 0, 3 ) ) : '' ), empty( $fails_paths ) );
+$t0 = SPS_Answer_Transformer::apply( array_merge( $base, array( 'keller' => 0 ) ), $schema );
+check( 'Ohne Keller: Kellerdecke = Stahlbeton, massiv', 'Kellerdecke aus Stahlbeton, massiv' === $t0['kellerdecke'] );
 
 echo $fails ? "\n$fails Test(s) fehlgeschlagen\n" : "\nAlle Tests bestanden\n";
 exit( $fails ? 1 : 0 );

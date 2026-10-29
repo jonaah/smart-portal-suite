@@ -202,6 +202,16 @@
         "kwh": "waermeverbrauch-kwh"
       },
       {
+        "_comment": "Ohne Keller fragt das Formular die Kellerdecke nicht ab; das NC-Formular verlangt sie aber. Unterster Boden ist dann meist eine Betonbodenplatte."
+      },
+      {
+        "set": "kellerdecke",
+        "value": "Massiv",
+        "when": {
+          "keller": 0
+        }
+      },
+      {
         "_comment": "Auswahltexte auf die festen Optionen des Nextcloud-Formulars übersetzen (NC-Formular bleibt unverändert, der PDF-Job hängt daran). Steht nach der Umrechnung, die noch \"Gas\" erwartet."
       },
       {
@@ -748,67 +758,6 @@
       "step": 1000,
       "value": 15000,
       "suffix": " kWh",
-      "dynamicConfig": {
-        "dependsOn": "energietraeger",
-        "configs": {
-          "Gas": {
-            "min": 4000,
-            "max": 40000,
-            "step": 1000,
-            "value": 15000,
-            "suffix": " kWh"
-          },
-          "Öl": {
-            "min": 500,
-            "max": 5000,
-            "step": 100,
-            "value": 1500,
-            "suffix": " Liter"
-          },
-          "Holzpellets": {
-            "min": 1000,
-            "max": 10000,
-            "step": 100,
-            "value": 3000,
-            "suffix": " kg"
-          },
-          "Strom": {
-            "min": 4000,
-            "max": 40000,
-            "step": 1000,
-            "value": 15000,
-            "suffix": " kWh"
-          },
-          "Wärmepumpe": {
-            "min": 1000,
-            "max": 15000,
-            "step": 500,
-            "value": 4000,
-            "suffix": " kWh"
-          },
-          "Fern-/Nahwärme": {
-            "min": 4000,
-            "max": 40000,
-            "step": 1000,
-            "value": 15000,
-            "suffix": " kWh"
-          },
-          "Geothermie": {
-            "min": 4000,
-            "max": 40000,
-            "step": 1000,
-            "value": 15000,
-            "suffix": " kWh"
-          },
-          "Biomasse": {
-            "min": 1000,
-            "max": 10000,
-            "step": 100,
-            "value": 3000,
-            "suffix": " kg"
-          }
-        }
-      },
       "icon": "icon-slider-waermeverbrauch",
       "conversion": {
         "dependsOn": "energietraeger",
@@ -854,7 +803,7 @@
       "reason": "Dieser Wert wird im Gebäudesteckbrief zur Berechnung der Heizkosten, Einsparpotenziale und Wirtschaftlichkeit verwendet.",
       "required": true,
       "min": 5,
-      "max": 25,
+      "max": 40,
       "step": 1,
       "value": 11,
       "suffix": " Cent/kWh",

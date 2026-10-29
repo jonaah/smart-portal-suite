@@ -6,6 +6,13 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 
 ---
 
+## [0.6.4] - 2026-10-29
+### Behoben
+- **Häuser ohne Keller:** Das NC-Formular verlangt die Kellerdecke als Pflichtangabe, das Formular fragt sie bei 0 Kellergeschossen aber nicht ab – solche Anfragen landeten im Fallback. Ohne Keller wird jetzt automatisch „Kellerdecke aus Stahlbeton, massiv“ übertragen (unterster Boden ist dann meist eine Betonbodenplatte).
+- **Wärmeverbrauch je Energieträger:** Öl, Pellets, Biomasse und Wärmepumpe hatten eigene, viel zu kleine Bereiche (z. B. Öl max. 5.000), obwohl der Wert in kWh gespeichert wird – realistische Verbräuche ließen sich nicht eingeben. Wieder wie im bisherigen Gebäude-Check: 4.000–40.000 kWh für alle, mit Umrechnung in Liter/m³/kg bzw. Strom.
+- Wärmekosten bis 40 Cent/kWh (Strom-Direktheizung lag vorher über dem Maximum).
+- Prüfungen berücksichtigen feste Regelwerte zusätzlich zu den Auswahloptionen. Neuer Offline-Test: 4.224 Antwortwege (Keller, Außenwand, Fenster, Energieträger, Dach) – alle Pflichtfragen des NC-Formulars werden befüllt.
+
 ## [0.6.3] - 2026-10-29
 ### Behoben
 - **Abhängigkeiten der Geschoss-Fragen wieder da** (gingen beim Umbau verloren): Vollgeschosse ≤ Geschosse, Kellergeschosse ≤ Geschosse − Dachgeschoss − 1, beheizte Geschosse ≤ Geschosse. Die Zahlen-Buttons zeigen nur noch mögliche Werte; wird eine frühere Antwort verkleinert, werden zu große Folgeantworten verworfen. Schema-Option `"dynamicMax"`.

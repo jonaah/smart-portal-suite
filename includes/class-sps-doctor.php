@@ -632,6 +632,10 @@ class SPS_Doctor {
 			}
 			$from_rules[ $key ][] = (string) $rule['value'];
 		}
+		// Feste Werte aus Regeln ergänzen (z. B. kellerdecke = "Massiv", wenn kein Keller).
+		foreach ( $from_rules as $k => $v ) {
+			$values[ $k ] = array_values( array_unique( array_merge( isset( $values[ $k ] ) ? $values[ $k ] : array(), $v ) ) );
+		}
 		foreach ( $renames as $k => $map ) {
 			if ( isset( $values[ $k ] ) ) {
 				foreach ( $values[ $k ] as $i => $v ) {
@@ -640,9 +644,6 @@ class SPS_Doctor {
 					}
 				}
 			}
-		}
-		foreach ( $from_rules as $k => $v ) {
-			$values[ $k ] = array_values( array_unique( $v ) );
 		}
 		return $values;
 	}
