@@ -267,5 +267,18 @@ check( sprintf( '%d Antwortwege, alle Pflichtfragen befüllt%s', $n, $fails_path
 $t0 = SPS_Answer_Transformer::apply( array_merge( $base, array( 'keller' => 0 ) ), $schema );
 check( 'Ohne Keller: Kellerdecke = Stahlbeton, massiv', 'Kellerdecke aus Stahlbeton, massiv' === $t0['kellerdecke'] );
 
+echo "Heizenergie in Rechnungseinheit\n";
+$u = SPS_Answer_Transformer::apply( array( 'energietraeger' => 'Öl', 'waermeverbrauch' => 1, 'waermeverbrauch_eingabe' => 2000, 'waermeverbrauch_einheit' => 'Liter' ), $schema );
+check( 'Öl 2.000 Liter → 19.600 kWh', 19600 === $u['waermeverbrauch'] && '2.000 Liter' === $u['waermeverbrauch_original'] && 19600 === $u['waermeverbrauch_kwh'] );
+check( 'Eingabefelder entfernt', ! isset( $u['waermeverbrauch_eingabe'] ) && ! isset( $u['waermeverbrauch_einheit'] ) );
+$u = SPS_Answer_Transformer::apply( array( 'energietraeger' => 'Gas', 'waermeverbrauch_eingabe' => 1800, 'waermeverbrauch_einheit' => 'm³' ), $schema );
+check( 'Gas 1.800 m³ → 18.180 kWh, Erdgas', 18180 === $u['waermeverbrauch'] && 'Erdgas' === $u['energietraeger'] );
+$u = SPS_Answer_Transformer::apply( array( 'energietraeger' => 'Gas', 'waermeverbrauch_eingabe' => 21000, 'waermeverbrauch_einheit' => 'kWh' ), $schema );
+check( 'Gas in kWh 1:1', 21000 === $u['waermeverbrauch'] );
+$u = SPS_Answer_Transformer::apply( array( 'energietraeger' => 'Wärmepumpe', 'umrechnungsquote' => 4, 'waermeverbrauch_eingabe' => 4500, 'waermeverbrauch_einheit' => 'kWh Strom' ), $schema );
+check( 'Wärmepumpe 4.500 kWh Strom × JAZ 4 → 18.000 kWh', 18000 === $u['waermeverbrauch'] && '4.500 kWh Strom' === $u['waermeverbrauch_original'] );
+$u = SPS_Answer_Transformer::apply( array( 'energietraeger' => 'Öl', 'waermeverbrauch' => 15000, 'waermeverbrauch_eingabe' => 5, 'waermeverbrauch_einheit' => 'm³' ), $schema );
+check( 'Einheit passt nicht zum Energieträger → alter Weg', 15000 === $u['waermeverbrauch'] );
+
 echo $fails ? "\n$fails Test(s) fehlgeschlagen\n" : "\nAlle Tests bestanden\n";
 exit( $fails ? 1 : 0 );

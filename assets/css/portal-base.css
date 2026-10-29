@@ -1954,3 +1954,57 @@ header, .site-header, .wp-block-header, .wp-block-template-part {
         margin-bottom: 14px;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   21. EINGABE IN RECHNUNGSEINHEIT (Heizenergie: Liter, m³, kg, kWh)
+   ═══════════════════════════════════════════════════════════════ */
+.sps-unit-toggle {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    margin: 0 auto 16px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--sps-text-main) 8%, transparent);
+}
+
+.sps-unit-option {
+    border: 0;
+    padding: 6px 16px;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--sps-text-muted);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.sps-unit-option.active {
+    background: var(--sps-accent);
+    color: var(--sps-on-accent);
+}
+
+.sps-unit-conversion {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 14px;
+    color: var(--sps-text-main);
+    font-size: 15px;
+}
+
+.sps-unit-conversion strong {
+    font-weight: 700;
+}
+
+.sps-unit-rule {
+    color: var(--sps-text-muted);
+    font-size: 13px;
+}
+
+.sps-unit-hint {
+    margin: 12px 0 0;
+    color: var(--sps-text-muted);
+    font-size: 13px;
+    line-height: 1.45;
+}

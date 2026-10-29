@@ -6,6 +6,11 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 
 ---
 
+## [0.6.5] - 2026-10-29
+### Geändert
+- **Heizenergieverbrauch in der Einheit der Rechnung:** Öl in Litern, Gas in m³ oder kWh (umschaltbar), Pellets und Biomasse in kg, Strom-Direktheizung und Fernwärme in kWh, Wärmepumpe als Wärmepumpen-Strom in kWh. Das Formular zeigt live die Umrechnung („2.500 Liter ≈ 24.500 kWh Wärme pro Jahr · 1 Liter ≈ 9,8 kWh“, bei der Wärmepumpe „kWh Strom × Jahresarbeitszahl“) und einen Hinweis, wo die Zahl auf der Rechnung steht. An Nextcloud geht wie bisher der kWh-Wert; „waermeverbrauch-original“ enthält die Eingabe mit Einheit. Der Server rechnet aus Eingabe und Einheit selbst nach (Schema-Option `"inputUnits"`, Regel `"input"`).
+- Faktoren wie im bisherigen Gebäude-Check: Heizöl 9,8 kWh/l, Erdgas 10,1 kWh/m³, Pellets 4,8 kWh/kg, Biomasse 4,0 kWh/kg.
+
 ## [0.6.4] - 2026-10-29
 ### Behoben
 - **Häuser ohne Keller:** Das NC-Formular verlangt die Kellerdecke als Pflichtangabe, das Formular fragt sie bei 0 Kellergeschossen aber nicht ab – solche Anfragen landeten im Fallback. Ohne Keller wird jetzt automatisch „Kellerdecke aus Stahlbeton, massiv“ übertragen (unterster Boden ist dann meist eine Betonbodenplatte).

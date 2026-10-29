@@ -352,6 +352,15 @@ class SPS_Answer_Transformer {
 	 */
 	protected static function apply_conversion( array $answers, array $rule, array $schema ) {
 		$source = self::norm( $rule['convert'] );
+
+		// Eingabe in Rechnungseinheit (Schema "inputUnits"): kWh = Eingabe × Faktor.
+		if ( ! empty( $rule['input'] ) ) {
+			$converted = self::apply_unit_input( $answers, $rule, $schema, $source );
+			if ( null !== $converted ) {
+				return $converted;
+			}
+		}
+
 		if ( ! array_key_exists( $source, $answers ) || ! is_numeric( $answers[ $source ] ) ) {
 			return $answers;
 		}
@@ -387,6 +396,67 @@ class SPS_Answer_Transformer {
 			$answers[ self::norm( $rule['kwh'] ) ] = (int) round( $kwh );
 		}
 
+		return $answers;
+	}
+
+	/**
+	 * kWh aus Eingabe und Einheit berechnen (Schema "inputUnits" des Schritts).
+	 *
+	 * @param array  $answers Antworten.
+	 * @param array  $rule    Regel mit "input" (Eingabefeld) und "unit_field" (Einheitenfeld).
+	 * @param array  $schema  Schema.
+	 * @param string $source  Ziel-Schlüssel (kWh).
+	 * @return array|null Antworten oder null, wenn keine Einheiten-Eingabe vorliegt.
+	 */
+	protected static function apply_unit_input( array $answers, array $rule, array $schema, $source ) {
+		$in_key   = self::norm( $rule['input'] );
+		$unit_key = self::norm( isset( $rule['unit_field'] ) ? $rule['unit_field'] : $source . '_einheit' );
+		if ( ! isset( $answers[ $in_key ], $answers[ $unit_key ] ) || ! is_numeric( $answers[ $in_key ] ) ) {
+			return null;
+		}
+
+		$steps = self::flatten_steps( $schema );
+		$iu    = isset( $steps[ $source ]['inputUnits'] ) && is_array( $steps[ $source ]['inputUnits'] ) ? $steps[ $source ]['inputUnits'] : array();
+		$list  = isset( $iu['default'] ) && is_array( $iu['default'] ) ? $iu['default'] : array();
+		if ( ! empty( $iu['dependsOn'] ) ) {
+			$dep = self::norm( $iu['dependsOn'] );
+			$val = isset( $answers[ $dep ] ) ? (string) $answers[ $dep ] : '';
+			if ( '' !== $val && isset( $iu['options'][ $val ] ) && is_array( $iu['options'][ $val ] ) ) {
+				$list = $iu['options'][ $val ];
+			}
+		}
+
+		$unit = (string) $answers[ $unit_key ];
+		$cfg  = null;
+		foreach ( $list as $u ) {
+			if ( isset( $u['unit'] ) && (string) $u['unit'] === $unit ) {
+				$cfg = $u;
+				break;
+			}
+		}
+		if ( null === $cfg ) {
+			return null; // Einheit passt nicht zum Energieträger – nicht raten.
+		}
+
+		if ( ! empty( $cfg['factorField'] ) ) {
+			$ff     = self::norm( $cfg['factorField'] );
+			$factor = ( isset( $answers[ $ff ] ) && is_numeric( $answers[ $ff ] ) && (float) $answers[ $ff ] > 0 )
+				? (float) $answers[ $ff ]
+				: ( isset( $cfg['defaultFactor'] ) ? (float) $cfg['defaultFactor'] : 1.0 );
+		} else {
+			$factor = isset( $cfg['factor'] ) && (float) $cfg['factor'] > 0 ? (float) $cfg['factor'] : 1.0;
+		}
+
+		$input = (float) $answers[ $in_key ];
+		$kwh   = (int) round( $input * $factor );
+
+		$answers[ $source ] = $kwh;
+		if ( ! empty( $rule['original'] ) ) {
+			$answers[ self::norm( $rule['original'] ) ] = self::format_de( $input ) . ' ' . $unit;
+		}
+		if ( ! empty( $rule['kwh'] ) ) {
+			$answers[ self::norm( $rule['kwh'] ) ] = $kwh;
+		}
 		return $answers;
 	}
 

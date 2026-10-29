@@ -145,6 +145,59 @@ window.SPS = window.SPS || {};
     });
 
     /**
+     * Slider mit Eingabe in der Einheit der Rechnung (z. B. Liter Heizöl, m³ Gas,
+     * kWh Wärmepumpen-Strom). Die Antwort step.id bleibt der kWh-Wert (Wärme),
+     * Eingabe und Einheit stehen zusätzlich in "<id>_eingabe" / "<id>_einheit".
+     *
+     * Schema:
+     *   "inputUnits": { "dependsOn": "energietraeger",
+     *                   "options": { "Öl": [ { "unit": "Liter", "factor": 9.8, "min": …, "max": …, "step": …, "value": …, "hint": "…" } ], … },
+     *                   "default": [ { "unit": "kWh", "factor": 1, … } ] }
+     *   Faktor alternativ dynamisch: "factorField": "umrechnungsquote", "defaultFactor": 3.5
+     *
+     * @param {Object}       step - Schritt.
+     * @param {FormInstance} form - Formular.
+     * @returns {string}
+     */
+    function renderUnitSlider(step, form) {
+        const Calc  = SPS.Calculations;
+        const units = form.getInputUnits(step);
+        const sel   = form.getSelectedUnit(step);
+        const value = form.getUnitInputValue(step, sel);
+        form.setUnitInput(step, sel, value, false);
+
+        const id     = escapeAttr(step.id);
+        const inst   = escapeAttr(form.instanceId);
+        const toggle = units.length > 1
+            ? `<div class="sps-unit-toggle" role="group" aria-label="Einheit">${units.map(u =>
+                `<button type="button" class="sps-unit-option${u.unit === sel.unit ? ' active' : ''}" data-unit-step="${id}" data-unit="${escapeAttr(u.unit)}">${SPS.escapeHtml(u.unit)}</button>`
+              ).join('')}</div>`
+            : '';
+        const badge = (step.referenceBadge && Calc && Calc.calculateReferenceBadge)
+            ? (Calc.calculateReferenceBadge(form.getAnswer(step.id), step.referenceBadge) || '')
+            : '';
+
+        return `
+            <div class="sps-slider-wrapper sps-unit-slider">
+                ${step.icon ? `<div class="sps-slider-hero-icon">${renderIcon(step.icon, 'sps-hero-svg')}</div>` : ''}
+                <div class="sps-slider-container">
+                    ${toggle}
+                    ${step.referenceBadge ? `<div class="sps-slider-badge" id="${inst}_badge_${id}" aria-live="polite"${badge ? '' : ' hidden'}>${SPS.escapeHtml(badge)}</div>` : ''}
+                    <span class="sps-slider-val" id="${inst}_val_${id}">${SPS.escapeHtml(form.formatUnitValue(value, sel))}</span>
+                    <input type="range"
+                           id="${inst}_input_${id}"
+                           class="sps-slider"
+                           min="${Number(sel.min)}" max="${Number(sel.max)}" step="${Number(sel.step || 1)}"
+                           value="${value}"
+                           aria-label="${SPS.escapeAttr((step.label || '') + ' in ' + sel.unit)}">
+                    <div class="sps-slider-conversion sps-unit-conversion" id="${inst}_conv_${id}" aria-live="polite">${form.unitConversionHtml(step, sel, value)}</div>
+                    ${sel.hint ? `<p class="sps-unit-hint">${SPS.escapeHtml(sel.hint)}</p>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
      * 2. Range Slider Renderer ('slider')
      *
      * Renders a two-column wrapper on desktop:
@@ -164,6 +217,9 @@ window.SPS = window.SPS || {};
      * @returns {string} HTML markup.
      */
     registerField('slider', function(step, form) {
+        if (step.inputUnits) {
+            return renderUnitSlider(step, form);
+        }
         const cfg         = form.getStepConfig(step);
         const Calc        = SPS.Calculations;
         let   currentVal  = form.getAnswer(step.id);
@@ -948,6 +1004,15 @@ window.SPS = window.SPS || {};
                     }
                 }
 
+                // Einheit umschalten (z. B. Gas: m³ / kWh)
+                const unitBtn = e.target.closest('.sps-unit-option');
+                if (unitBtn) {
+                    const uStepEl = unitBtn.closest('.sps-step');
+                    const uIdx    = parseInt(uStepEl.getAttribute('data-step-index'), 10);
+                    this.switchUnit(uIdx, unitBtn.getAttribute('data-unit'));
+                    return;
+                }
+
                 // Discrete slider option buttons
                 const sliderOptionBtn = e.target.closest('.sps-slider-option');
                 if (sliderOptionBtn) {
@@ -1035,6 +1100,11 @@ window.SPS = window.SPS || {};
                     return;
                 }
 
+                // Einheiten-Regler: Antwort ist der berechnete kWh-Wert (siehe handleUnitInput)
+                if (step && step.inputUnits && target.type === 'range') {
+                    return;
+                }
+
                 // General input / date
                 if (step) {
                     this.setAnswer(step.id, target.value);
@@ -1081,6 +1151,13 @@ window.SPS = window.SPS || {};
                 }
 
                 // Slider live value update
+                if (target.type === 'range' && step && step.inputUnits) {
+                    this.handleUnitInput(stepEl, step, parseFloat(target.value));
+                    if (SPS.Calculations && SPS.Calculations.updateSliderGradient) {
+                        SPS.Calculations.updateSliderGradient(target);
+                    }
+                    return;
+                }
                 if (target.type === 'range') {
                     const value = parseFloat(target.value);
                     this.setAnswer(step.id, value);
@@ -1604,6 +1681,138 @@ window.SPS = window.SPS || {};
         }
 
         /**
+         * Einheiten für einen inputUnits-Schritt (abhängig vom Energieträger).
+         *
+         * @param {Object} step - Schritt.
+         * @returns {Array<Object>}
+         */
+        getInputUnits(step) {
+            const iu  = step.inputUnits || {};
+            const dep = iu.dependsOn ? this.getAnswer(iu.dependsOn) : null;
+            const list = (dep && iu.options && Array.isArray(iu.options[dep])) ? iu.options[dep] : iu.default;
+            return Array.isArray(list) && list.length ? list : [{ unit: 'kWh', factor: 1, min: step.min || 0, max: step.max || 100, step: step.step || 1, value: step.value || 0 }];
+        }
+
+        /**
+         * Gewählte Einheit (gespeichert oder erste der Liste).
+         */
+        getSelectedUnit(step) {
+            const units = this.getInputUnits(step);
+            const saved = this.getAnswer(step.id + '_einheit');
+            return units.find(u => u.unit === saved) || units[0];
+        }
+
+        /**
+         * Umrechnungsfaktor der Einheit in kWh (statisch oder aus einem Antwortfeld, z. B. JAZ).
+         */
+        getUnitFactor(unitCfg) {
+            if (unitCfg.factorField) {
+                const v = parseFloat(this.getAnswer(unitCfg.factorField));
+                return (!isNaN(v) && v > 0) ? v : (Number(unitCfg.defaultFactor) || 1);
+            }
+            return Number(unitCfg.factor) || 1;
+        }
+
+        /**
+         * Eingabewert in der gewählten Einheit (gespeichert, sonst Startwert), auf den Bereich begrenzt.
+         */
+        getUnitInputValue(step, unitCfg) {
+            let v = parseFloat(this.getAnswer(step.id + '_eingabe'));
+            if (this.getAnswer(step.id + '_einheit') !== unitCfg.unit || isNaN(v)) {
+                v = Number(unitCfg.value !== undefined ? unitCfg.value : unitCfg.min);
+            }
+            return Math.min(Number(unitCfg.max), Math.max(Number(unitCfg.min), v));
+        }
+
+        /**
+         * Eingabe speichern und kWh (Antwort step.id) daraus berechnen.
+         */
+        setUnitInput(step, unitCfg, value, trigger) {
+            const kwh = Math.round(Number(value) * this.getUnitFactor(unitCfg));
+            this.setAnswer(step.id + '_eingabe', Number(value), false);
+            this.setAnswer(step.id + '_einheit', unitCfg.unit, false);
+            this.setAnswer(step.id, kwh, trigger !== false);
+            return kwh;
+        }
+
+        /**
+         * "2.000 Liter"
+         */
+        formatUnitValue(value, unitCfg) {
+            const Calc = SPS.Calculations;
+            const num  = Calc ? Calc.formatGermanNumber(value) : String(value);
+            return `${num} ${unitCfg.unit}`;
+        }
+
+        /**
+         * Umrechnungszeile: "≈ 19.600 kWh Wärme pro Jahr" + Faktor.
+         */
+        unitConversionHtml(step, unitCfg, value) {
+            const Calc   = SPS.Calculations;
+            const fmt    = (n, d) => Calc ? Calc.formatGermanNumber(n, d) : String(n);
+            const factor = this.getUnitFactor(unitCfg);
+            const kwh    = Math.round(Number(value) * factor);
+            let rule;
+            if (unitCfg.factorField) {
+                rule = `${fmt(value)} ${SPS.escapeHtml(unitCfg.unit)} × Jahresarbeitszahl ${fmt(factor, 1)}`;
+            } else if (factor === 1) {
+                rule = '';
+            } else {
+                rule = `1 ${SPS.escapeHtml(unitCfg.unit)} ≈ ${fmt(factor, 1)} kWh`;
+            }
+            return `<strong>≈ ${fmt(kwh)} kWh Wärme pro Jahr</strong>${rule ? `<span class="sps-unit-rule">${rule}</span>` : ''}`;
+        }
+
+        /**
+         * Live-Update bei Bewegung des Reglers.
+         */
+        handleUnitInput(stepEl, step, value) {
+            const sel = this.getSelectedUnit(step);
+            const kwh = this.setUnitInput(step, sel, value);
+            const valEl  = stepEl.querySelector(`#${this.instanceId}_val_${step.id}`);
+            const convEl = stepEl.querySelector(`#${this.instanceId}_conv_${step.id}`);
+            const badge  = stepEl.querySelector(`#${this.instanceId}_badge_${step.id}`);
+            if (valEl) valEl.textContent = this.formatUnitValue(value, sel);
+            if (convEl) convEl.innerHTML = this.unitConversionHtml(step, sel, value);
+            if (badge && step.referenceBadge && SPS.Calculations) {
+                const t = SPS.Calculations.calculateReferenceBadge(kwh, step.referenceBadge);
+                badge.textContent = t || '';
+                badge.hidden = !t;
+            }
+        }
+
+        /**
+         * Einheit umschalten: kWh beibehalten, Eingabe in neue Einheit umrechnen.
+         */
+        switchUnit(stepIndex, unit) {
+            const step = this.steps[stepIndex];
+            const target = this.getInputUnits(step).find(u => u.unit === unit);
+            if (!target) return;
+            const kwh = parseFloat(this.getAnswer(step.id));
+            let v = isNaN(kwh) ? Number(target.value) : kwh / this.getUnitFactor(target);
+            const st = Number(target.step || 1);
+            v = Math.round(v / st) * st;
+            v = Math.min(Number(target.max), Math.max(Number(target.min), v));
+            this.setUnitInput(step, target, v);
+            this.rerenderStepBody(stepIndex);
+        }
+
+        /**
+         * Feld eines Schritts neu aufbauen.
+         */
+        rerenderStepBody(index) {
+            const step   = this.steps[index];
+            const stepEl = this.container.querySelector(`#${this.instanceId}_step_${index}`);
+            const body   = stepEl ? stepEl.querySelector('.sps-step-body') : null;
+            if (!body || !step) return;
+            body.innerHTML = getFieldRenderer(step.type)(step, this);
+            const input = body.querySelector('input[type="range"]');
+            if (input && SPS.Calculations && SPS.Calculations.updateSliderGradient) {
+                SPS.Calculations.updateSliderGradient(input);
+            }
+        }
+
+        /**
          * Ist der Slider eine Jahreszahl? Schema "format": "year" oder
          * ganzzahliger Bereich zwischen 1800 und 2100 ohne Einheit.
          *
@@ -1930,6 +2139,9 @@ window.SPS = window.SPS || {};
                 }
             });
             this.refreshDynamicSlider(index);
+            if (this.steps[index] && this.steps[index].inputUnits) {
+                this.rerenderStepBody(index);
+            }
 
             // Activate new
             const nextEl = this.container.querySelector(`#${this.instanceId}_step_${this.currentStepIndex}`);

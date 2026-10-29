@@ -199,7 +199,9 @@
       {
         "convert": "waermeverbrauch",
         "original": "waermeverbrauch-original",
-        "kwh": "waermeverbrauch-kwh"
+        "kwh": "waermeverbrauch-kwh",
+        "input": "waermeverbrauch-eingabe",
+        "unit_field": "waermeverbrauch-einheit"
       },
       {
         "_comment": "Ohne Keller fragt das Formular die Kellerdecke nicht ab; das NC-Formular verlangt sie aber. Unterster Boden ist dann meist eine Betonbodenplatte."
@@ -270,7 +272,9 @@
           "fenster_sanierung",
           "dach_sanierung",
           "keller_sanierung",
-          "baujahr_detail"
+          "baujahr_detail",
+          "waermeverbrauch_eingabe",
+          "waermeverbrauch_einheit"
         ]
       }
     ]
@@ -750,7 +754,7 @@
       "type": "slider",
       "dataType": "int",
       "label": "Wie hoch ist Ihr jährlicher Heizenergieverbrauch?",
-      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Energie für <strong>Heizung und Warmwasser</strong> – ohne Haushaltsstrom</li><li>Steht auf der <strong>Gas-, Öl-, Fernwärme- oder Heizstromrechnung</strong>; wenn möglich Durchschnitt der letzten 3 Jahre</li><li>Die Anzeige rechnet den Wert zusätzlich in Liter, m³ oder kg um</li></ul>",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Energie für <strong>Heizung und Warmwasser</strong> – ohne Haushaltsstrom</li><li>Geben Sie den Wert so ein, wie er auf Ihrer <strong>Rechnung</strong> steht – die Umrechnung in kWh erledigt das Formular</li><li>Wenn möglich, den <strong>Durchschnitt der letzten 3 Jahre</strong></li></ul>",
       "reason": "Ist die Grundlage für die Einstufung des Gebäudes und die Berechnung der Heizkosten im Gebäudesteckbrief.",
       "required": true,
       "min": 4000,
@@ -759,6 +763,126 @@
       "value": 15000,
       "suffix": " kWh",
       "icon": "icon-slider-waermeverbrauch",
+      "referenceBadge": {
+        "unitPerStep": 6000,
+        "template": "Ø {count} Personen",
+        "min": 1,
+        "max": 8
+      },
+      "inputUnits": {
+        "dependsOn": "energietraeger",
+        "options": {
+          "Öl": [
+            {
+              "unit": "Liter",
+              "factor": 9.8,
+              "min": 300,
+              "max": 6000,
+              "step": 50,
+              "value": 2000,
+              "hint": "Getankte Liter Heizöl pro Jahr laut Lieferrechnungen. Tanken Sie seltener als jährlich: Gesamtmenge ÷ Anzahl Jahre."
+            }
+          ],
+          "Gas": [
+            {
+              "unit": "m³",
+              "factor": 10.1,
+              "min": 400,
+              "max": 6000,
+              "step": 50,
+              "value": 1800,
+              "hint": "Verbrauch in Kubikmetern (Zählerstand-Differenz) laut Gasrechnung."
+            },
+            {
+              "unit": "kWh",
+              "factor": 1,
+              "min": 4000,
+              "max": 60000,
+              "step": 500,
+              "value": 18000,
+              "hint": "Verbrauch in kWh laut Gasrechnung – dort bereits aus m³ umgerechnet."
+            }
+          ],
+          "Holzpellets": [
+            {
+              "unit": "kg",
+              "factor": 4.8,
+              "min": 1000,
+              "max": 12000,
+              "step": 100,
+              "value": 4000,
+              "hint": "Gelieferte Pellets pro Jahr in kg laut Rechnung (1 Tonne = 1.000 kg)."
+            }
+          ],
+          "Biomasse": [
+            {
+              "unit": "kg",
+              "factor": 4.0,
+              "min": 1000,
+              "max": 15000,
+              "step": 100,
+              "value": 5000,
+              "hint": "Holz bzw. Hackschnitzel pro Jahr in kg (lufttrocken)."
+            }
+          ],
+          "Strom": [
+            {
+              "unit": "kWh Strom",
+              "factor": 1,
+              "min": 2000,
+              "max": 40000,
+              "step": 500,
+              "value": 12000,
+              "hint": "Heizstrom laut Stromrechnung (Heizstromtarif oder eigener Zähler für Nachtspeicher/Direktheizung)."
+            }
+          ],
+          "Fern-/Nahwärme": [
+            {
+              "unit": "kWh",
+              "factor": 1,
+              "min": 4000,
+              "max": 60000,
+              "step": 500,
+              "value": 15000,
+              "hint": "Gelieferte Wärme laut Fernwärmeabrechnung (MWh × 1.000 = kWh)."
+            }
+          ],
+          "Wärmepumpe": [
+            {
+              "unit": "kWh Strom",
+              "factorField": "umrechnungsquote",
+              "defaultFactor": 3.5,
+              "min": 1000,
+              "max": 15000,
+              "step": 100,
+              "value": 4500,
+              "hint": "Stromverbrauch der Wärmepumpe laut eigenem Zähler bzw. Wärmepumpen-Tarif auf der Stromrechnung. Daraus berechnen wir mit der Jahresarbeitszahl die erzeugte Wärme."
+            }
+          ],
+          "Geothermie": [
+            {
+              "unit": "kWh",
+              "factor": 1,
+              "min": 4000,
+              "max": 60000,
+              "step": 500,
+              "value": 15000,
+              "hint": "Erzeugte Wärme in kWh laut Abrechnung oder Wärmemengenzähler."
+            }
+          ]
+        },
+        "default": [
+          {
+            "unit": "kWh",
+            "factor": 1,
+            "min": 4000,
+            "max": 60000,
+            "step": 500,
+            "value": 15000,
+            "hint": "Wärmeverbrauch in kWh laut Abrechnung."
+          }
+        ]
+      },
       "conversion": {
         "dependsOn": "energietraeger",
         "factors": {
@@ -785,13 +909,8 @@
           }
         },
         "format": "{primary} kWh / {converted} {unit}",
-        "fallbackFormat": "{primary} kWh"
-      },
-      "referenceBadge": {
-        "unitPerStep": 6000,
-        "template": "Ø {count} Personen",
-        "min": 1,
-        "max": 8
+        "fallbackFormat": "{primary} kWh",
+        "_comment": "Nur für Antworten ohne Einheiten-Eingabe (ältere/gecachte Formularversion): Wert ist kWh, \"original\" wird zurückgerechnet."
       }
     },
     {
