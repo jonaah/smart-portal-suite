@@ -186,6 +186,13 @@ class SPS_Doctor {
 			$this->add( 'privacy', 'Datenschutzerklärung', 'warn', 'Weder SPS-Einstellung noch veröffentlichte WP-Datenschutzseite – Formular verlinkt auf ' . SPS_Settings::get_privacy_url() );
 		}
 
+		if ( SPS_Abilities::is_supported() ) {
+			$registered = function_exists( 'wp_get_ability' ) ? count( array_filter( SPS_Abilities::names(), 'wp_get_ability' ) ) : 0;
+			$this->add( 'abilities', 'MCP-Abilities', 'ok', sprintf( '%d von %d registriert (z. B. Easy MCP AI: unter "Tools › Abilities" einschalten).', $registered, count( SPS_Abilities::names() ) ) );
+		} else {
+			$this->add( 'abilities', 'MCP-Abilities', 'warn', 'WordPress-Abilities-API fehlt (erst ab WordPress 6.9) – Steuerung per MCP nicht verfügbar.' );
+		}
+
 		$magic = shortcode_exists( 'magic_login_form' );
 		$this->add( 'magic_login', 'Magic Login Pro', $magic ? 'ok' : 'warn', $magic ? 'aktiv' : 'nicht aktiv – Login/Registrierung bleiben für Besucher leer' );
 

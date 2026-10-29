@@ -6,6 +6,13 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 
 ---
 
+## [0.6.0] - 2026-10-29
+### Hinzugefügt
+- **Steuerung per MCP:** 15 WordPress-Abilities (ab WP 6.9) für Formulare, Design, Zugang, Nextcloud-Zuordnung, Übertragungstest, Diagnose, Fallback-Leads, Einstellungen (ohne Zugangsdaten) und Konten-Sync. Werden von Easy MCP AI bzw. dem MCP Adapter als Werkzeuge angeboten (Easy MCP AI: unter „Tools › Abilities“ einschalten). Nur für Administratoren, ändernde Aufrufe werden protokolliert. `wp sps doctor` zeigt den Status.
+
+### Geändert
+- „Zuordnung prüfen“ im Formular-Editor wertet fehlende Optionen nur bei Pflichtfragen als Fehler (wie `wp sps doctor`).
+
 ## [0.5.2] - 2026-10-29
 ### Behoben
 - **v0.5.0 war unvollständig:** `includes/class-sps-upload-staging.php` fehlte im Release → Fatal Error (HTTP 500) auf allen Seiten. (Tag v0.5.1 wurde ohne Versionsanpassung erstellt, dafür gibt es kein Release.)

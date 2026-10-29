@@ -390,7 +390,7 @@
                     var bad = 0;
                     var rows = res.data.rows.map(function(r) {
                         var ok = r.status === 'ok' || r.status.indexOf('WebDAV') !== -1 || r.status === 'Datei';
-                        var critical = r.status.indexOf('FEHLT') === 0 || r.status.indexOf('Optionen fehlen') === 0 || r.status.indexOf('Pflicht-Dateifrage') === 0;
+                        var critical = r.status.indexOf('FEHLT') === 0 || r.status.indexOf('Pflicht-Dateifrage') === 0 || (r.required === 'ja' && r.status.indexOf('Optionen fehlen') === 0);
                         if (critical) bad++;
                         return '<tr class="' + (critical ? 'sps-map-bad' : (ok ? 'sps-map-ok' : 'sps-map-warn')) + '">' +
                             '<td>' + esc(r.name) + (r.required ? ' <strong>*</strong>' : '') + '</td>' +

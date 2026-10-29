@@ -426,6 +426,28 @@ Unter **Smart Portal > Account-Sync** steht ein Administrations-Panel bereit:
 
 ---
 
+## 10a. Steuerung per MCP (WordPress-Abilities)
+
+Ab WordPress 6.9 meldet das Plugin seine Funktionen über die Abilities-API an. MCP-Server wie **Easy MCP AI** oder der offizielle **MCP Adapter** stellen sie als Werkzeuge bereit, z. B. `wp_ability_smart_portal_suite_update_form_theme`. In Easy MCP AI einmalig unter **Tools › Abilities** einschalten. Danach die MCP-Verbindung neu laden.
+
+| Ability (`smart-portal-suite/…`) | Art | Zweck |
+|---|---|---|
+| `list-forms` | lesen | Formulare, Shortcode, Zugang, NC-Zuordnung, Seiten mit dem Formular |
+| `get-form-schema` | lesen | Schritte, Pflichtfragen, Optionen, Antwortschlüssel |
+| `get-form-theme` | lesen | Farben/Radien/Höhe, alle Variablen mit Standardwert, Vorlagen |
+| `update-form-theme` | ändern | Variablen setzen/entfernen, Vorlage anwenden, zurücksetzen |
+| `set-form-access` | ändern | nur angemeldete / alle / wie Schema, Hinweistext |
+| `list-nextcloud-forms` | lesen | NC-Formulare inkl. Warnung bei gleichen Titeln |
+| `set-nextcloud-form` | ändern | NC-Formular fest zuordnen (prüft Erreichbarkeit) |
+| `check-form-mapping` | lesen | Zuordnung Felder → NC-Fragen, Probleme |
+| `preview-submission` | lesen | Beispielantworten aufbereiten und zuordnen, ohne Senden |
+| `run-diagnostics` | lesen | wie `wp sps doctor` |
+| `list-pending-leads` / `retry-pending-leads` | lesen / ändern | Fallback-Leads anzeigen / nachreichen |
+| `get-settings` / `update-settings` | lesen / ändern | Einstellungen ohne Zugangsdaten |
+| `sync-user` | ändern | Kundenkonto mit Nextcloud abgleichen |
+
+Nur für Administratoren (`manage_options`). Passwörter werden weder ausgegeben noch gesetzt, Nextcloud-URL und Service-Account nur per `wp sps configure`. Jeder ändernde Aufruf wird im Debug-Log des Plugins protokolliert. Unter WordPress < 6.9 läuft das Plugin unverändert, nur ohne diese Werkzeuge (`wp sps doctor` meldet das).
+
 ## 11. Technische Dokumentation der Einzelfunktionen (`docs/`)
 
 Jede Funktion, jedes Modul und jede Schicht des Plugins ist in einem eigenen technischen Referenzdokument im Ordner [`docs/`](docs/README.md) dokumentiert:

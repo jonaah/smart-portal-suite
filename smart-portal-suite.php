@@ -3,7 +3,7 @@
  * Plugin Name:       Smart Portal Suite
  * Plugin URI:        https://effizientes-heim.de/
  * Description:       Multi-Step Formulare für Gebäude-Check und Projektanfragen mit Nextcloud-Anbindung.
- * Version:           0.5.2
+ * Version:           0.6.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Jonah Kleimann
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin-Konstanten definieren
-define( 'SPS_VERSION', '0.5.2' );
+define( 'SPS_VERSION', '0.6.0' );
 define( 'SPS_PLUGIN_FILE', __FILE__ );
 define( 'SPS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SPS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -39,6 +39,7 @@ require_once SPS_PLUGIN_DIR . 'includes/class-sps-account-sync-page.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-submission.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-upload-staging.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-doctor.php';
+require_once SPS_PLUGIN_DIR . 'includes/class-sps-abilities.php';
 
 /**
  * Nextcloud Bridge Module laden.
@@ -75,6 +76,9 @@ function sps_init() {
 	SPS_Auth_Shortcodes::get_instance();
 	SPS_Submission::init();
 	SPS_Upload_Staging::init();
+
+	// MCP: Funktionen als WordPress-Abilities (ab WP 6.9) bereitstellen.
+	SPS_Abilities::init();
 
 	if ( is_admin() ) {
 		SPS_Form_Manager::get_instance();

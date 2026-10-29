@@ -738,9 +738,49 @@ class SPS_Form_Manager {
 			wp_send_json_error( array( 'message' => __( 'Nextcloud ist nicht konfiguriert (URL, Service-Account, App-Passwort).', 'smart-portal-suite' ) ) );
 		}
 
+		$out = self::nc_forms_summary();
+		if ( is_wp_error( $out ) ) {
+			wp_send_json_error( array( 'message' => $out->get_error_message() ) );
+		}
+
+		wp_send_json_success( array( 'forms' => $out ) );
+	}
+
+	/**
+	 * AJAX: Zuordnung SPS-Felder → Fragen eines NC-Formulars (wie "wp sps mapping").
+	 */
+	public function ajax_nc_mapping() {
+		check_ajax_referer( self::NONCE_ACTION, 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
+		}
+
+		$form_id = isset( $_POST['form_id'] ) ? sanitize_key( wp_unslash( $_POST['form_id'] ) ) : '';
+		$schema  = $form_id ? SPS_Form_Renderer::get_instance()->load_schema( $form_id ) : null;
+		if ( ! $schema ) {
+			wp_send_json_error( array( 'message' => __( 'Formular nicht gefunden.', 'smart-portal-suite' ) ) );
+		}
+
+		$result = self::mapping_check( $schema, isset( $_POST['nc_form_id'] ) ? absint( $_POST['nc_form_id'] ) : 0 );
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+		wp_send_json_success( $result );
+	}
+
+	/**
+	 * Nextcloud-Formulare des Service-Accounts (eigene + geteilte), neueste zuerst.
+	 *
+	 * @return array|WP_Error Liste mit id, title, owner, lastUpdated, expired, duplicate.
+	 */
+	public static function nc_forms_summary() {
+		if ( ! SPS_NC_Client::service()->is_configured() ) {
+			return new WP_Error( 'sps_not_configured', __( 'Nextcloud ist nicht konfiguriert (URL, Service-Account, App-Passwort).', 'smart-portal-suite' ) );
+		}
+
 		$forms = ( new SPS_NC_Forms() )->list_forms();
 		if ( is_wp_error( $forms ) ) {
-			wp_send_json_error( array( 'message' => $forms->get_error_message() ) );
+			return $forms;
 		}
 
 		$titles = array();
@@ -765,54 +805,55 @@ class SPS_Form_Manager {
 			return $b['id'] - $a['id'];
 		} );
 
-		wp_send_json_success( array( 'forms' => $out ) );
+		return $out;
 	}
 
 	/**
-	 * AJAX: Zuordnung SPS-Felder → Fragen eines NC-Formulars (wie "wp sps mapping").
+	 * Zuordnung SPS-Felder → Fragen eines NC-Formulars prüfen (wie "wp sps mapping").
+	 *
+	 * @param array $schema Schema.
+	 * @param int   $nc_id  NC-Formular-ID (0 = aktuelle Zuordnung).
+	 * @return array|WP_Error nc_form_id, rows, unused, problems.
 	 */
-	public function ajax_nc_mapping() {
-		check_ajax_referer( self::NONCE_ACTION, 'nonce' );
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
-		}
-
-		$form_id = isset( $_POST['form_id'] ) ? sanitize_key( wp_unslash( $_POST['form_id'] ) ) : '';
-		$schema  = $form_id ? SPS_Form_Renderer::get_instance()->load_schema( $form_id ) : null;
-		if ( ! $schema ) {
-			wp_send_json_error( array( 'message' => __( 'Formular nicht gefunden.', 'smart-portal-suite' ) ) );
-		}
-
+	public static function mapping_check( array $schema, $nc_id = 0 ) {
 		$forms = new SPS_NC_Forms();
-		$nc_id = isset( $_POST['nc_form_id'] ) ? absint( $_POST['nc_form_id'] ) : 0;
+		$nc_id = absint( $nc_id );
 		if ( ! $nc_id ) {
 			$nc_id = $forms->resolve_form_id( $schema );
 			if ( is_wp_error( $nc_id ) ) {
-				wp_send_json_error( array( 'message' => $nc_id->get_error_message() ) );
+				return $nc_id;
 			}
 		}
 
 		$questions = $forms->get_questions( $nc_id, false );
 		if ( is_wp_error( $questions ) ) {
-			wp_send_json_error( array( 'message' => sprintf( 'NC-Formular %d: %s', $nc_id, $questions->get_error_message() ) ) );
+			return new WP_Error( $questions->get_error_code(), sprintf( 'NC-Formular %d: %s', $nc_id, $questions->get_error_message() ) );
 		}
 
-		$rows = SPS_Doctor::mapping_report( $schema, $questions );
-		$used = array();
+		$rows     = SPS_Doctor::mapping_report( $schema, $questions );
+		$used     = array();
+		$problems = array();
 		foreach ( $rows as $r ) {
 			foreach ( explode( '+', (string) $r['source'] ) as $k ) {
 				$used[ $k ] = true;
+			}
+			$critical = 0 === strpos( $r['status'], 'FEHLT' )
+				|| 0 === strpos( $r['status'], 'Pflicht-Dateifrage' )
+				|| ( 'ja' === $r['required'] && 0 === strpos( $r['status'], 'Optionen fehlen' ) );
+			if ( $critical ) {
+				$problems[] = $r['name'] . ': ' . $r['status'];
 			}
 		}
 		$unused = array_values( array_filter( SPS_Doctor::available_keys( $schema ), function ( $k ) use ( $used ) {
 			return ! isset( $used[ $k ] );
 		} ) );
 
-		wp_send_json_success( array(
+		return array(
 			'nc_form_id' => (int) $nc_id,
 			'rows'       => $rows,
 			'unused'     => $unused,
-		) );
+			'problems'   => $problems,
+		);
 	}
 
 	/* ═══════════════════════════════════════════════════════════════
@@ -876,7 +917,7 @@ class SPS_Form_Manager {
 			wp_send_json_error( array( 'message' => 'Invalid theme data.' ), 400 );
 		}
 
-		$sanitized = $this->sanitize_theme_data( $theme );
+		$sanitized = self::sanitize_theme_data( $theme );
 
 		if ( empty( $sanitized ) ) {
 			self::delete_theme( $form_id );
@@ -1641,7 +1682,7 @@ class SPS_Form_Manager {
 	 * @param array $data Raw theme data.
 	 * @return array Sanitized theme array.
 	 */
-	private function sanitize_theme_data( $data ) {
+	public static function sanitize_theme_data( $data ) {
 		$defaults  = self::get_defaults();
 		$sanitized = array();
 
