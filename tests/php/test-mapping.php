@@ -172,5 +172,36 @@ check( 'ne bei fehlendem Feld = wahr', SPS_Answer_Transformer::matches( array(),
 check( 'gte', SPS_Answer_Transformer::matches( array( 'x' => 2002 ), array( 'x' => array( 'gte' => 2002 ) ) ) );
 check( 'Liste = in', SPS_Answer_Transformer::matches( array( 'x' => 'b' ), array( 'x' => array( 'a', 'b' ) ) ) );
 
+echo "Übersetzung auf Optionen des Nextcloud-Formulars (forms_nc/Gebaeude-Check.json)\n";
+$t = SPS_Answer_Transformer::apply( array( 'energietraeger' => 'Gas', 'waermeverbrauch' => 15000, 'dachart' => 'Holzdach', 'kellerdecke' => 'Kappendecke' ), $schema );
+check( 'Gas -> Erdgas', 'Erdgas' === $t['energietraeger'] );
+check( 'Umrechnung noch mit Gas-Faktor (m³)', false !== strpos( (string) $t['waermeverbrauch_original'], 'm³' ) );
+check( 'Holzdach -> Dach in Holzkonstruktion', 'Dach in Holzkonstruktion' === $t['dachart'] );
+check( 'Kappendecke -> Ziegel-/Hohlsteindecke', 'Ziegel-/Hohlsteindecke' === $t['kellerdecke'] );
+$nc = json_decode( file_get_contents( $root . '/forms_nc/Gebaeude-Check.json' ), true );
+$nc = isset( $nc['form'] ) ? $nc['form'] : $nc;
+$qid = 0;
+foreach ( $nc['questions'] as &$nq ) {
+	$nq['id'] = ++$qid;
+	$oid = 0;
+	foreach ( (array) $nq['options'] as &$no ) {
+		$no['id'] = $qid * 100 + ( ++$oid );
+	}
+	unset( $no );
+}
+unset( $nq );
+$bad = array();
+foreach ( SPS_Doctor::mapping_report( $schema, $nc['questions'] ) as $r ) {
+	if ( 'ja' === $r['required'] && 'ok' !== $r['status'] ) {
+		$bad[] = $r['name'] . ': ' . $r['status'];
+	}
+}
+$lead = array( 'energietraeger' => 'Gas', 'dachart' => 'Holzdach', 'kellerdecke' => 'Holz', 'aussenwand_sanierung_jahr' => 2000, 'baujahr' => 1981, 'waermeverbrauch_original' => '1.714 kWh (Strom)' );
+$re   = SPS_Answer_Transformer::apply_value_translations( $lead, $schema );
+check( 'Alter Lead: Werte übersetzt', 'Erdgas' === $re['energietraeger'] && 'Dach in Holzkonstruktion' === $re['dachart'] && 'Kellerdecke als Holzbalkendecke' === $re['kellerdecke'] );
+check( 'Alter Lead: Ableitungen unverändert', 2000 === $re['aussenwand_sanierung_jahr'] && '1.714 kWh (Strom)' === $re['waermeverbrauch_original'] );
+check( 'Übersetzung wiederholbar', $re === SPS_Answer_Transformer::apply_value_translations( $re, $schema ) );
+check( 'Alle Pflichtfragen des NC-Formulars passen (' . implode( '; ', $bad ) . ')', empty( $bad ) );
+
 echo $fails ? "\n$fails Test(s) fehlgeschlagen\n" : "\nAlle Tests bestanden\n";
 exit( $fails ? 1 : 0 );

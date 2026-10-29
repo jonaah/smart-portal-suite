@@ -43,6 +43,36 @@ class SPS_Answer_Transformer {
 	}
 
 	/**
+	 * Nur Übersetzungsregeln anwenden: { "set": k, "value": neu, "when": { k: alt } }.
+	 *
+	 * Für bereits aufbereitete Fallback-Leads: Diese Regeln sind wiederholbar,
+	 * die übrigen (Ableitungen aus Rohfeldern) nicht.
+	 *
+	 * @param array      $answers Aufbereitete Antworten.
+	 * @param array|null $schema  Formular-Schema.
+	 * @return array
+	 */
+	public static function apply_value_translations( array $answers, $schema = null ) {
+		if ( ! is_array( $schema ) || empty( $schema['submit']['rules'] ) || ! is_array( $schema['submit']['rules'] ) ) {
+			return $answers;
+		}
+		foreach ( $schema['submit']['rules'] as $rule ) {
+			if ( ! is_array( $rule ) || empty( $rule['set'] ) || ! array_key_exists( 'value', $rule ) || empty( $rule['when'] ) || ! is_array( $rule['when'] ) || 1 !== count( $rule['when'] ) ) {
+				continue;
+			}
+			$key = self::norm( $rule['set'] );
+			$old = current( $rule['when'] );
+			if ( self::norm( key( $rule['when'] ) ) !== $key || ! is_scalar( $old ) ) {
+				continue;
+			}
+			if ( isset( $answers[ $key ] ) && is_scalar( $answers[ $key ] ) && trim( (string) $answers[ $key ] ) === trim( (string) $old ) ) {
+				$answers[ $key ] = $rule['value'];
+			}
+		}
+		return $answers;
+	}
+
+	/**
 	 * Antworten aufbereiten.
 	 *
 	 * @param array      $answers Bereinigte Antworten aus dem Frontend.

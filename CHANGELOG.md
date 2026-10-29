@@ -6,6 +6,16 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 
 ---
 
+## [0.6.1] - 2026-10-29
+### Behoben
+- **Gebäude-Check → Nextcloud-Formular:** Energieträger „Gas“, Dachart „Holzdach“/„Massives Dach“ und Kellerdecke „Holz“/„Massiv“/„Kappendecke“ werden beim Absenden auf die festen Optionen des NC-Formulars übersetzt („Erdgas“, „Dach in Holzkonstruktion“, „Dach in massiver Konstruktion“, „Kellerdecke als Holzbalkendecke“, „Kellerdecke aus Stahlbeton, massiv“, „Ziegel-/Hohlsteindecke“). Vorher scheiterte jede Übertragung mit HTTP 400 an diesen Pflichtfragen. Die Auswahl im Formular und das NC-Formular bleiben unverändert.
+- Bereits gespeicherte Fallback-Leads werden beim Nachreichen ebenfalls übersetzt (nur die wiederholbaren Übersetzungsregeln, Ableitungen laufen nicht doppelt).
+- Prüfungen (Doctor, „Zuordnung prüfen“, MCP) berücksichtigen solche Übersetzungsregeln. Offline-Test gegen `forms_nc/Gebaeude-Check.json`: alle Pflichtfragen passen.
+
+### Geändert
+- **Gebäude-Check standardmäßig nur für angemeldete Nutzer** (`requires_login` im Schema). Zum Testen weiter umschaltbar (Formular-Editor bzw. `wp sps configure --form-access=gebaeude_check=public`).
+- **Schnell-Themes ohne Branding:** drei neue Farbschemata „Klar (Hell, Petrol)“, „Anthrazit (Dunkel, Bernstein)“, „Salbei (Hell, Grün)“ inkl. Illustrationsfarben; die bisherigen Vorlagen heißen jetzt „Standard (Violett)“, „Ozean (Dunkelblau)“, „Minimal (Hell, Blau)“.
+
 ## [0.6.0] - 2026-10-29
 ### Hinzugefügt
 - **Steuerung per MCP:** 15 WordPress-Abilities (ab WP 6.9) für Formulare, Design, Zugang, Nextcloud-Zuordnung, Übertragungstest, Diagnose, Fallback-Leads, Einstellungen (ohne Zugangsdaten) und Konten-Sync. Werden von Easy MCP AI bzw. dem MCP Adapter als Werkzeuge angeboten (Easy MCP AI: unter „Tools › Abilities“ einschalten). Nur für Administratoren, ändernde Aufrufe werden protokolliert. `wp sps doctor` zeigt den Status.

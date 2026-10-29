@@ -492,7 +492,7 @@ class SPS_Submission {
 
 			if ( '' === $error ) {
 				$answers  = (array) $lead['answers'];
-				$prepared = empty( $lead['transformed'] ) ? SPS_Answer_Transformer::apply( $answers, $schema ) : $answers;
+				$prepared = empty( $lead['transformed'] ) ? SPS_Answer_Transformer::apply( $answers, $schema ) : SPS_Answer_Transformer::apply_value_translations( $answers, $schema );
 				$user_id  = isset( $lead['wp_user_id'] ) ? (int) $lead['wp_user_id'] : 0;
 				$client   = ( $user_id && (int) SPS_Settings::get_setting( 'submit_as_user', 1 ) ) ? SPS_NC_Client::for_user( $user_id, false ) : SPS_NC_Client::service();
 				$result   = self::send_to_forms( $schema, $prepared, self::normalize_files( $files ), $client );

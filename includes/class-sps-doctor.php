@@ -618,9 +618,27 @@ class SPS_Doctor {
 			}
 		}
 		$from_rules = array();
+		$renames    = array();
 		foreach ( isset( $schema['submit']['rules'] ) ? (array) $schema['submit']['rules'] : array() as $rule ) {
-			if ( ! empty( $rule['set'] ) && array_key_exists( 'value', $rule ) && is_scalar( $rule['value'] ) ) {
-				$from_rules[ SPS_Answer_Transformer::norm( $rule['set'] ) ][] = (string) $rule['value'];
+			if ( empty( $rule['set'] ) || ! array_key_exists( 'value', $rule ) || ! is_scalar( $rule['value'] ) ) {
+				continue;
+			}
+			$key  = SPS_Answer_Transformer::norm( $rule['set'] );
+			$when = isset( $rule['when'] ) && is_array( $rule['when'] ) ? $rule['when'] : array();
+			// Übersetzung eines Auswahlwerts: { "set": k, "value": neu, "when": { k: alt } }.
+			if ( 1 === count( $when ) && $key === SPS_Answer_Transformer::norm( key( $when ) ) && is_scalar( current( $when ) ) ) {
+				$renames[ $key ][ (string) current( $when ) ] = (string) $rule['value'];
+				continue;
+			}
+			$from_rules[ $key ][] = (string) $rule['value'];
+		}
+		foreach ( $renames as $k => $map ) {
+			if ( isset( $values[ $k ] ) ) {
+				foreach ( $values[ $k ] as $i => $v ) {
+					if ( isset( $map[ $v ] ) ) {
+						$values[ $k ][ $i ] = $map[ $v ];
+					}
+				}
 			}
 		}
 		foreach ( $from_rules as $k => $v ) {

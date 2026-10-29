@@ -3,6 +3,7 @@
   "form_type": "Gebaeude-Check",
   "title": "Gebäude-Check",
   "nc_form_title": "Gebaeudedaten",
+  "requires_login": true,
   "submit": {
     "rules": [
       {
@@ -200,6 +201,13 @@
         "original": "waermeverbrauch-original",
         "kwh": "waermeverbrauch-kwh"
       },
+      { "_comment": "Auswahltexte auf die festen Optionen des Nextcloud-Formulars übersetzen (NC-Formular bleibt unverändert, der PDF-Job hängt daran). Steht nach der Umrechnung, die noch \"Gas\" erwartet." },
+      { "set": "energietraeger", "value": "Erdgas", "when": { "energietraeger": "Gas" } },
+      { "set": "dachart", "value": "Dach in Holzkonstruktion", "when": { "dachart": "Holzdach" } },
+      { "set": "dachart", "value": "Dach in massiver Konstruktion", "when": { "dachart": "Massives Dach" } },
+      { "set": "kellerdecke", "value": "Kellerdecke als Holzbalkendecke", "when": { "kellerdecke": "Holz" } },
+      { "set": "kellerdecke", "value": "Kellerdecke aus Stahlbeton, massiv", "when": { "kellerdecke": "Massiv" } },
+      { "set": "kellerdecke", "value": "Ziegel-/Hohlsteindecke", "when": { "kellerdecke": "Kappendecke" } },
       {
         "remove": [
           "aussenwand_typ",
