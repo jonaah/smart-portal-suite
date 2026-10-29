@@ -6,6 +6,16 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 
 ---
 
+## [0.6.3] - 2026-10-29
+### Behoben
+- **Abhängigkeiten der Geschoss-Fragen wieder da** (gingen beim Umbau verloren): Vollgeschosse ≤ Geschosse, Kellergeschosse ≤ Geschosse − Dachgeschoss − 1, beheizte Geschosse ≤ Geschosse. Die Zahlen-Buttons zeigen nur noch mögliche Werte; wird eine frühere Antwort verkleinert, werden zu große Folgeantworten verworfen. Schema-Option `"dynamicMax"`.
+- Reihenfolge: Dachgeschoss und Kellergeschosse kommen vor „beheizte Geschosse“.
+
+### Geändert
+- **Erklärungen bei allen Fragen**: kurze Info, was gemeint ist und wofür es gebraucht wird; längere Hilfen aufklappbar („Weitere Informationen“). Grundlage sind die Hilfetexte des Nextcloud-Formulars.
+- „Anzahl der Geschosse“ zählt alle Ebenen inkl. Keller und ausgebautem Dachgeschoss (wie im NC-Formular bei den Vollgeschossen beschrieben); neue Auswahl „5+“.
+- Klare Trennung Strom/Wärme: „Jährlicher Stromverbrauch (Haushaltsstrom)“, „Was zahlen Sie für eine Kilowattstunde Strom?“, „Jährlicher Heizenergieverbrauch“, „Was kostet Sie eine Kilowattstunde Wärme?“.
+
 ## [0.6.2] - 2026-10-29
 ### Geändert
 - **„Ein Bildschirm“ als Standard:** Das Formular füllt genau die Fensterhöhe (abzüglich Admin-Leiste/Sticky-Header) und wird beim Öffnen der Seite in den Blick gescrollt. Header und Footer bleiben erreichbar: Das Mausrad über dem Formular scrollt am Ende des Inhalts die Seite weiter (vorher nur über die Scrollleiste). Im Styling-Editor wählbar: „Ein Bildschirm“, „Feste Höhe“, „Automatisch“. Formulare mit bereits gespeicherter fester Höhe behalten diese.

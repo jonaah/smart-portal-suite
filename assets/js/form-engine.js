@@ -178,9 +178,13 @@ window.SPS = window.SPS || {};
         const hasValue = !(unanswered && noPreselect);
 
         // Determine discrete values (2–7 steps → show buttons; "buttons": true bis 12)
-        const discreteValues = (Calc && Calc.getSliderStepValues)
+        let discreteValues = (Calc && Calc.getSliderStepValues)
             ? Calc.getSliderStepValues(cfg.min, cfg.max, cfg.step, step.buttons ? 12 : undefined)
             : [];
+        // Nur ein möglicher Wert (z. B. 1 Geschoss → 0 Keller): als einzigen Button anzeigen.
+        if (!discreteValues.length && step.buttons && Number(cfg.max) <= Number(cfg.min)) {
+            discreteValues = [Number(cfg.min)];
+        }
         const isDiscrete = discreteValues.length > 0;
 
         // Compute initial display value (conversion takes priority over plain suffix)
@@ -1646,13 +1650,77 @@ window.SPS = window.SPS || {};
          * @returns {Object} Effective step configuration with dynamic overrides applied.
          */
         getStepConfig(step) {
+            let cfg = step;
             if (step.dynamicConfig && step.dynamicConfig.dependsOn) {
                 const depVal = this.getAnswer(step.dynamicConfig.dependsOn);
                 if (depVal && step.dynamicConfig.configs && step.dynamicConfig.configs[depVal]) {
-                    return Object.assign({}, step, step.dynamicConfig.configs[depVal]);
+                    cfg = Object.assign({}, step, step.dynamicConfig.configs[depVal]);
                 }
             }
-            return step;
+            const dynMax = this.resolveDynamicMax(step);
+            if (dynMax !== null) {
+                const min = Number(cfg.min !== undefined ? cfg.min : 0);
+                cfg = Object.assign({}, cfg, { max: Math.max(min, Math.min(Number(cfg.max), dynMax)) });
+            }
+            return cfg;
+        }
+
+        /**
+         * Obergrenze aus früheren Antworten, z. B. Vollgeschosse ≤ Geschosse.
+         * Schema: "dynamicMax": { "sum": ["geschosse"], "subtract": ["dachgeschoss"], "add": -1 }
+         * Ohne Antwort auf ein "sum"-Feld gibt es keine Grenze; fehlende "subtract"-Felder zählen 0.
+         *
+         * @param {Object} step - Schritt.
+         * @returns {number|null}
+         */
+        resolveDynamicMax(step) {
+            const dm = step.dynamicMax;
+            if (!dm || !Array.isArray(dm.sum) || !dm.sum.length) return null;
+            let total = 0;
+            for (const f of dm.sum) {
+                const v = parseFloat(this.getAnswer(f));
+                if (isNaN(v)) return null;
+                total += v;
+            }
+            (dm.subtract || []).forEach(f => {
+                const v = parseFloat(this.getAnswer(f));
+                if (!isNaN(v)) total -= v;
+            });
+            return total + (Number(dm.add) || 0);
+        }
+
+        /**
+         * Slider-Schritt mit dynamischer Obergrenze neu aufbauen (beim Betreten).
+         * Liegt die bisherige Antwort über der neuen Grenze, wird sie verworfen
+         * (bzw. ohne "preselect": false auf die Grenze gesetzt).
+         *
+         * @param {number} index - Schrittindex.
+         */
+        refreshDynamicSlider(index) {
+            const step = this.steps[index];
+            if (!step || step.type !== 'slider' || !step.dynamicMax) return;
+            const cfg = this.getStepConfig(step);
+            const cur = parseFloat(this.getAnswer(step.id));
+            if (!isNaN(cur) && cur > Number(cfg.max)) {
+                if (step.preselect === false) {
+                    delete this.answers[step.id];
+                } else {
+                    this.setAnswer(step.id, Number(cfg.max), false);
+                }
+            }
+            // Nur ein Wert möglich (z. B. 1 Geschoss → kein Keller): direkt übernehmen.
+            if (Number(cfg.max) <= Number(cfg.min) && (this.getAnswer(step.id) === undefined || this.getAnswer(step.id) === null)) {
+                this.setAnswer(step.id, Number(cfg.min), false);
+            }
+            const stepEl = this.container.querySelector(`#${this.instanceId}_step_${index}`);
+            const body   = stepEl ? stepEl.querySelector('.sps-step-body') : null;
+            if (body) {
+                body.innerHTML = getFieldRenderer('slider')(step, this);
+                const input = body.querySelector('input[type="range"]');
+                if (input && SPS.Calculations && SPS.Calculations.updateSliderGradient) {
+                    SPS.Calculations.updateSliderGradient(input);
+                }
+            }
         }
 
         /**
@@ -1846,6 +1914,22 @@ window.SPS = window.SPS || {};
             }
 
             this.currentStepIndex = index;
+
+            // Abhängige Obergrenzen (z. B. Vollgeschosse ≤ Geschosse) neu berechnen.
+            // Alle Antworten prüfen, damit nach einer Korrektur keine ungültigen Werte bleiben.
+            this.steps.forEach(st => {
+                if (st.type !== 'slider' || !st.dynamicMax) return;
+                const max = Number(this.getStepConfig(st).max);
+                const val = parseFloat(this.getAnswer(st.id));
+                if (!isNaN(val) && val > max) {
+                    if (st.preselect === false) {
+                        delete this.answers[st.id];
+                    } else {
+                        this.setAnswer(st.id, max, false);
+                    }
+                }
+            });
+            this.refreshDynamicSlider(index);
 
             // Activate new
             const nextEl = this.container.querySelector(`#${this.instanceId}_step_${this.currentStepIndex}`);

@@ -201,13 +201,51 @@
         "original": "waermeverbrauch-original",
         "kwh": "waermeverbrauch-kwh"
       },
-      { "_comment": "Auswahltexte auf die festen Optionen des Nextcloud-Formulars übersetzen (NC-Formular bleibt unverändert, der PDF-Job hängt daran). Steht nach der Umrechnung, die noch \"Gas\" erwartet." },
-      { "set": "energietraeger", "value": "Erdgas", "when": { "energietraeger": "Gas" } },
-      { "set": "dachart", "value": "Dach in Holzkonstruktion", "when": { "dachart": "Holzdach" } },
-      { "set": "dachart", "value": "Dach in massiver Konstruktion", "when": { "dachart": "Massives Dach" } },
-      { "set": "kellerdecke", "value": "Kellerdecke als Holzbalkendecke", "when": { "kellerdecke": "Holz" } },
-      { "set": "kellerdecke", "value": "Kellerdecke aus Stahlbeton, massiv", "when": { "kellerdecke": "Massiv" } },
-      { "set": "kellerdecke", "value": "Ziegel-/Hohlsteindecke", "when": { "kellerdecke": "Kappendecke" } },
+      {
+        "_comment": "Auswahltexte auf die festen Optionen des Nextcloud-Formulars übersetzen (NC-Formular bleibt unverändert, der PDF-Job hängt daran). Steht nach der Umrechnung, die noch \"Gas\" erwartet."
+      },
+      {
+        "set": "energietraeger",
+        "value": "Erdgas",
+        "when": {
+          "energietraeger": "Gas"
+        }
+      },
+      {
+        "set": "dachart",
+        "value": "Dach in Holzkonstruktion",
+        "when": {
+          "dachart": "Holzdach"
+        }
+      },
+      {
+        "set": "dachart",
+        "value": "Dach in massiver Konstruktion",
+        "when": {
+          "dachart": "Massives Dach"
+        }
+      },
+      {
+        "set": "kellerdecke",
+        "value": "Kellerdecke als Holzbalkendecke",
+        "when": {
+          "kellerdecke": "Holz"
+        }
+      },
+      {
+        "set": "kellerdecke",
+        "value": "Kellerdecke aus Stahlbeton, massiv",
+        "when": {
+          "kellerdecke": "Massiv"
+        }
+      },
+      {
+        "set": "kellerdecke",
+        "value": "Ziegel-/Hohlsteindecke",
+        "when": {
+          "kellerdecke": "Kappendecke"
+        }
+      },
       {
         "remove": [
           "aussenwand_typ",
@@ -248,7 +286,8 @@
           "text": "Reihenendhaus/Doppelhaushälfte",
           "icon": "icon-reihenendhaus-doppelhaushalfte"
         }
-      ]
+      ],
+      "desc": "Die Bauform bestimmt, wie viele Wände an die Außenluft grenzen. Ein Reihenmittelhaus verliert über die Nachbarwände kaum Wärme, ein freistehendes Haus über alle vier Seiten."
     },
     {
       "id": "nutzung",
@@ -270,7 +309,8 @@
           "text": "Eigennutzung und Vermietung",
           "icon": "icon-eigennutzung-vermietung"
         }
-      ]
+      ],
+      "desc": "Ob Sie selbst wohnen oder vermieten, beeinflusst die Annahmen zum Nutzerverhalten und welche Förderprogramme in Frage kommen."
     },
     {
       "id": "flaeche",
@@ -310,7 +350,9 @@
           "value": 325,
           "icon": "icon-300qmplus"
         }
-      ]
+      ],
+      "desc": "Gemeint ist die beheizte Wohnfläche aller Wohnungen zusammen. Daraus ergibt sich der Energieverbrauch pro Quadratmeter – der wichtigste Vergleichswert für Ihr Haus.",
+      "details": "Die Wohnfläche finden Sie z. B. im Kaufvertrag, im Mietvertrag, in der Baubeschreibung oder im Energieausweis. Eine Schätzung genügt."
     },
     {
       "id": "wohneinheiten",
@@ -340,13 +382,14 @@
           "value": 4,
           "icon": "icon-4wohneinheitenplus"
         }
-      ]
+      ],
+      "desc": "Anzahl der abgeschlossenen Wohnungen im Gebäude – eine Einliegerwohnung zählt mit. Wichtig für die Einstufung als Ein- oder Mehrfamilienhaus und für die Förderhöchstbeträge."
     },
     {
       "id": "geschosse",
       "type": "radio",
       "dataType": "int",
-      "label": "Anzahl der Geschosse?",
+      "label": "Wie viele Geschosse hat das Gebäude insgesamt?",
       "required": true,
       "choices": [
         {
@@ -368,8 +411,16 @@
           "text": "4",
           "value": 4,
           "icon": "icon-4geschosse"
+        },
+        {
+          "text": "5+",
+          "value": 5,
+          "icon": "icon-4geschosse"
         }
-      ]
+      ],
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Zählen Sie <strong>alle Ebenen</strong>: Keller, Erdgeschoss, Obergeschosse und ein <strong>ausgebautes</strong> Dachgeschoss</li><li>Ein nicht ausgebauter Dachboden zählt <strong>nicht</strong></li></ul>",
+      "details": "Beispiel: Keller + Erdgeschoss + Obergeschoss + ausgebautes Dachgeschoss = 4 Geschosse. Die folgenden Fragen (Vollgeschosse, Dachgeschoss, Keller, beheizte Geschosse) beziehen sich auf diese Zahl.",
+      "reason": "Die Geschosszahl bestimmt zusammen mit der Wohnfläche die Grundfläche und Höhe des Gebäudes – und damit die Größe von Dach, Außenwänden und Kellerdecke."
     },
     {
       "id": "baujahr",
@@ -471,7 +522,7 @@
       "type": "radio",
       "dataType": "double",
       "label": "Geschosshöhe in Meter?",
-      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Bitte geben Sie die <strong>durchschnittliche Geschosshöhe</strong> an.</li><li>Diese setzt sich zusammen aus <strong>Raumhöhe + Deckenhöhe</strong>.</li></ul>",
+      "desc": "Durchschnittliche Höhe eines Geschosses von Fußboden zu Fußboden, also Raumhöhe plus Deckendicke. Zusammen mit der Wohnfläche ergibt das das beheizte Volumen.",
       "reason": "Wird benötigt, um zusammen mit der Wohnfläche das beheizte Gebäudevolumen zu berechnen.",
       "required": true,
       "choices": [
@@ -495,7 +546,8 @@
           "value": 3,
           "icon": "icon-30plus"
         }
-      ]
+      ],
+      "details": "Richtwerte: Neubau meist 2,6–2,8 m, Altbau vor 1950 oft 3,0 m und mehr. Wenn Sie es nicht genau wissen, schätzen Sie bitte."
     },
     {
       "id": "vollgeschosse",
@@ -503,31 +555,41 @@
       "preselect": false,
       "buttons": true,
       "dataType": "int",
-      "label": "Anzahl Vollgeschosse?",
-      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Liegen <strong>vollständig über der Geländeoberfläche</strong></li><li>Werden in der Regel als <strong>Wohn- oder Nutzgeschosse</strong> genutzt</li><li>Haben eine Raumhöhe von <strong>mind. 2,3m</strong> und eine Fläche von <strong>2/3 des Erdgeschosses</strong></li><li><strong>Wichtig:</strong> Untergeschosse zählen <strong>nicht</strong> als Vollgeschosse</li></ul>",
+      "label": "Wie viele davon sind Vollgeschosse?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Vollwertige Stockwerke, z. B. Erdgeschoss + Obergeschoss = <strong>2</strong></li><li>Dachgeschoss und Keller zählen nur, wenn sie <strong>über 2,30 m hoch</strong> sind <strong>und</strong> mehr als <strong>2/3 der Erdgeschossfläche</strong> haben</li></ul>",
       "reason": "Dient der Ermittlung der Gebäudegeometrie und der Berechnung der wärmeübertragenden Hüllfläche.",
       "required": true,
       "min": 0,
       "max": 10,
       "step": 1,
       "value": 1,
-      "icon": "icon-slider-vollgeschosse"
+      "icon": "icon-slider-vollgeschosse",
+      "dynamicMax": {
+        "sum": [
+          "geschosse"
+        ]
+      }
     },
     {
-      "id": "beheizt",
-      "type": "slider",
-      "preselect": false,
-      "buttons": true,
+      "id": "dachgeschoss",
+      "type": "radio",
       "dataType": "int",
-      "label": "Anzahl beheizter Geschosse?",
-      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Geschosse, die über eine <strong>Heizung</strong> verfügen</li><li>Sind somit für <strong>Wohn- oder Nutzungszwecke</strong> geeignet</li><li>Das können sowohl <strong>Vollgeschosse</strong> als auch <strong>Untergeschosse</strong> (Keller) sein</li></ul>",
-      "reason": "Wichtig für die genaue Bestimmung des beheizten Volumens und der thermischen Gebäudehülle.",
+      "label": "Gibt es ein ausgebautes Dachgeschoss?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Ein Geschoss direkt unter dem Dach, das als Wohnraum genutzt wird oder ausgebaut ist</li><li>Ein nicht ausgebauter Dachboden zählt <strong>nicht</strong></li></ul>",
+      "reason": "Beeinflusst die Dachfläche und das beheizte Volumen sowie die Einstufung der Dachdämmung.",
       "required": true,
-      "min": 0,
-      "max": 5,
-      "step": 1,
-      "value": 1,
-      "icon": "icon-slider-beheizt"
+      "choices": [
+        {
+          "text": "Ja, ausgebaut",
+          "value": 1,
+          "icon": "icon-dachgeschoss-ja"
+        },
+        {
+          "text": "Nein",
+          "value": 0,
+          "icon": "icon-dachgeschoss-nein"
+        }
+      ]
     },
     {
       "id": "keller",
@@ -535,44 +597,53 @@
       "preselect": false,
       "buttons": true,
       "dataType": "int",
-      "label": "Anzahl der Kellergeschosse?",
-      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Ein Geschoss, das <strong>teilweise oder vollständig</strong> unter der Geländeoberfläche liegt</li></ul>",
+      "label": "Wie viele Kellergeschosse gibt es?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Ein Kellergeschoss liegt ganz oder teilweise <strong>unter der Erde</strong></li><li>Kein Keller = 0, zwei Kellerebenen = 2</li></ul>",
       "reason": "Wird benötigt, um Verluste über das Erdreich und unbeheizte Kellerbereiche zu berechnen.",
       "required": true,
       "min": 0,
-      "max": 3,
+      "max": 4,
       "step": 1,
       "value": 1,
-      "icon": "icon-slider-keller"
+      "icon": "icon-slider-keller",
+      "dynamicMax": {
+        "sum": [
+          "geschosse"
+        ],
+        "subtract": [
+          "dachgeschoss"
+        ],
+        "add": -1
+      }
     },
     {
-      "id": "dachgeschoss",
-      "type": "radio",
+      "id": "beheizt",
+      "type": "slider",
+      "preselect": false,
+      "buttons": true,
       "dataType": "int",
-      "label": "Dachgeschoss?",
-      "desc": "<ul style='margin: 0; padding-left: 20px;'><li><strong>Wichtig:</strong> Ein nicht ausgebauter Dachboden zählt <strong>nicht</strong> als Dachgeschoss</li></ul>",
-      "reason": "Beeinflusst die Dachfläche und das beheizte Volumen sowie die Einstufung der Dachdämmung.",
+      "label": "Wie viele Geschosse sind beheizt?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Alle Geschosse mit Heizkörpern oder Fußbodenheizung</li><li>Auch ein beheizter Keller oder ein ausgebautes Dachgeschoss zählt mit</li></ul>",
+      "reason": "Wichtig für die genaue Bestimmung des beheizten Volumens und der thermischen Gebäudehülle.",
       "required": true,
-      "choices": [
-        {
-          "text": "JA",
-          "value": 1,
-          "icon": "icon-dachgeschoss-ja"
-        },
-        {
-          "text": "NEIN",
-          "value": 0,
-          "icon": "icon-dachgeschoss-nein"
-        }
-      ]
+      "min": 0,
+      "max": 5,
+      "step": 1,
+      "value": 1,
+      "icon": "icon-slider-beheizt",
+      "dynamicMax": {
+        "sum": [
+          "geschosse"
+        ]
+      }
     },
     {
       "id": "energieverbrauch",
       "type": "slider",
       "dataType": "int",
-      "label": "Jährlicher Energieverbrauch?",
-      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Sie finden diese Angaben meist auf der <strong>Jahresabrechnung</strong> des Energieversorgers</li><li>Wenn möglich, geben Sie den <strong>Durchschnitt der letzen 3 Jahre</strong> an</li></ul>",
-      "reason": "Dient als Basis zur Berechnung des tatsächlichen Strombedarfs und für wirtschaftliche Berechnungen (z.B. Amortisation).",
+      "label": "Wie hoch ist Ihr jährlicher Stromverbrauch (Haushaltsstrom)?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Strom für Licht, Geräte und Küche – <strong>ohne</strong> Strom für Heizung oder Wärmepumpe</li><li>Steht auf der <strong>Jahresabrechnung Ihres Stromversorgers</strong>; wenn möglich Durchschnitt der letzten 3 Jahre</li></ul>",
+      "reason": "Grundlage für Ihren Strombedarf, z. B. für die Auslegung einer Photovoltaikanlage, und für die Wirtschaftlichkeitsberechnung.",
       "required": true,
       "min": 1000,
       "max": 10000,
@@ -585,14 +656,15 @@
         "template": "Ø {count} Personen",
         "min": 1,
         "max": 8
-      }
+      },
+      "details": "Haben Wärmepumpe oder Heizung einen eigenen Zähler, geben Sie hier nur den Haushaltszähler an. Den Heizstrom fragen wir später beim Heizenergieverbrauch ab."
     },
     {
       "id": "kosten",
       "type": "slider",
       "dataType": "int",
-      "label": "Aktuelle Kosten?",
-      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Wie viel <strong>Cent/kWh</strong> bezahlen Sie aktuell für Strom?</li><li>Berechnung: <strong>Gesamtkosten</strong> des letzten Jahres / <strong>gesamt Stromverbrauch</strong> in kWh</li></ul>",
+      "label": "Was zahlen Sie für eine Kilowattstunde Strom?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Ihr Strompreis in <strong>Cent pro kWh</strong> (Haushaltsstrom)</li><li>Steht auf der Stromrechnung – oder: Gesamtkosten des Jahres ÷ verbrauchte kWh</li></ul>",
       "reason": "Wird im Gebäudesteckbrief verwendet, um die zukünftigen Stromkosten und mögliche Einsparpotenziale zu berechnen.",
       "required": true,
       "min": 20,
@@ -606,8 +678,8 @@
       "id": "energietraeger",
       "type": "radio",
       "dataType": "string",
-      "label": "Hauptenergieträger",
-      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Wenn mehrere Heizsysteme vorhanden sind, wählen Sie den <strong>Hauptenergieträger</strong> aus</li></ul>",
+      "label": "Womit heizen Sie überwiegend?",
+      "desc": "Bei mehreren Heizsystemen wählen Sie das, mit dem der größte Teil der Wärme erzeugt wird.",
       "reason": "Erforderlich für die Umrechnung von End- in Primärenergie und zur Bestimmung der spezifischen CO₂-Emissionen.",
       "required": true,
       "choices": [
@@ -649,8 +721,8 @@
       "id": "umrechnungsquote",
       "type": "slider",
       "dataType": "double",
-      "label": "Umrechnungsquote Wärmepumpe?",
-      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Geben Sie den durchschnittlichen <strong>Umrechnungsfaktor (JAZ/COP)</strong> Ihrer Wärmepumpe an</li><li>Beispiel: Aus 1 kWh Strom werden <strong>3,5 kWh Wärmeenergie</strong> erzeugt</li></ul>",
+      "label": "Wie effizient arbeitet Ihre Wärmepumpe?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Die <strong>Jahresarbeitszahl</strong> sagt, wie viel Wärme aus 1 kWh Strom entsteht – z. B. 3,5 kWh</li><li>Steht im Display der Wärmepumpe oder im Wartungsprotokoll; ohne Angabe ist 3,5 ein guter Richtwert</li></ul>",
       "reason": "Wird benötigt, um den tatsächlichen Stromverbrauch für die erzeugte Wärmeenergie abzuleiten.",
       "showIf": {
         "field": "energietraeger",
@@ -667,8 +739,8 @@
       "id": "waermeverbrauch",
       "type": "slider",
       "dataType": "int",
-      "label": "Jährlicher Wärmeenergieverbrauch?",
-      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Geben Sie je nach Energieträger den jährlichen <strong>Wärme- oder Brennstoffverbrauch</strong> an</li><li>Nutzen Sie dazu die <strong>passende Einheit</strong> (z.B. Liter oder m³)</li><li>Die Anzeige zeigt Ihnen zusätzlich den <strong>umgerechneten kWh-Wert</strong> an</li></ul>",
+      "label": "Wie hoch ist Ihr jährlicher Heizenergieverbrauch?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Energie für <strong>Heizung und Warmwasser</strong> – ohne Haushaltsstrom</li><li>Steht auf der <strong>Gas-, Öl-, Fernwärme- oder Heizstromrechnung</strong>; wenn möglich Durchschnitt der letzten 3 Jahre</li><li>Die Anzeige rechnet den Wert zusätzlich in Liter, m³ oder kg um</li></ul>",
       "reason": "Ist die Grundlage für die Einstufung des Gebäudes und die Berechnung der Heizkosten im Gebäudesteckbrief.",
       "required": true,
       "min": 4000,
@@ -741,13 +813,29 @@
       "conversion": {
         "dependsOn": "energietraeger",
         "factors": {
-          "Öl":          { "factor": 9.8,  "unit": "Liter" },
-          "Gas":         { "factor": 10.1, "unit": "m³" },
-          "Holzpellets": { "factor": 4.8,  "unit": "kg" },
-          "Biomasse":    { "factor": 4.0,  "unit": "kg" },
-          "Wärmepumpe":  { "factorField": "umrechnungsquote", "defaultFactor": 3.5, "unit": "kWh (Strom)" }
+          "Öl": {
+            "factor": 9.8,
+            "unit": "Liter"
+          },
+          "Gas": {
+            "factor": 10.1,
+            "unit": "m³"
+          },
+          "Holzpellets": {
+            "factor": 4.8,
+            "unit": "kg"
+          },
+          "Biomasse": {
+            "factor": 4.0,
+            "unit": "kg"
+          },
+          "Wärmepumpe": {
+            "factorField": "umrechnungsquote",
+            "defaultFactor": 3.5,
+            "unit": "kWh (Strom)"
+          }
         },
-        "format":         "{primary} kWh / {converted} {unit}",
+        "format": "{primary} kWh / {converted} {unit}",
         "fallbackFormat": "{primary} kWh"
       },
       "referenceBadge": {
@@ -761,8 +849,8 @@
       "id": "waermekosten",
       "type": "slider",
       "dataType": "int",
-      "label": "Aktuelle Wärmekosten?",
-      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Geben Sie die aktuellen Wärmekosten in <strong>Cent/kWh</strong> an</li><li>Berechnung: <strong>Wärme Gesamtkosten</strong> / <strong>gesamt Wärmeverbrauch</strong> in kWh</li></ul>",
+      "label": "Was kostet Sie eine Kilowattstunde Wärme?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Heizkosten in <strong>Cent pro kWh</strong>: Jahreskosten für Heizung und Warmwasser ÷ Heizenergieverbrauch in kWh</li><li>Bei Gas oder Fernwärme steht der Arbeitspreis pro kWh meist direkt auf der Rechnung</li></ul>",
       "reason": "Dieser Wert wird im Gebäudesteckbrief zur Berechnung der Heizkosten, Einsparpotenziale und Wirtschaftlichkeit verwendet.",
       "required": true,
       "min": 5,
@@ -796,7 +884,9 @@
           "text": "Holzbau / Fertighaus",
           "icon": "icon-holz-fertighaus"
         }
-      ]
+      ],
+      "desc": "Wählen Sie die Bauart, die bei den meisten Außenwänden zutrifft.",
+      "details": "Zweischalig = zwei Mauerschalen mit Luftschicht oder Dämmung dazwischen. Massivwand = eine durchgehende Steinwand. Fachwerk = sichtbares Holzfachwerk mit ausgefüllten Feldern. Holzbau/Fertighaus = Wand überwiegend aus Holz."
     },
     {
       "id": "aussenwand_daemmung",
@@ -819,7 +909,8 @@
           "text": "Nein",
           "icon": "icon-daemmung-nein"
         }
-      ]
+      ],
+      "desc": "Liegt zwischen den beiden Mauerschalen eine Dämmschicht – oder nur Luft?"
     },
     {
       "id": "aussenwand_material",
@@ -846,7 +937,8 @@
           "text": "Sonstige",
           "icon": "icon-massivwand-sonstige"
         }
-      ]
+      ],
+      "desc": "Hochlochziegel haben viele Löcher im Stein (oft ab den 1950er-Jahren). Vollziegel, Naturstein, Kalksandstein und Bims-Vollstein sind durchgehend massiv."
     },
     {
       "id": "aussenwand_dicke_voll",
@@ -873,7 +965,8 @@
           "text": "> 30 cm",
           "icon": "icon-aussenwand-dick-30"
         }
-      ]
+      ],
+      "desc": "Am einfachsten an einer Fenster- oder Türlaibung messen."
     },
     {
       "id": "aussenwand_dicke_sonst",
@@ -896,7 +989,8 @@
           "text": "> 20 cm",
           "icon": "icon-aussenwand-dick-30"
         }
-      ]
+      ],
+      "desc": "Am einfachsten an einer Fenster- oder Türlaibung messen."
     },
     {
       "id": "aussenwand_fachwerk",
@@ -919,7 +1013,8 @@
           "text": "Ziegel / Naturstein",
           "icon": "icon-aussenwand-fachwerk-ziegel"
         }
-      ]
+      ],
+      "desc": "Womit sind die Felder zwischen den Holzbalken ausgefüllt?"
     },
     {
       "id": "aussenwand_sanierung",
@@ -937,7 +1032,8 @@
           "text": "Nein, es gab keine Sanierung",
           "icon": "icon-sanierung-nein"
         }
-      ]
+      ],
+      "desc": "Gemeint ist eine nachträgliche Dämmung, z. B. Wärmedämmverbundsystem oder Kerndämmung. Ein neuer Anstrich oder Putz allein zählt nicht."
     },
     {
       "id": "aussenwand_sanierung_jahr",
@@ -956,7 +1052,8 @@
       "max": 2026,
       "step": 1,
       "value": 2000,
-      "icon": "icon-slider-calendar"
+      "icon": "icon-slider-calendar",
+      "desc": "Das Jahr, in dem die Außenwände zuletzt überwiegend gedämmt wurden."
     },
     {
       "id": "fenster_typ",
@@ -978,7 +1075,8 @@
           "text": "Aluminium-/Stahl-Fenster",
           "icon": "icon-fenster-aluminium"
         }
-      ]
+      ],
+      "desc": "Wählen Sie den Rahmen, der im Haus am häufigsten vorkommt."
     },
     {
       "id": "verglasung",
@@ -1001,7 +1099,8 @@
           "text": "Doppelverglasung",
           "icon": "icon-fenster-doppel"
         }
-      ]
+      ],
+      "desc": "Einfachverglasung = nur eine Scheibe je Fensterflügel. Doppelverglasung = Isolierglas mit zwei Scheiben oder ein Kasten-/Verbundfenster."
     },
     {
       "id": "fenster_sanierung",
@@ -1019,7 +1118,8 @@
           "text": "Nein, es gab keine Sanierung",
           "icon": "icon-sanierung-nein"
         }
-      ]
+      ],
+      "desc": "Wurden die meisten Fenster nach dem Bau ausgetauscht oder neu verglast?"
     },
     {
       "id": "fenster_sanierung_jahr",
@@ -1038,7 +1138,8 @@
       "max": 2026,
       "step": 1,
       "value": 2000,
-      "icon": "icon-slider-calendar"
+      "icon": "icon-slider-calendar",
+      "desc": "Das Jahr, in dem die meisten Fenster eingebaut oder erneuert wurden."
     },
     {
       "id": "dachart",
@@ -1060,7 +1161,9 @@
           "text": "Flachdach",
           "icon": "icon-dach-flach"
         }
-      ]
+      ],
+      "desc": "Gemeint ist das Dach bzw. die Dachschräge direkt über dem beheizten Wohnbereich.",
+      "details": "Holzdach = klassischer Dachstuhl aus Holz, typisch bei Einfamilienhäusern. Massives Dach = Dach aus Beton oder anderer massiver Bauweise. Flachdach = Dach fast ohne Neigung."
     },
     {
       "id": "dach_sanierung",
@@ -1078,7 +1181,8 @@
           "text": "Nein, es gab keine Sanierung",
           "icon": "icon-sanierung-nein"
         }
-      ]
+      ],
+      "desc": "Z. B. Neueindeckung mit Dämmung, Dämmung zwischen den Sparren oder Dämmung der obersten Geschossdecke."
     },
     {
       "id": "dach_sanierung_jahr",
@@ -1097,7 +1201,8 @@
       "max": 2026,
       "step": 1,
       "value": 2000,
-      "icon": "icon-slider-calendar"
+      "icon": "icon-slider-calendar",
+      "desc": "Das Jahr der letzten größeren Dachsanierung mit Dämmung."
     },
     {
       "id": "kellerdecke",
@@ -1124,7 +1229,9 @@
           "text": "Kappendecke",
           "icon": "icon-decke-kappe"
         }
-      ]
+      ],
+      "desc": "Gemeint ist die Decke zwischen Keller und beheiztem Wohnbereich.",
+      "details": "Holz = Holzbalkendecke, meist in älteren Häusern. Massiv = glatte, feste Stahlbetondecke. Kappendecke = gemauerte, leicht gewölbte Ziegel- oder Hohlsteinfelder zwischen Stahlträgern."
     },
     {
       "id": "keller_sanierung",
@@ -1147,7 +1254,8 @@
           "text": "Nein, es gab keine Sanierung",
           "icon": "icon-sanierung-nein"
         }
-      ]
+      ],
+      "desc": "Z. B. Dämmplatten an der Unterseite der Kellerdecke."
     },
     {
       "id": "keller_sanierung_jahr",
@@ -1166,7 +1274,8 @@
       "max": 2026,
       "step": 1,
       "value": 2000,
-      "icon": "icon-slider-calendar"
+      "icon": "icon-slider-calendar",
+      "desc": "Das Jahr, in dem die Kellerdecke zuletzt gedämmt wurde."
     },
     {
       "id": "zinssatz",
@@ -1191,7 +1300,9 @@
           "value": 5,
           "icon": "icon-zinssatz-5-plus"
         }
-      ]
+      ],
+      "desc": "Mit diesem Zins rechnen wir aus, ob und wann sich eine Sanierung für Sie lohnt.",
+      "details": "<strong>Sicherheit (1–2 %)</strong>: Das Geld soll im Haus besser aufgehoben sein als auf dem Tagesgeldkonto – Sanierungen rechnen sich schneller.<br><strong>Finanzierung (3–4 %)</strong>: Sie nehmen einen Kredit auf und wollen wissen, ob die Ersparnis die Zinsen deckt – der realistischste Wert für Kreditnehmer.<br><strong>Investment (5 %+)</strong>: Die Sanierung muss mehr bringen als eine gute Geldanlage – nur Maßnahmen mit hoher Einsparung gelten als wirtschaftlich."
     },
     {
       "id": "adresse",
@@ -1243,7 +1354,8 @@
           "label": "Ich akzeptiere die Datenschutzbestimmungen und stimme der Verarbeitung meiner Daten zu.",
           "required": true
         }
-      ]
+      ],
+      "desc": "Die Adresse brauchen wir für die Klimadaten des Standorts und um den Gebäudesteckbrief Ihrem Objekt zuzuordnen."
     }
   ]
 }
