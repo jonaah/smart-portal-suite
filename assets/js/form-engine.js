@@ -1878,6 +1878,8 @@ window.SPS = window.SPS || {};
          * Obergrenze aus früheren Antworten, z. B. Vollgeschosse ≤ Geschosse.
          * Schema: "dynamicMax": { "sum": ["geschosse"], "subtract": ["dachgeschoss"], "add": -1 }
          * Ohne Antwort auf ein "sum"-Feld gibt es keine Grenze; fehlende "subtract"-Felder zählen 0.
+         * "atLeast": N hält trotz Berechnung mindestens N als Auswahl offen (Nutzer können
+         * frühere Angaben anders verstanden haben).
          *
          * @param {Object} step - Schritt.
          * @returns {number|null}
@@ -1895,7 +1897,11 @@ window.SPS = window.SPS || {};
                 const v = parseFloat(this.getAnswer(f));
                 if (!isNaN(v)) total -= v;
             });
-            return total + (Number(dm.add) || 0);
+            total += Number(dm.add) || 0;
+            if (dm.atLeast !== undefined && !isNaN(Number(dm.atLeast))) {
+                total = Math.max(total, Number(dm.atLeast));
+            }
+            return total;
         }
 
         /**

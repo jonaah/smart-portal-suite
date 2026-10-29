@@ -1317,7 +1317,7 @@
   </symbol>
 
 
-  <symbol id="icon-dach-holz" viewBox="0 0 252 175" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="icon-dach-massiv" viewBox="0 0 252 175" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M37 102.934L119.488 25.5943C122.579 22.6969 127.392 22.7108 130.465 25.626L212.5 103.434" stroke="#494949" stroke-width="16" stroke-linecap="square"/>
 <path d="M125.5 24.4343V104.434" stroke="#494949" stroke-width="16" stroke-linejoin="round"/>
 <rect x="24" y="98.4343" width="202" height="76" rx="8" fill="#381D92"/>
@@ -1326,7 +1326,7 @@
 <path d="M4 106.681L119.784 5.96395C122.776 3.36151 127.223 3.34333 130.236 5.92123L248 106.681" stroke="#AFA4D3" stroke-width="8" stroke-linecap="round"/>
   </symbol>
 
-  <symbol id="icon-dach-massiv" viewBox="0 0 252 175" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="icon-dach-holz" viewBox="0 0 252 175" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M37 102.934L119.488 25.5943C122.579 22.6969 127.392 22.7108 130.465 25.626L212.5 103.434" stroke="#906128" stroke-width="16" stroke-linecap="square"/>
 <path d="M95.5 48.4343V107.934" stroke="#906128" stroke-width="16" stroke-linejoin="round"/>
 <path d="M153 48.4343V107.934" stroke="#906128" stroke-width="16" stroke-linejoin="round"/>
@@ -1346,7 +1346,7 @@
   </symbol>
 
 
-  <symbol id="icon-decke-holz" viewBox="0 0 217 169">
+  <symbol id="icon-decke-massiv" viewBox="0 0 217 169">
     <path d="M6.75399 34.0432L6.46973 168.5L157.982 157.414V69.5762L6.75399 34.0432Z" fill="#949494" stroke="#494949" stroke-linejoin="round"/>
 <path d="M211.139 160.541L157.982 157.414V69.5761L210.002 62.4695L211.139 160.541Z" fill="#898888" stroke="#494949" stroke-linejoin="round"/>
 <path d="M0.5 168.5H6.46954L6.7538 34.0432L0.5 35.7488V168.5Z" fill="#9A9A9A" stroke="#494949" stroke-linejoin="round"/>
@@ -1356,7 +1356,7 @@
 <path d="M214.551 50.5304V63.8908L61.9009 18.1244V0.5L214.551 50.5304Z" fill="#676565" stroke="#494949" stroke-linejoin="round"/>ƒ
   </symbol>
 
-  <symbol id="icon-decke-massiv" viewBox="0 0 217 169" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="icon-decke-holz" viewBox="0 0 217 169" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M6.75399 34.0432L6.46973 168.5L157.982 157.414V69.5762L6.75399 34.0432Z" fill="#949494" stroke="#494949" stroke-linejoin="round"/>
 <path d="M211.14 160.541L157.982 157.414V69.5761L210.003 62.4695L211.14 160.541Z" fill="#898888" stroke="#494949" stroke-linejoin="round"/>
 <path d="M0.5 168.5H6.46954L6.7538 34.0432L0.5 35.7488V168.5Z" fill="#9A9A9A" stroke="#494949" stroke-linejoin="round"/>

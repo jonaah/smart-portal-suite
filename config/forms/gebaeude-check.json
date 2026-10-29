@@ -627,7 +627,8 @@
         "subtract": [
           "dachgeschoss"
         ],
-        "add": -1
+        "add": -1,
+        "atLeast": 2
       }
     },
     {

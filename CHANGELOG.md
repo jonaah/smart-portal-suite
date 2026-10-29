@@ -6,6 +6,13 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 
 ---
 
+## [0.6.7] - 2026-10-29
+### Geändert
+- Gebäude-Check, Kellergeschosse: Es stehen immer mindestens 0, 1 und 2 zur Auswahl, auch wenn die vorherigen Geschossangaben rechnerisch keinen Keller zulassen. Nutzer können frühere Fragen anders verstanden haben. Neu im Schema: `"dynamicMax": { …, "atLeast": N }`.
+
+### Behoben
+- Vertauschte Bilder: Holzdach ↔ massives Dach sowie Holz- ↔ Massivdecke (Kellerdecke).
+
 ## [0.6.6] - 2026-10-29
 ### Behoben
 - **Konten-Sync mit Nextcloud 33/34** („Password confirmation is required“, OCS 403): Nextcloud akzeptiert App-Passwörter für die Kontenverwaltung nur noch mit der Ausnahme `allowed_no_password_confirmation_ranges` (IP des WordPress-Servers) – und die greift nur bei Anfragen **ohne Sitzungs-Cookie**. Das Plugin schickt Cookies jetzt nur noch beim Forms-Datei-Upload mit, wo Nextcloud sie braucht.
