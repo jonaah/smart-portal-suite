@@ -6,6 +6,10 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 
 ---
 
+## [0.6.10] - 2026-11-02
+### Behoben
+- **Social Login (Nextcloud → WordPress) scheiterte mit „Unknown OAuth client.“:** Easy MCP AI fing Anfragen an `/oauth/authorize/` ab und lehnte die normale Client-ID von WP OAuth Server ab. Das Plugin schreibt diese Anfragen jetzt intern auf `/?oauth=authorize` um (neue Klasse `SPS_OAuth_Compat`). Keine Änderung der URL in Nextcloud nötig; MCP-Clients bleiben unberührt. Abschaltbar mit dem Filter `sps_oauth_authorize_compat`.
+
 ## [0.6.9] - 2026-11-02
 ### Behoben
 - **Erfolgsmeldung nach der Registrierung:** Magic Login Pro leitete nach dem Absenden auf die Startseite um, die Meldung stand nur in der URL (`?magic-registration=success&message=…`). Besucher werden jetzt auf die Registrierungsseite zurückgeleitet (Einstellung „Registrierungs-Seiten URL“). `[sps_register]` zeigt dort statt des Formulars eine Erfolgsbox mit Hinweis auf E-Mail und Spam-Ordner und einem Button zum Login. Der Text kommt aus dem Plugin, nicht aus der URL.

@@ -3,7 +3,7 @@
  * Plugin Name:       Smart Portal Suite
  * Plugin URI:        https://effizientes-heim.de/
  * Description:       Multi-Step Formulare für Gebäude-Check und Projektanfragen mit Nextcloud-Anbindung.
- * Version:           0.6.9
+ * Version:           0.6.10
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Jonah Kleimann
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin-Konstanten definieren
-define( 'SPS_VERSION', '0.6.9' );
+define( 'SPS_VERSION', '0.6.10' );
 define( 'SPS_PLUGIN_FILE', __FILE__ );
 define( 'SPS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SPS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -29,6 +29,7 @@ define( 'SPS_PREFIX', 'sps_' );
 /**
  * Core-Klassen laden (kein Composer in v1.0, einfaches require_once).
  */
+require_once SPS_PLUGIN_DIR . 'includes/class-sps-oauth-compat.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-settings.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-answer-transformer.php';
 require_once SPS_PLUGIN_DIR . 'includes/class-sps-ajax-handler.php';
