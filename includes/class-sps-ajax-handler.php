@@ -159,10 +159,34 @@ class SPS_Ajax_Handler {
 			wp_send_json_error( array( 'message' => __( 'Es gab einen Fehler bei der Übermittlung. Bitte versuchen Sie es später erneut oder kontaktieren Sie uns direkt.', 'smart-portal-suite' ) ), 500 );
 		}
 
-		wp_send_json_success( array(
+		$response = array(
 			'message' => __( 'Formulardaten erfolgreich übermittelt.', 'smart-portal-suite' ),
 			'form_id' => $schema_id,
-		) );
+		);
+
+		// Optionaler Bestätigungstext aus dem Schema (submit.success).
+		if ( ! empty( $schema['submit']['success'] ) && is_array( $schema['submit']['success'] ) ) {
+			$cfg     = $schema['submit']['success'];
+			$success = array();
+			foreach ( array( 'title', 'message', 'note', 'link_label' ) as $key ) {
+				if ( isset( $cfg[ $key ] ) && is_string( $cfg[ $key ] ) && '' !== $cfg[ $key ] ) {
+					$success[ $key ] = sanitize_text_field( $cfg[ $key ] );
+				}
+			}
+			if ( ! empty( $success['link_label'] ) ) {
+				$nc_url = esc_url_raw( (string) SPS_Settings::get_setting( 'nextcloud_url', '' ) );
+				if ( '' !== $nc_url ) {
+					$success['link_url'] = $nc_url;
+				} else {
+					unset( $success['link_label'] );
+				}
+			}
+			if ( ! empty( $success ) ) {
+				$response['success'] = $success;
+			}
+		}
+
+		wp_send_json_success( $response );
 	}
 
 	/**

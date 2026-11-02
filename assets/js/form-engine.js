@@ -2642,7 +2642,7 @@ window.SPS = window.SPS || {};
             })
             .then(data => {
                 if (data.success) {
-                    this.renderSuccess(data.data && data.data.message ? data.data.message : 'Ihre Anfrage wurde erfolgreich übermittelt.');
+                    this.renderSuccess(data.data && data.data.message ? data.data.message : 'Ihre Anfrage wurde erfolgreich übermittelt.', data.data && data.data.success ? data.data.success : null);
                 } else {
                     fail((data.data && data.data.message) ? data.data.message : (typeof data.data === 'string' ? data.data : 'Ein Fehler ist aufgetreten.'));
                 }
@@ -2659,14 +2659,24 @@ window.SPS = window.SPS || {};
          * Replaces the form container markup with an elegant success confirmation screen.
          *
          * @param {string} message - Success description message.
+         * @param {Object} [custom] - Optional overrides from schema submit.success (title, message, note, link_url, link_label).
          */
-        renderSuccess(message) {
+        renderSuccess(message, custom) {
+            const c = custom || {};
+            const title = c.title || 'Vielen Dank!';
+            const desc = c.message || message;
+            const note = c.note || 'Wir haben Ihre Angaben erhalten und werden uns schnellstmöglich bei Ihnen melden.';
+            let link = '';
+            if (c.link_url && c.link_label && /^https:\/\//i.test(c.link_url)) {
+                link = `<p class="sps-success-link"><a class="sps-btn sps-btn-primary" href="${SPS.escapeHtml(c.link_url)}" target="_blank" rel="noopener">${SPS.escapeHtml(c.link_label)}</a></p>`;
+            }
             this.container.innerHTML = `
                 <div class="sps-form-wrapper sps-success-box" role="alert">
                     <div class="sps-success-icon">${renderIcon('icon-check', 'sps-success-svg')}</div>
-                    <h3 class="sps-success-title">Vielen Dank!</h3>
-                    <p class="sps-success-desc">${SPS.escapeHtml(message)}</p>
-                    <p class="sps-success-note">Wir haben Ihre Angaben erhalten und werden uns schnellstmöglich bei Ihnen melden.</p>
+                    <h3 class="sps-success-title">${SPS.escapeHtml(title)}</h3>
+                    <p class="sps-success-desc">${SPS.escapeHtml(desc)}</p>
+                    <p class="sps-success-note">${SPS.escapeHtml(note)}</p>
+                    ${link}
                 </div>
             `;
         }

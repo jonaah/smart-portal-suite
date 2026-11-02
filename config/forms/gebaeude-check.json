@@ -5,6 +5,12 @@
   "nc_form_title": "Gebaeudedaten",
   "requires_login": true,
   "submit": {
+    "success": {
+      "title": "Vielen Dank, wir haben Ihre Angaben erhalten!",
+      "message": "Ihre Auswertung wird jetzt erstellt und erscheint in Kürze in Ihrem persönlichen Ordner in der Nextcloud.",
+      "note": "Melden Sie sich dort mit Ihrem Konto dieser Website an, um Ihre Daten einzusehen.",
+      "link_label": "Zur Nextcloud"
+    },
     "rules": [
       {
         "_comment": "Ableitungen wie im bisherigen Gebäude-Check (legacy/legacy-forms/gebaeude-check.txt) – Reihenfolge beachten"

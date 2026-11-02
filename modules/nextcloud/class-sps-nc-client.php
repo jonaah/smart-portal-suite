@@ -335,10 +335,11 @@ class SPS_NC_Client {
 	 * OCS-Antwort auswerten.
 	 *
 	 * @param array|WP_Error $response   HTTP-Antwort.
-	 * @param int[]          $ok_status  Akzeptierte OCS-Statuscodes (v1: 100, v2: 200).
+	 * @param int[]|null     $ok_status  Akzeptierte OCS-Statuscodes. Standard (null): v1 = 100, v2 = jeder 2xx-Code
+	 *                                   (Forms antwortet beim Anlegen einer Antwort mit 201).
 	 * @return array|WP_Error `ocs.data` bei Erfolg.
 	 */
-	public static function parse_ocs( $response, $ok_status = array( 100, 200 ) ) {
+	public static function parse_ocs( $response, $ok_status = null ) {
 		if ( is_wp_error( $response ) ) {
 			return $response;
 		}
@@ -349,7 +350,13 @@ class SPS_NC_Client {
 		$status  = isset( $data['ocs']['meta']['statuscode'] ) ? (int) $data['ocs']['meta']['statuscode'] : null;
 		$message = isset( $data['ocs']['meta']['message'] ) ? (string) $data['ocs']['meta']['message'] : '';
 
-		if ( $code >= 200 && $code < 300 && null !== $status && in_array( $status, $ok_status, true ) ) {
+		if ( null === $ok_status ) {
+			$status_ok = null !== $status && ( 100 === $status || ( $status >= 200 && $status < 300 ) );
+		} else {
+			$status_ok = null !== $status && in_array( $status, $ok_status, true );
+		}
+
+		if ( $code >= 200 && $code < 300 && $status_ok ) {
 			return isset( $data['ocs']['data'] ) ? $data['ocs']['data'] : array();
 		}
 

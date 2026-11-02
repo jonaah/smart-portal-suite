@@ -6,6 +6,13 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 
 ---
 
+## [0.6.12] - 2026-11-02
+### Geändert
+- **Bestätigung nach dem Absenden:** Formulare können im Schema unter `submit.success` eigenen Titel, Text, Hinweis und einen Link-Button („Zur Nextcloud“, URL aus den Einstellungen) vorgeben. Der Gebäude-Check erklärt damit, dass die Auswertung im persönlichen Nextcloud-Ordner erscheint.
+
+### Behoben
+- **Nextcloud-Forms-Antwort (HTTP 201):** `SPS_NC_Client::parse_ocs` akzeptiert standardmäßig jeden 2xx-OCS-Statuscode (v2), nicht nur 200. Erfolgreich angelegte Antworten wurden sonst als Fehler gewertet.
+
 ## [0.6.11] - 2026-11-02
 ### Behoben
 - **Social Login, zweiter Teil:** Easy MCP AI fing auch `/oauth/token` ab („code and code_verifier are required.“). `SPS_OAuth_Compat` schreibt jetzt `/oauth/authorize`, `/oauth/token` und `/oauth/me` intern auf die Query-Form um (alle HTTP-Methoden).
