@@ -37,6 +37,9 @@ class SPS_Auth_Shortcodes {
 		// Assets registrieren
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_auth_assets' ) );
 
+		// Magic Login Pro leitet nach der Registrierung auf die Startseite um.
+		add_action( 'template_redirect', array( $this, 'redirect_registration_success' ) );
+
 		// Shortcodes registrieren
 		add_shortcode( 'sps_auth_buttons', array( $this, 'render_auth_buttons' ) );
 		add_shortcode( 'sps_login', array( $this, 'render_login_form' ) );
@@ -74,6 +77,53 @@ class SPS_Auth_Shortcodes {
 	private function enqueue_auth_assets() {
 		wp_enqueue_style( 'sps-auth-forms-css' );
 		wp_enqueue_script( 'sps-auth-forms-js' );
+	}
+
+	/**
+	 * Wurde die Registrierung gerade erfolgreich abgeschlossen?
+	 * (Parameter von Magic Login Pro: ?magic-registration=success)
+	 *
+	 * @return bool
+	 */
+	private static function is_registration_success() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- reine Anzeige, keine Aktion.
+		return isset( $_GET['magic-registration'] ) && 'success' === sanitize_key( wp_unslash( $_GET['magic-registration'] ) );
+	}
+
+	/**
+	 * Absolute URL der Registrierungsseite aus den Einstellungen.
+	 *
+	 * @return string
+	 */
+	private static function get_register_page_url() {
+		$url = (string) SPS_Settings::get_setting( 'auth_register_url', '/registrierung/' );
+		if ( '' === $url ) {
+			$url = '/registrierung/';
+		}
+		return preg_match( '#^https?://#i', $url ) ? $url : home_url( '/' . ltrim( $url, '/' ) );
+	}
+
+	/**
+	 * Leitet nach erfolgreicher Registrierung zurück auf die Registrierungsseite,
+	 * wo [sps_register] die Erfolgsmeldung anzeigt (statt nur einer URL auf der Startseite).
+	 */
+	public function redirect_registration_success() {
+		if ( ! self::is_registration_success() ) {
+			return;
+		}
+
+		$register_url = self::get_register_page_url();
+		$target_path  = untrailingslashit( (string) wp_parse_url( $register_url, PHP_URL_PATH ) );
+		$request_uri  = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$current_path = untrailingslashit( (string) wp_parse_url( $request_uri, PHP_URL_PATH ) );
+
+		// Schon auf der Registrierungsseite (oder Registrierung liegt auf der Startseite): nichts tun.
+		if ( '' === $target_path || $target_path === $current_path ) {
+			return;
+		}
+
+		wp_safe_redirect( add_query_arg( 'magic-registration', 'success', $register_url ) );
+		exit;
 	}
 
 	/**
@@ -251,7 +301,19 @@ class SPS_Auth_Shortcodes {
 			</div>
 
 			<div class="sps-form-box">
-				<?php if ( is_user_logged_in() ) : ?>
+				<?php if ( self::is_registration_success() ) : ?>
+					<div class="sps-auth-success" role="status">
+						<div class="sps-auth-success-icon" aria-hidden="true">
+							<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+						</div>
+						<h3><?php esc_html_e( 'Registrierung erfolgreich', 'smart-portal-suite' ); ?></h3>
+						<p><?php esc_html_e( 'Wir haben dir eine E-Mail mit deinem Anmeldelink geschickt. Bitte prüfe dein E-Mail-Postfach.', 'smart-portal-suite' ); ?></p>
+						<p class="sps-auth-success-hint"><?php esc_html_e( 'Keine E-Mail erhalten? Schau bitte auch im Spam-Ordner nach. Die Zustellung kann einige Minuten dauern.', 'smart-portal-suite' ); ?></p>
+						<a href="<?php echo esc_url( $args['login_url'] ); ?>" class="sps-btn-home">
+							<?php esc_html_e( 'Zum Login', 'smart-portal-suite' ); ?>
+						</a>
+					</div>
+				<?php elseif ( is_user_logged_in() ) : ?>
 					<div class="sps-already-logged-in">
 						<p><?php esc_html_e( 'Du bist bereits erfolgreich angemeldet.', 'smart-portal-suite' ); ?></p>
 						<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="sps-btn-home">

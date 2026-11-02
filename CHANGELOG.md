@@ -6,6 +6,10 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 
 ---
 
+## [0.6.9] - 2026-11-02
+### Behoben
+- **Erfolgsmeldung nach der Registrierung:** Magic Login Pro leitete nach dem Absenden auf die Startseite um, die Meldung stand nur in der URL (`?magic-registration=success&message=…`). Besucher werden jetzt auf die Registrierungsseite zurückgeleitet (Einstellung „Registrierungs-Seiten URL“). `[sps_register]` zeigt dort statt des Formulars eine Erfolgsbox mit Hinweis auf E-Mail und Spam-Ordner und einem Button zum Login. Der Text kommt aus dem Plugin, nicht aus der URL.
+
 ## [0.6.8] - 2026-11-02
 ### Hinzugefügt
 - **Zustimmungstexte im Admin editierbar** (Smart Portal → Einstellungen → Design & Datenschutz): „Zustimmungstext Registrierung“ und „Zustimmungstext Formulare“ mit Mini-Editor (Fett, Kursiv, Link). Links öffnen sich immer in einem neuen Tab. Erlaubt sind nur `a`, `strong`, `em`, `br`. Leeres Feld = bisheriger Standardtext. Auch per MCP-Ability `update-settings` setzbar (`consent_text_register`, `consent_text_form`).

@@ -372,7 +372,8 @@
 	font-size: 1.05rem;
 }
 
-.sps-already-logged-in .sps-btn-home {
+.sps-already-logged-in .sps-btn-home,
+.sps-auth-success .sps-btn-home {
 	display: inline-block;
 	background-color: var(--sps-auth-primary);
 	color: #ffffff !important;
@@ -383,8 +384,56 @@
 	transition: background-color 0.2s;
 }
 
-.sps-already-logged-in .sps-btn-home:hover {
+.sps-already-logged-in .sps-btn-home:hover,
+.sps-auth-success .sps-btn-home:hover {
 	background-color: var(--sps-auth-primary-hover);
+}
+
+/* Erfolgsmeldung nach der Registrierung */
+.sps-auth-success {
+	text-align: center;
+	padding: 24px 20px 32px 20px;
+}
+
+.sps-auth-success-icon {
+	width: 56px;
+	height: 56px;
+	margin: 0 auto 16px auto;
+	border-radius: 50%;
+	background-color: #e7f6ee;
+	color: #1f7a4d;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.sps-auth-success-icon svg {
+	width: 28px;
+	height: 28px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2.5;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.sps-auth-success h3 {
+	margin: 0 0 10px 0;
+	font-size: 1.3rem;
+	color: var(--sps-auth-text);
+}
+
+.sps-auth-success p {
+	margin: 0 0 12px 0;
+	color: var(--sps-auth-text);
+	font-size: 1.05rem;
+	line-height: 1.5;
+}
+
+.sps-auth-success .sps-auth-success-hint {
+	font-size: 0.92rem;
+	opacity: 0.75;
+	margin-bottom: 24px;
 }
 
 /* Admin Dependency Notice */
