@@ -9,6 +9,7 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 
 ### Geändert
 Form Text 10 min warten
+- **Admin-Leiste:** Die WordPress-Leiste im Frontend wird nur noch Administratoren (`manage_options`) angezeigt. Per Filter `sps_show_admin_bar` anpassbar.
 
 ## [0.6.12] - 2026-11-02
 ### Geändert

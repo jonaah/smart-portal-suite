@@ -90,6 +90,24 @@ function sps_init() {
 add_action( 'plugins_loaded', 'sps_init' );
 
 /**
+ * Admin-Leiste im Frontend nur für Administratoren anzeigen.
+ *
+ * Kunden (Rolle Abonnent o. ä.) sehen die schwarze WordPress-Leiste oben nicht mehr.
+ * Anpassbar über den Filter `sps_show_admin_bar` (Standard: Recht `manage_options`),
+ * z. B. add_filter( 'sps_show_admin_bar', '__return_true' ) zum Abschalten der Regel.
+ *
+ * @param bool $show Ob die Leiste angezeigt werden soll.
+ * @return bool
+ */
+function sps_filter_show_admin_bar( $show ) {
+	if ( ! is_user_logged_in() ) {
+		return $show;
+	}
+	return (bool) apply_filters( 'sps_show_admin_bar', current_user_can( 'manage_options' ) );
+}
+add_filter( 'show_admin_bar', 'sps_filter_show_admin_bar', 99 );
+
+/**
  * Deaktivierung: geplantes Nachreichen entfernen.
  */
 register_deactivation_hook( __FILE__, array( 'SPS_Submission', 'unschedule' ) );
