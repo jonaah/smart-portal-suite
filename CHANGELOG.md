@@ -6,6 +6,10 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 
 ---
 
+## [0.6.11] - 2026-11-02
+### Behoben
+- **Social Login, zweiter Teil:** Easy MCP AI fing auch `/oauth/token` ab („code and code_verifier are required.“). `SPS_OAuth_Compat` schreibt jetzt `/oauth/authorize`, `/oauth/token` und `/oauth/me` intern auf die Query-Form um (alle HTTP-Methoden).
+
 ## [0.6.10] - 2026-11-02
 ### Behoben
 - **Social Login (Nextcloud → WordPress) scheiterte mit „Unknown OAuth client.“:** Easy MCP AI fing Anfragen an `/oauth/authorize/` ab und lehnte die normale Client-ID von WP OAuth Server ab. Das Plugin schreibt diese Anfragen jetzt intern auf `/?oauth=authorize` um (neue Klasse `SPS_OAuth_Compat`). Keine Änderung der URL in Nextcloud nötig; MCP-Clients bleiben unberührt. Abschaltbar mit dem Filter `sps_oauth_authorize_compat`.
