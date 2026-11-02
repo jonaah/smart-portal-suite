@@ -6,6 +6,13 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) 
 
 ---
 
+## [0.6.8] - 2026-11-02
+### Hinzugefügt
+- **Zustimmungstexte im Admin editierbar** (Smart Portal → Einstellungen → Design & Datenschutz): „Zustimmungstext Registrierung“ und „Zustimmungstext Formulare“ mit Mini-Editor (Fett, Kursiv, Link). Links öffnen sich immer in einem neuen Tab. Erlaubt sind nur `a`, `strong`, `em`, `br`. Leeres Feld = bisheriger Standardtext. Auch per MCP-Ability `update-settings` setzbar (`consent_text_register`, `consent_text_form`).
+
+### Behoben
+- **Registrierung `[sps_register]`:** Der Link zur Datenschutzerklärung erschien als Quelltext (`<a href=…>`), weil Magic Login Pro HTML im Attribut `registration_terms` maskiert. Das Plugin übergibt jetzt einen Platzhalter und setzt den fertigen Text danach ein.
+
 ## [0.6.7] - 2026-10-29
 ### Geändert
 - Gebäude-Check, Kellergeschosse: Es stehen immer mindestens 0, 1 und 2 zur Auswahl, auch wenn die vorherigen Geschossangaben rechnerisch keinen Keller zulassen. Nutzer können frühere Fragen anders verstanden haben. Neu im Schema: `"dynamicMax": { …, "atLeast": N }`.

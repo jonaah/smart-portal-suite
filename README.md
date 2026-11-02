@@ -368,6 +368,7 @@ Rendert ein responsives Anmeldeformular im Corporate Design der Suite als Wrappe
 Rendert das Registrierungsformular im zweispaltigen Raster:
 - Vorname & Nachname nebeneinander, E-Mail-Feld in voller Breite.
 - Integrierte AGB-/Datenschutz-Checkbox mit dynamischer Verlinkung auf die in den Einstellungen hinterlegte Datenschutzerklärung.
+- Zustimmungstext im Admin unter **Smart Portal → Einstellungen → Zustimmungstext Registrierung** frei editierbar (Mini-Editor mit Link-Button). Für die Formular-Checkboxen gibt es das Feld **Zustimmungstext Formulare** (leer = Text aus der Formulardefinition).
 - Double-Submit-Schutz (Button wird während der Übertragung gesperrt: "Wird registriert...").
 - Automatischer Reset bei Validierungsfehlern (MutationObserver).
 - Löst nach erfolgreicher Registrierung den DOM-Event `sps_registration_success` aus (ideal für Google Tag Manager oder Analytics).

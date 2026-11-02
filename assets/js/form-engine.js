@@ -397,6 +397,18 @@ window.SPS = window.SPS || {};
     });
 
     /**
+     * Zustimmungstext aus den Plugin-Einstellungen (Smart Portal > Einstellungen).
+     * Serverseitig per wp_kses bereinigt; leer = Text aus der Formulardefinition.
+     *
+     * @returns {string} HTML oder ''.
+     */
+    function customConsentHtml() {
+        return (window.spsGlobalConfig && typeof window.spsGlobalConfig.consentHtml === 'string')
+            ? window.spsGlobalConfig.consentHtml
+            : '';
+    }
+
+    /**
      * 6. Nested Field Groups Renderer ('group')
      * Supports complex multi-input layouts arranged in flexible horizontal rows or vertical stacks
      * (e.g. combined First Name + Last Name rows, or Phone + Email combos).
@@ -426,7 +438,7 @@ window.SPS = window.SPS || {};
                                    ${isChecked ? 'checked' : ''} 
                                    ${f.required ? 'required' : ''}>
                             <span class="sps-consent-text">
-                                ${SPS.escapeHtml(labelText)} <a href="${SPS.escapeAttr(privacyUrl)}" target="_blank" rel="noopener noreferrer" class="sps-consent-link">Datenschutzerklärung</a>.
+                                ${customConsentHtml() || `${SPS.escapeHtml(labelText)} <a href="${SPS.escapeAttr(privacyUrl)}" target="_blank" rel="noopener noreferrer" class="sps-consent-link">Datenschutzerklärung</a>.`}
                             </span>
                         </label>
                     </div>
@@ -682,7 +694,7 @@ window.SPS = window.SPS || {};
                     <label class="sps-consent-label" for="${form.instanceId}_consent_input">
                         <input type="checkbox" id="${form.instanceId}_consent_input" data-field-id="consent" class="sps-consent-checkbox" ${isChecked ? 'checked' : ''} required>
                         <span class="sps-consent-text">
-                            Ich akzeptiere die <a href="${SPS.escapeAttr(privacyUrl)}" target="_blank" rel="noopener noreferrer" class="sps-consent-link">Datenschutzbestimmungen</a> und stimme der Verarbeitung meiner Daten zu.
+                            ${customConsentHtml() || `Ich akzeptiere die <a href="${SPS.escapeAttr(privacyUrl)}" target="_blank" rel="noopener noreferrer" class="sps-consent-link">Datenschutzbestimmungen</a> und stimme der Verarbeitung meiner Daten zu.`}
                         </span>
                     </label>
                 </div>
@@ -711,7 +723,7 @@ window.SPS = window.SPS || {};
                 <label class="sps-consent-label" for="${inputId}">
                     <input type="checkbox" id="${inputId}" data-field-id="consent" class="sps-consent-checkbox" ${isChecked ? 'checked' : ''} required>
                     <span class="sps-consent-text">
-                        ${SPS.escapeHtml(labelText)} <a href="${SPS.escapeAttr(privacyUrl)}" target="_blank" rel="noopener noreferrer" class="sps-consent-link">Datenschutzerklärung</a>.
+                        ${customConsentHtml() || `${SPS.escapeHtml(labelText)} <a href="${SPS.escapeAttr(privacyUrl)}" target="_blank" rel="noopener noreferrer" class="sps-consent-link">Datenschutzerklärung</a>.`}
                     </span>
                 </label>
             </div>

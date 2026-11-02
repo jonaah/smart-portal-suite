@@ -323,6 +323,22 @@ class SPS_Settings {
 			'sps_section_design'
 		);
 
+		add_settings_field(
+			'consent_text_register',
+			__( 'Zustimmungstext Registrierung', 'smart-portal-suite' ),
+			array( $this, 'render_field_consent_text_register' ),
+			'smart-portal-suite',
+			'sps_section_design'
+		);
+
+		add_settings_field(
+			'consent_text_form',
+			__( 'Zustimmungstext Formulare', 'smart-portal-suite' ),
+			array( $this, 'render_field_consent_text_form' ),
+			'smart-portal-suite',
+			'sps_section_design'
+		);
+
 		// Sektion 3: Benachrichtigungen & Fallback
 		add_settings_section(
 			'sps_section_fallback',
@@ -571,6 +587,54 @@ class SPS_Settings {
 		<?php
 	}
 
+	public function render_field_consent_text_register() {
+		$value = (string) self::get_setting( 'consent_text_register', '' );
+		if ( '' === trim( $value ) ) {
+			$value = self::get_default_consent_text( 'register' );
+		}
+		$this->render_consent_editor( 'consent_text_register', 'sps_consent_text_register', $value );
+		?>
+		<p class="description"><?php esc_html_e( 'Text neben der Pflicht-Checkbox im Registrierungsformular [sps_register]. Wort markieren und mit dem Link-Button verlinken. Links öffnen sich in einem neuen Tab. Feld leeren = Standardtext mit dem Datenschutz-Link oben.', 'smart-portal-suite' ); ?></p>
+		<?php
+	}
+
+	public function render_field_consent_text_form() {
+		$value = (string) self::get_setting( 'consent_text_form', '' );
+		$this->render_consent_editor( 'consent_text_form', 'sps_consent_text_form', $value );
+		?>
+		<p class="description"><?php esc_html_e( 'Text neben der Datenschutz-Checkbox in allen Formularen (z. B. Gebäude-Check). Leer lassen = Text aus der jeweiligen Formulardefinition plus Link „Datenschutzerklärung“.', 'smart-portal-suite' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Mini-Editor (Fett, Kursiv, Link) für Zustimmungstexte.
+	 *
+	 * @param string $key       Setting-Key.
+	 * @param string $editor_id Editor-ID (nur Kleinbuchstaben/Unterstriche).
+	 * @param string $value     Aktueller Inhalt.
+	 */
+	private function render_consent_editor( $key, $editor_id, $value ) {
+		wp_editor(
+			$value,
+			$editor_id,
+			array(
+				'textarea_name' => self::OPTION_NAME . '[' . $key . ']',
+				'textarea_rows' => 3,
+				'media_buttons' => false,
+				'teeny'         => true,
+				'quicktags'     => false,
+				'wpautop'       => false,
+				'tinymce'       => array(
+					'toolbar1'      => 'bold,italic,link,unlink,undo,redo',
+					'toolbar2'      => '',
+					'forced_root_block' => false,
+					'height'        => 90,
+					'resize'        => true,
+				),
+			)
+		);
+	}
+
 	public function render_field_admin_email() {
 		$value = self::get_setting( 'admin_email', get_option( 'admin_email' ) );
 		?>
@@ -752,6 +816,16 @@ class SPS_Settings {
 
 		// Datenschutz URL
 		$sanitized['privacy_url'] = isset( $input['privacy_url'] ) ? esc_url_raw( trim( $input['privacy_url'] ) ) : '';
+
+		// Zustimmungstexte (Mini-Editor, nur Fett/Kursiv/Links)
+		foreach ( array( 'consent_text_register' => 'register', 'consent_text_form' => 'form' ) as $consent_key => $consent_context ) {
+			$html = isset( $input[ $consent_key ] ) ? self::sanitize_consent_html( (string) $input[ $consent_key ] ) : '';
+			// Unveränderter Standardtext wird nicht gespeichert, damit er dem Datenschutz-Link folgt.
+			if ( '' !== $html && self::normalize_consent_html( $html ) === self::normalize_consent_html( self::get_default_consent_text( $consent_context ) ) ) {
+				$html = '';
+			}
+			$sanitized[ $consent_key ] = $html;
+		}
 
 		// Admin Benachrichtigungs-E-Mail
 		$sanitized['admin_email'] = isset( $input['admin_email'] ) ? sanitize_email( trim( $input['admin_email'] ) ) : get_option( 'admin_email' );
@@ -936,6 +1010,97 @@ class SPS_Settings {
 			$url = (string) get_privacy_policy_url();
 		}
 		return '' !== $url ? $url : home_url( '/datenschutz/' );
+	}
+
+	/**
+	 * Erlaubte Tags in Zustimmungstexten.
+	 *
+	 * @return array
+	 */
+	public static function get_consent_allowed_tags() {
+		return array(
+			'a'      => array( 'href' => true, 'title' => true, 'target' => true, 'rel' => true ),
+			'strong' => array(),
+			'b'      => array(),
+			'em'     => array(),
+			'i'      => array(),
+			'br'     => array(),
+		);
+	}
+
+	/**
+	 * Bereinigt Editor-HTML: Absätze werden zu Zeilenumbrüchen, nur erlaubte Tags bleiben.
+	 *
+	 * @param string $html Eingabe.
+	 * @return string
+	 */
+	public static function sanitize_consent_html( $html ) {
+		$html = preg_replace( '#</p>\s*<p[^>]*>#i', '<br>', (string) $html );
+		$html = preg_replace( '#</?p[^>]*>#i', '', $html );
+		$html = wp_kses( $html, self::get_consent_allowed_tags() );
+		$html = preg_replace( '#^(\s|&nbsp;|<br\s*/?>)+|(\s|&nbsp;|<br\s*/?>)+$#i', '', $html );
+		return trim( $html );
+	}
+
+	/**
+	 * Vergleichsform: ohne target/rel, Leerraum vereinheitlicht.
+	 *
+	 * @param string $html HTML.
+	 * @return string
+	 */
+	private static function normalize_consent_html( $html ) {
+		$html = preg_replace( '#\s(target|rel|class)=("[^"]*"|\'[^\']*\')#i', '', (string) $html );
+		$html = str_replace( '&nbsp;', ' ', $html );
+		return trim( preg_replace( '/\s+/u', ' ', $html ) );
+	}
+
+	/**
+	 * Standard-Zustimmungstext.
+	 *
+	 * @param string $context     'register' oder 'form'.
+	 * @param string $privacy_url Optional abweichende Datenschutz-URL.
+	 * @return string Leer für 'form' (Formulardefinition entscheidet).
+	 */
+	public static function get_default_consent_text( $context, $privacy_url = '' ) {
+		if ( 'register' !== $context ) {
+			return '';
+		}
+		$url = '' !== $privacy_url ? $privacy_url : self::get_privacy_url();
+		return sprintf(
+			/* translators: %s: URL der Datenschutzerklärung */
+			__( 'Ich habe die <a href="%s">Datenschutzerklärung</a> gelesen und stimme zu.', 'smart-portal-suite' ),
+			esc_url( $url )
+		);
+	}
+
+	/**
+	 * Fertiges, sicheres HTML für einen Zustimmungstext.
+	 * Alle Links öffnen in neuem Tab (das Formular bleibt erhalten).
+	 *
+	 * @param string $context     'register' oder 'form'.
+	 * @param string $privacy_url Optional abweichende Datenschutz-URL für den Standardtext.
+	 * @return string Leer, wenn für 'form' nichts eingestellt ist.
+	 */
+	public static function get_consent_html( $context, $privacy_url = '' ) {
+		$key  = 'register' === $context ? 'consent_text_register' : 'consent_text_form';
+		$html = self::sanitize_consent_html( (string) self::get_setting( $key, '' ) );
+		if ( '' === $html ) {
+			$html = self::get_default_consent_text( $context, $privacy_url );
+		}
+		if ( '' === $html ) {
+			return '';
+		}
+
+		if ( class_exists( 'WP_HTML_Tag_Processor' ) ) {
+			$tags = new WP_HTML_Tag_Processor( $html );
+			while ( $tags->next_tag( 'a' ) ) {
+				$tags->set_attribute( 'target', '_blank' );
+				$tags->set_attribute( 'rel', 'noopener noreferrer' );
+				$tags->add_class( 'sps-consent-link' );
+			}
+			$html = $tags->get_updated_html();
+		}
+		return $html;
 	}
 
 	/**

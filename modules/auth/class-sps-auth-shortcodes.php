@@ -261,19 +261,19 @@ class SPS_Auth_Shortcodes {
 				<?php else : ?>
 					<?php
 					if ( shortcode_exists( 'magic_login_registration_form' ) ) {
-						$terms_html = sprintf(
-							__( 'Ich habe die <a href="%s" target="_blank" rel="noopener">Datenschutzerklärung</a> gelesen und stimme zu.', 'smart-portal-suite' ),
-							esc_url( $args['privacy_url'] )
-						);
+						// Magic Login Pro maskiert HTML im Attribut registration_terms. Deshalb geht
+						// nur ein Platzhalter hinein, der danach durch den fertigen Text ersetzt wird.
+						$terms_html  = SPS_Settings::get_consent_html( 'register', $args['privacy_url'] );
+						$terms_token = 'SPSCONSENTTEXTTOKEN';
 
 						$shortcode_str = sprintf(
 							'[magic_login_registration_form show_name="true" require_name="true" show_terms="true" require_terms="true" registration_terms="%s" button_text="%s" info_message="" success_message="%s"]',
-							esc_attr( $terms_html ),
+							$terms_token,
 							esc_attr( $args['button_text'] ),
 							esc_attr( $args['success_message'] )
 						);
 
-						echo do_shortcode( $shortcode_str );
+						echo str_replace( $terms_token, $terms_html, do_shortcode( $shortcode_str ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Shortcode-Ausgabe, Text per wp_kses bereinigt.
 					} elseif ( current_user_can( 'manage_options' ) ) {
 						?>
 						<div class="sps-auth-notice">

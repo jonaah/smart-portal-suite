@@ -42,6 +42,8 @@ class SPS_Abilities {
 		'auth_register_url'   => 'string',
 		'login_redirect_url'  => 'string',
 		'privacy_url'         => 'string',
+		'consent_text_register' => 'string',
+		'consent_text_form'   => 'string',
 		'admin_email'         => 'string',
 		'nc_sync_auto_groups' => 'string',
 		'primary_color'       => 'string',
@@ -414,7 +416,7 @@ class SPS_Abilities {
 			),
 			'update-settings'        => array(
 				'label'       => 'Einstellungen ändern',
-				'description' => 'Ändert Einstellungen ohne Zugangsdaten: submit_as_user, nc_file_mode (webdav|forms), webdav_upload_dir, webdav_base_dir, auth_login_url, auth_register_url, login_redirect_url, privacy_url, admin_email, nc_sync_auto_groups, primary_color, debug_mode. Nextcloud-URL, Service-Account und Passwörter nur per "wp sps configure".',
+				'description' => 'Ändert Einstellungen ohne Zugangsdaten: submit_as_user, nc_file_mode (webdav|forms), webdav_upload_dir, webdav_base_dir, auth_login_url, auth_register_url, login_redirect_url, privacy_url, consent_text_register, consent_text_form (HTML: a, strong, em, br; leer = Standard), admin_email, nc_sync_auto_groups, primary_color, debug_mode. Nextcloud-URL, Service-Account und Passwörter nur per "wp sps configure".',
 				'readonly'    => false,
 				'idempotent'  => true,
 				'input'       => array(
