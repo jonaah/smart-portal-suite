@@ -259,6 +259,14 @@ class SPS_Settings {
 			'sps_section_nextcloud_db'
 		);
 
+		add_settings_field(
+			'nc_social_provider',
+			__( 'Social-Login-Anbieter', 'smart-portal-suite' ),
+			array( $this, 'render_field_nc_social_provider' ),
+			'smart-portal-suite',
+			'sps_section_nextcloud_db'
+		);
+
 		// Sektion 1c: Authentifizierung & Registrierung
 		add_settings_section(
 			'sps_section_auth',
@@ -533,6 +541,14 @@ class SPS_Settings {
 		<?php
 	}
 
+	public function render_field_nc_social_provider() {
+		$value = self::get_setting( 'nc_social_provider', '' );
+		?>
+		<input type="text" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[nc_social_provider]" value="<?php echo esc_attr( $value ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'automatisch', 'smart-portal-suite' ); ?>" />
+		<p class="description"><?php esc_html_e( '„Interner Name“ des Anbieters in Nextcloud → Social Login → Benutzerdefiniertes OAuth2 (Groß-/Kleinschreibung beachten). Leer = automatisch aus Nextcloud lesen.', 'smart-portal-suite' ); ?></p>
+		<?php
+	}
+
 	public function render_field_login_redirect_url() {
 		$value = self::get_setting( 'login_redirect_url', home_url( '/' ) );
 		?>
@@ -799,6 +815,8 @@ class SPS_Settings {
 
 		$prefix = isset( $input['nc_db_prefix'] ) ? sanitize_text_field( trim( $input['nc_db_prefix'] ) ) : 'oc_';
 		$sanitized['nc_db_prefix'] = ! empty( $prefix ) ? $prefix : 'oc_';
+		$sanitized['nc_social_provider'] = isset( $input['nc_social_provider'] ) ? sanitize_text_field( trim( $input['nc_social_provider'] ) ) : '';
+		delete_transient( 'sps_nc_social_provider' );
 
 		// Authentifizierung & Weiterleitung
 		$sanitized['login_redirect_url'] = isset( $input['login_redirect_url'] ) ? esc_url_raw( trim( $input['login_redirect_url'] ) ) : home_url( '/' );

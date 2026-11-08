@@ -78,7 +78,10 @@ class SPS_NC_User_Sync {
 		$pw_type     = (string) get_user_meta( $user_id, 'nextcloud_password_type', true );
 		$needs_token = $linked && '' !== (string) get_user_meta( $user_id, 'nextcloud_password_enc', true ) && ! in_array( $pw_type, array( 'app', 'stale' ), true );
 
-		if ( $linked && ( $social_linked || ! $db_configured ) && ! $needs_token ) {
+		// Verknüpfungen vor 0.6.17 nutzten fest "wordpress-<ID>" – einmalig neu schreiben.
+		$needs_relink = $social_linked && $db_configured && '' === (string) get_user_meta( $user_id, 'nextcloud_social_identifier', true );
+
+		if ( $linked && ( $social_linked || ! $db_configured ) && ! $needs_token && ! $needs_relink ) {
 			return;
 		}
 
@@ -229,15 +232,19 @@ class SPS_NC_User_Sync {
 
 		if ( $social_linked ) {
 			update_user_meta( $user_id, 'nextcloud_social_linked', '1' );
-			SPS_Diagnostics::log( sprintf( 'Social-Login-Verknüpfung gesetzt: uid="%s", identifier="wordpress-%d".', $nc_username, $user_id ), 'info' );
+			SPS_Diagnostics::log( sprintf( 'Social-Login-Verknüpfung gesetzt: uid="%s", identifier="%s".', $nc_username, get_user_meta( $user_id, 'nextcloud_social_identifier', true ) ), 'info' );
 		}
 
 		// ---------------------------------------------------
 		// 4. Passwort für die Formularübertragung als Kunde
 		//    Neu angelegt → Initialpasswort übernehmen.
-		//    Bestehend → nur setzen, wenn keines gespeichert ist (oder $force).
+		//    Bestehend → nur setzen, wenn keines gespeichert oder es ungültig ist.
 		// ---------------------------------------------------
-		$needs_password = null === $password && ( $force || ! $stored || $stored['username'] !== $nc_username );
+		//    Ein neues Passwort löst in Nextcloud eine Mail „Passwort geändert“ an den Kunden aus.
+		//    Deshalb nur, wenn nötig: keine/fremde Zugangsdaten oder als ungültig markiert ("stale").
+		//    $force allein setzt kein neues Passwort mehr (App-Passwort bleibt gültig).
+		$pw_type_now    = (string) get_user_meta( $user_id, 'nextcloud_password_type', true );
+		$needs_password = null === $password && ( ! $stored || $stored['username'] !== $nc_username || ( $force && 'stale' === $pw_type_now ) );
 
 		if ( $needs_password ) {
 			$password = wp_generate_password( 32, true, true );
@@ -279,7 +286,21 @@ class SPS_NC_User_Sync {
 				SPS_Diagnostics::log( sprintf( 'Gespeichertes Login-Passwort von "%s" durch App-Passwort ersetzt.', $nc_username ), 'info' );
 			} else {
 				$data = $app->get_error_data();
-				if ( isset( $data['http'] ) && 401 === (int) $data['http'] ) {
+				if ( isset( $data['http'] ) && 401 === (int) $data['http'] && $force ) {
+					// Manueller Sync (Account-Sync/CLI): ungültige Zugangsdaten gleich ersetzen.
+					$new_pw  = wp_generate_password( 32, true, true );
+					$pwd_res = $client->set_user_password( $nc_username, $new_pw );
+					$app     = is_wp_error( $pwd_res ) ? $pwd_res : $this->obtain_app_password( $nc_url, $nc_username, $new_pw );
+					if ( is_wp_error( $pwd_res ) ) {
+						SPS_Diagnostics::log( sprintf( 'Passwort-Aktualisierung für "%s" fehlgeschlagen: %s', $nc_username, $pwd_res->get_error_message() ), 'error' );
+					} elseif ( is_wp_error( $app ) ) {
+						$secret = $new_pw;
+					} else {
+						$secret = $app;
+						$type   = 'app';
+					}
+					SPS_Diagnostics::log( sprintf( 'Ungültige Zugangsdaten von "%s" ersetzt (Nextcloud schickt dem Kunden einmalig „Passwort geändert“).', $nc_username ), 'warning' );
+				} elseif ( isset( $data['http'] ) && 401 === (int) $data['http'] ) {
 					update_user_meta( $user_id, 'nextcloud_password_type', 'stale' );
 					SPS_Diagnostics::log( sprintf( 'Gespeichertes Nextcloud-Passwort von "%s" ist ungültig. Einzel-Sync unter „Account-Sync“ setzt neue Zugangsdaten.', $nc_username ), 'warning' );
 				} else {
@@ -344,8 +365,6 @@ class SPS_NC_User_Sync {
 			return false;
 		}
 
-		$identifier = 'wordpress-' . $user_id;
-
 		try {
 			$dsn = sprintf( 'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $db_host, (int) $db_port, $db_name );
 			$pdo = new PDO( $dsn, $db_user, $db_pass, array(
@@ -353,6 +372,10 @@ class SPS_NC_User_Sync {
 				PDO::ATTR_TIMEOUT            => 5,
 				PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
 			) );
+
+			// Social Login bildet die UID aus "<Interner Name>-<id>" – Groß-/Kleinschreibung zählt
+			// (Nextcloud-Tabellen sind utf8mb4_bin). Den Namen daher aus Nextcloud lesen.
+			$identifier = $this->get_social_provider_name( $pdo, $prefix ) . '-' . $user_id;
 
 			$table = $prefix . 'sociallogin_connect';
 
@@ -364,11 +387,80 @@ class SPS_NC_User_Sync {
 				':identifier' => $identifier,
 			) );
 
+			update_user_meta( $user_id, 'nextcloud_social_identifier', $identifier );
 			return true;
 		} catch ( PDOException $e ) {
 			SPS_Diagnostics::log( 'Fehler bei Social-Login-Verknüpfung (Nextcloud DB PDO): ' . $e->getMessage(), 'error' );
 			return false;
 		}
+	}
+
+	/**
+	 * Interner Name des Social-Login-Anbieters für diese WordPress-Seite.
+	 *
+	 * Reihenfolge: Einstellung "nc_social_provider" → Social-Login-Konfiguration in
+	 * Nextcloud (custom_oauth2_providers, Anbieter mit der Domain dieser Website) → "wordpress".
+	 *
+	 * @param PDO    $pdo    Verbindung zur Nextcloud-DB.
+	 * @param string $prefix Tabellenpräfix.
+	 * @return string
+	 */
+	public function get_social_provider_name( $pdo = null, $prefix = 'oc_' ) {
+		$fixed = trim( (string) SPS_Settings::get_setting( 'nc_social_provider', '' ) );
+		if ( '' !== $fixed ) {
+			return $fixed;
+		}
+		$cached = get_transient( 'sps_nc_social_provider' );
+		if ( is_string( $cached ) && '' !== $cached ) {
+			return $cached;
+		}
+
+		$name = '';
+		if ( $pdo instanceof PDO ) {
+			try {
+				// Neuere Versionen: custom_providers = {"custom_oauth2":[…],"custom_oidc":[…]}; ältere: custom_oauth2_providers = […]
+				$stmt = $pdo->prepare( "SELECT configkey, configvalue FROM `{$prefix}appconfig` WHERE appid = 'sociallogin' AND configkey IN ('custom_providers', 'custom_oauth2_providers')" );
+				$stmt->execute();
+				$providers = array();
+				foreach ( $stmt->fetchAll() as $row ) {
+					$val = json_decode( (string) $row['configvalue'], true );
+					if ( ! is_array( $val ) ) {
+						continue;
+					}
+					if ( 'custom_providers' === $row['configkey'] ) {
+						foreach ( array( 'custom_oauth2', 'custom_oidc' ) as $type ) {
+							if ( ! empty( $val[ $type ] ) && is_array( $val[ $type ] ) ) {
+								$providers = array_merge( $providers, array_values( $val[ $type ] ) );
+							}
+						}
+					} else {
+						$providers = array_merge( $providers, array_values( $val ) );
+					}
+				}
+				if ( is_array( $providers ) && $providers ) {
+					$host = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+					foreach ( $providers as $prov ) {
+						$base = isset( $prov['apiBaseUrl'] ) ? strtolower( (string) wp_parse_url( $prov['apiBaseUrl'], PHP_URL_HOST ) ) : '';
+						if ( '' !== $host && $base === $host && ! empty( $prov['name'] ) ) {
+							$name = (string) $prov['name'];
+							break;
+						}
+					}
+					if ( '' === $name && 1 === count( $providers ) && ! empty( $providers[0]['name'] ) ) {
+						$name = (string) $providers[0]['name'];
+					}
+				}
+			} catch ( PDOException $e ) {
+				SPS_Diagnostics::log( 'Social-Login-Anbieter konnte nicht gelesen werden: ' . $e->getMessage(), 'warning' );
+			}
+		}
+
+		if ( '' === $name ) {
+			SPS_Diagnostics::log( 'Social-Login-Anbieter in Nextcloud nicht gefunden – verwende "wordpress". Ggf. Einstellung nc_social_provider setzen.', 'warning' );
+			return 'wordpress';
+		}
+		set_transient( 'sps_nc_social_provider', $name, DAY_IN_SECONDS );
+		return $name;
 	}
 
 	/**

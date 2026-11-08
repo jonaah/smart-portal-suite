@@ -30,6 +30,7 @@ class SPS_CLI {
 		'nc-db-name'         => 'nc_db_name',
 		'nc-db-user'         => 'nc_db_user',
 		'nc-db-prefix'       => 'nc_db_prefix',
+		'nc-social-provider' => 'nc_social_provider',
 		'groups'             => 'nc_sync_auto_groups',
 		'privacy-url'        => 'privacy_url',
 		'admin-email'        => 'admin_email',

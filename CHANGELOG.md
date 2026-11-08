@@ -5,6 +5,12 @@ Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokument
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
+## [0.6.17] - 2026-11-08
+
+### Behoben
+- **Social Login legte ein zweites Nextcloud-Konto an:** Die Verknüpfung in `oc_sociallogin_connect` wurde fest als `wordpress-<ID>` geschrieben. Social Login bildet die Kennung aber aus dem „Internen Namen“ des Anbieters (z. B. `Wordpress-<ID>`), und Nextcloud unterscheidet Groß-/Kleinschreibung. Der Name wird jetzt aus der Social-Login-Konfiguration in Nextcloud gelesen (`custom_providers` bzw. `custom_oauth2_providers`, Anbieter mit der Domain der Website); optional fest über die neue Einstellung „Social-Login-Anbieter“ (`nc_social_provider`, WP-CLI `--nc-social-provider`). Bestehende Verknüpfungen werden beim nächsten WordPress-Login neu geschrieben.
+- **Mail „Passwort geändert“ an Kunden:** Ein Einzel-Sync (Account-Sync, `wp sps sync-user --force`) setzte jedes Mal ein neues Nextcloud-Passwort, und Nextcloud informierte den Kunden darüber. Ein neues Passwort wird jetzt nur noch gesetzt, wenn keine gültigen Zugangsdaten vorliegen – bei veralteten Konten nur per manuellem Sync, nie automatisch. Konten mit App-Passwort bleiben unverändert.
+
 ## [0.6.16] - 2026-11-08
 
 ### Geändert

@@ -48,10 +48,15 @@ check('A: App-Passwort gespeichert', $META[1]['nextcloud_password_enc']==='enc:t
 // Kunde ändert Passwort → Client mit App-Passwort funktioniert weiter (Fake: Token bleibt)
 $NC['users']['kunde@example.org']='neuesPW';
 $c = new SPS_NC_Client('',1); check('A: Client nutzt App-Passwort, nicht Service', !$c->is_service_account() && $c->get_username()==='kunde@example.org');
-// B: Erzwungener Sync → neues App-Passwort, altes widerrufen
-$S->sync_user(1,true);
-check('B: neues Token', $META[1]['nextcloud_password_enc']==='enc:tok1');
-check('B: altes Token widerrufen', !isset($NC['tokens']['tok0']) && isset($NC['tokens']['tok1']));
+// B: Erzwungener Sync (Account-Sync) bei gültigem App-Passwort → keine Passwortänderung (keine Mail an den Kunden)
+$n=count($NC['calls']); $S->sync_user(1,true); $later=array_slice($NC['calls'],$n);
+check('B: kein Passwort gesetzt', !preg_grep('#^PUT .*cloud/users/#',$later));
+check('B: App-Passwort bleibt', $META[1]['nextcloud_password_enc']==='enc:tok0' && isset($NC['tokens']['tok0']));
+// B2: Erzwungener Sync bei unerkannt ungültigem Login-Passwort → einmal ersetzen, danach App-Passwort
+$META[4]=['nextcloud_username'=>'kunde@example.org','nextcloud_password_enc'=>'enc:falsch','nextcloud_linked'=>'1'];
+$n=count($NC['calls']); $S->sync_user(4,true); $later=array_slice($NC['calls'],$n);
+check('B2: genau ein Passwort gesetzt', 1===count(preg_grep('#^PUT .*cloud/users/#',$later)));
+check('B2: danach App-Passwort', ($META[4]['nextcloud_password_type']??'')==='app');
 // C: veraltetes Login-Passwort → stale, keine Endlosschleife
 $META[2]=['nextcloud_username'=>'kunde@example.org','nextcloud_password_enc'=>'enc:falsch','nextcloud_linked'=>'1'];
 $r=$S->sync_user(2); check('C: stale markiert', $META[2]['nextcloud_password_type']==='stale' && $r['success']);
