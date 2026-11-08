@@ -86,15 +86,30 @@ class SPS_Submission {
 		$use_user = $user_id && (int) SPS_Settings::get_setting( 'submit_as_user', 1 );
 		$client   = $use_user ? SPS_NC_Client::for_user( $user_id ) : SPS_NC_Client::service();
 
-		$result = self::send_to_forms( $schema, $prepared, $files, $client );
+		$result      = self::send_to_forms( $schema, $prepared, $files, $client );
+		$user_reason = '';
+
+		if ( $use_user && $client->is_service_account() ) {
+			$user_reason = 'Für das Konto sind keine Nextcloud-Zugangsdaten gespeichert (Sync fehlgeschlagen?).';
+		}
 
 		if ( is_wp_error( $result ) && ! $client->is_service_account() ) {
 			$data = $result->get_error_data();
 			$http = isset( $data['http'] ) ? (int) $data['http'] : 0;
 			if ( in_array( $http, self::USER_RETRY_CODES, true ) ) {
-				SPS_Diagnostics::log( sprintf( 'Übertragung als Benutzer "%s" abgelehnt (HTTP %d, %s) – Wiederholung mit Service-Account. Ist das Formular für die Kundengruppe freigegeben?', $client->get_username(), $http, $result->get_error_message() ), 'warning' );
+				if ( 401 === $http ) {
+					update_user_meta( $user_id, 'nextcloud_password_type', 'stale' );
+					$user_reason = 'Nextcloud lehnt die gespeicherten Zugangsdaten ab (HTTP 401). Abhilfe: Einzel-Sync unter „Account-Sync“.';
+				} else {
+					$user_reason = sprintf( 'Nextcloud lehnt die Antwort des Kunden ab (HTTP %d). Ist das Formular für die Kundengruppe freigegeben?', $http );
+				}
+				SPS_Diagnostics::log( sprintf( 'Übertragung als Benutzer "%s" abgelehnt (HTTP %d, %s) – Wiederholung mit Service-Account.', $client->get_username(), $http, $result->get_error_message() ), 'warning' );
 				$result = self::send_to_forms( $schema, $prepared, $files, SPS_NC_Client::service() );
 			}
+		}
+
+		if ( ! is_wp_error( $result ) && '' !== $user_reason ) {
+			self::notify_service_fallback( $form_id, $owner, $user_reason );
 		}
 
 		if ( ! is_wp_error( $result ) ) {
@@ -352,6 +367,33 @@ class SPS_Submission {
 			}
 		}
 		return $out;
+	}
+
+	/**
+	 * Warnmail: Antwort wurde mit dem Service-Account statt als Kunde übertragen.
+	 * Die Auswertung (PDF) kann dann nicht dem Kunden zugeordnet werden.
+	 *
+	 * @param string       $form_id Formular.
+	 * @param WP_User|null $owner   Kunde.
+	 * @param string       $reason  Grund.
+	 */
+	protected static function notify_service_fallback( $form_id, $owner, $reason ) {
+		$admin_email = SPS_Settings::get_setting( 'admin_email', get_option( 'admin_email' ) );
+		if ( empty( $admin_email ) || ! is_email( $admin_email ) ) {
+			return;
+		}
+		$who     = $owner ? $owner->user_email : 'unbekannt';
+		$subject = sprintf( '[%s] Formular als Service-Account übertragen (%s)', get_bloginfo( 'name' ), $form_id );
+		$body    = sprintf(
+			"Die Antwort von %s auf das Formular \"%s\" wurde an Nextcloud Forms übertragen, aber mit dem Service-Account statt als Kunde.\n\nFolge: Die Auswertung kann dem Kunden nicht zugeordnet werden und erscheint nicht in seinem Nextcloud-Ordner.\n\nGrund: %s\n\nNach der Korrektur das Formular vom Kunden erneut absenden lassen.\n\nZeitpunkt: %s\nWebsite: %s",
+			$who,
+			$form_id,
+			$reason,
+			current_time( 'mysql' ),
+			home_url()
+		);
+		wp_mail( $admin_email, $subject, $body );
+		SPS_Diagnostics::log( sprintf( 'Warnmail: "%s" von %s als Service-Account übertragen (%s).', $form_id, $who, $reason ), 'warning' );
 	}
 
 	/**

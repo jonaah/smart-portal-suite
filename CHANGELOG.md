@@ -5,6 +5,14 @@ Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokument
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
+## [0.6.16] - 2026-11-08
+
+### Geändert
+- **Formularübertragung als Kunde – App-Passwort statt Login-Passwort:** Beim Konto-Sync holt das Plugin mit dem Login-Passwort ein Nextcloud-App-Passwort („Gebäudeportal (Smart Portal Suite)“ unter „Geräte & Sitzungen“) und speichert nur dieses. Es bleibt gültig, wenn der Kunde sein Nextcloud-Passwort ändert. Bestandskonten werden beim nächsten Login bzw. Sync umgestellt, ein erzwungener Sync widerruft das alte App-Passwort. Neues User-Meta `nextcloud_password_type` (`app`, `login`, `stale`).
+
+### Behoben
+- **Antworten landeten unbemerkt beim Service-Account:** Lehnt Nextcloud die Zugangsdaten des Kunden ab (HTTP 401), wird das Konto als `stale` markiert und eine Warnmail an den Admin geschickt – ebenso, wenn für den Kunden keine Zugangsdaten vorliegen. Bisher stand im Gebäudesteckbrief nur „SPS Service“ und das PDF erreichte den Kunden nicht.
+
 ## [0.6.15] - 2026-11-08
 
 ### Geändert

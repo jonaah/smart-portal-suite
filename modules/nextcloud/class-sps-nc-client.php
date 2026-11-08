@@ -68,6 +68,11 @@ class SPS_NC_Client {
 	protected $keep_session = false;
 
 	/**
+	 * Name des App-Passworts in Nextcloud ("Geräte & Sitzungen").
+	 */
+	const APP_PASSWORD_NAME = 'Gebäudeportal (Smart Portal Suite)';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string   $base_url          Nextcloud Base URL (leer = aus Einstellungen).
@@ -457,6 +462,43 @@ class SPS_NC_Client {
 			array( 100, 102 )
 		);
 		return is_wp_error( $res ) ? new WP_Error( 'nc_group_add_failed', $res->get_error_message() ) : true;
+	}
+
+	/**
+	 * App-Passwort für den Benutzer dieses Clients anfordern.
+	 *
+	 * Funktioniert nur mit dem Login-Passwort (nicht mit einem App-Passwort).
+	 * Nextcloud legt dafür ein Gerät "Gebäudeportal" unter "Geräte & Sitzungen" an.
+	 * Das App-Passwort bleibt gültig, wenn der Benutzer sein Login-Passwort ändert.
+	 *
+	 * @return string|WP_Error App-Passwort.
+	 */
+	public function request_app_password() {
+		$res = self::parse_ocs(
+			$this->request(
+				'ocs/v2.php/core/getapppassword?format=json',
+				'GET',
+				null,
+				array( 'User-Agent' => self::APP_PASSWORD_NAME )
+			)
+		);
+		if ( is_wp_error( $res ) ) {
+			return $res;
+		}
+		if ( empty( $res['apppassword'] ) ) {
+			return new WP_Error( 'nc_app_password_missing', 'Nextcloud hat kein App-Passwort geliefert.' );
+		}
+		return (string) $res['apppassword'];
+	}
+
+	/**
+	 * App-Passwort widerrufen, mit dem dieser Client angemeldet ist.
+	 *
+	 * @return true|WP_Error
+	 */
+	public function revoke_app_password() {
+		$res = self::parse_ocs( $this->request( 'ocs/v2.php/core/apppassword?format=json', 'DELETE' ) );
+		return is_wp_error( $res ) ? $res : true;
 	}
 
 	/**

@@ -75,7 +75,10 @@ class SPS_NC_User_Sync {
 		$social_linked = '1' === get_user_meta( $user_id, 'nextcloud_social_linked', true );
 		$db_configured = '' !== (string) SPS_Settings::get_setting( 'nc_db_host', '' );
 
-		if ( $linked && ( $social_linked || ! $db_configured ) ) {
+		$pw_type     = (string) get_user_meta( $user_id, 'nextcloud_password_type', true );
+		$needs_token = $linked && '' !== (string) get_user_meta( $user_id, 'nextcloud_password_enc', true ) && ! in_array( $pw_type, array( 'app', 'stale' ), true );
+
+		if ( $linked && ( $social_linked || ! $db_configured ) && ! $needs_token ) {
 			return;
 		}
 
@@ -87,6 +90,19 @@ class SPS_NC_User_Sync {
 			}
 			$this->sync_user( $user_id );
 		} );
+	}
+
+	/**
+	 * App-Passwort mit dem Login-Passwort eines Benutzers anfordern.
+	 *
+	 * @param string $nc_url      Nextcloud-URL.
+	 * @param string $nc_username Nextcloud-UID.
+	 * @param string $password    Login-Passwort.
+	 * @return string|WP_Error
+	 */
+	protected function obtain_app_password( $nc_url, $nc_username, $password ) {
+		$user_client = new SPS_NC_Client( $nc_url, null, $nc_username, $password );
+		return $user_client->request_app_password();
 	}
 
 	/**
@@ -237,8 +253,43 @@ class SPS_NC_User_Sync {
 			}
 		}
 
+		// ---------------------------------------------------
+		// 5. App-Passwort statt Login-Passwort speichern.
+		//    Bleibt gültig, wenn der Kunde sein Nextcloud-Passwort ändert.
+		// ---------------------------------------------------
+		$old_type = (string) get_user_meta( $user_id, 'nextcloud_password_type', true );
+		$secret   = null;
+		$type     = 'login';
+
 		if ( null !== $password ) {
-			$encrypted = SPS_Settings::encrypt( $password );
+			$app = $this->obtain_app_password( $nc_url, $nc_username, $password );
+			if ( is_wp_error( $app ) ) {
+				SPS_Diagnostics::log( sprintf( 'App-Passwort für "%s" nicht erhalten (%s) – Login-Passwort wird gespeichert.', $nc_username, $app->get_error_message() ), 'warning' );
+				$secret = $password;
+			} else {
+				$secret = $app;
+				$type   = 'app';
+			}
+		} elseif ( $stored && 'app' !== $old_type && 'stale' !== $old_type ) {
+			// Bestandskonto: gespeichertes Login-Passwort einmalig gegen ein App-Passwort tauschen.
+			$app = $this->obtain_app_password( $nc_url, $nc_username, $stored['password'] );
+			if ( ! is_wp_error( $app ) ) {
+				$secret = $app;
+				$type   = 'app';
+				SPS_Diagnostics::log( sprintf( 'Gespeichertes Login-Passwort von "%s" durch App-Passwort ersetzt.', $nc_username ), 'info' );
+			} else {
+				$data = $app->get_error_data();
+				if ( isset( $data['http'] ) && 401 === (int) $data['http'] ) {
+					update_user_meta( $user_id, 'nextcloud_password_type', 'stale' );
+					SPS_Diagnostics::log( sprintf( 'Gespeichertes Nextcloud-Passwort von "%s" ist ungültig. Einzel-Sync unter „Account-Sync“ setzt neue Zugangsdaten.', $nc_username ), 'warning' );
+				} else {
+					SPS_Diagnostics::log( sprintf( 'App-Passwort für "%s" nicht erhalten (%s) – nächster Versuch beim nächsten Sync.', $nc_username, $app->get_error_message() ), 'warning' );
+				}
+			}
+		}
+
+		if ( null !== $secret ) {
+			$encrypted = SPS_Settings::encrypt( $secret );
 			if ( empty( $encrypted ) ) {
 				$msg = 'Verschlüsselung des Nextcloud-Passworts fehlgeschlagen.';
 				SPS_Diagnostics::log( $msg, 'error' );
@@ -246,7 +297,15 @@ class SPS_NC_User_Sync {
 				return array( 'success' => false, 'message' => $msg, 'details' => $details );
 			}
 			update_user_meta( $user_id, 'nextcloud_password_enc', $encrypted );
-			$details['password_set'] = true;
+			update_user_meta( $user_id, 'nextcloud_password_type', $type );
+			$details['password_set']  = true;
+			$details['password_type'] = $type;
+
+			// Altes App-Passwort widerrufen, damit unter „Geräte & Sitzungen“ nur eines steht.
+			if ( $stored && 'app' === $old_type && $stored['password'] !== $secret ) {
+				$old = new SPS_NC_Client( $nc_url, null, $stored['username'], $stored['password'] );
+				$old->revoke_app_password();
+			}
 		}
 
 		update_user_meta( $user_id, 'nextcloud_username', $nc_username );
