@@ -98,7 +98,7 @@ check( 'Fenster abgeleitet', 'Holzfenster, 2-Scheiben-Isolierverglasung / Kasten
 check( 'Sanierung Nein → Jahr = Baujahr', 2011 === $p['aussenwand_sanierung_jahr'] );
 check( 'Sanierung Ja → Jahr bleibt', 2018 === $p['fenster_sanierung_jahr'] );
 check( 'Dach ohne Antwort → Jahr = Baujahr', 2011 === $p['dach_sanierung_jahr'] );
-check( 'Wärmeverbrauch original (Öl)', '1.531 Liter' === $p['waermeverbrauch_original'] );
+check( 'Wärmeverbrauch original (Öl)', '1.500 Liter' === $p['waermeverbrauch_original'] );
 check( 'Wärmeverbrauch kWh', 15000 === $p['waermeverbrauch_kwh'] );
 check( 'Fläche int', 125 === $p['flaeche'] );
 check( 'Geschosshöhe double', 2.85 === $p['geschosshoehe'] );
@@ -138,7 +138,7 @@ check( 'Option per Wert 125 → Text "100-150 qm" → ID', array( 22 ) === $a['2
 check( 'Text als Array', array( '2011' ) === $a['3'] );
 check( 'Abgeleitete Außenwand', isset( $a['4'] ) && 0 === strpos( $a['4'][0], 'Massivwand aus Vollziegel' ) );
 check( 'Name mit "-" findet Antwort mit "_"', array( '2011' ) === $a['5'] );
-check( 'waermeverbrauch-original', array( '1.531 Liter' ) === $a['6'] );
+check( 'waermeverbrauch-original', array( '1.500 Liter' ) === $a['6'] );
 check( 'Zusammengesetzt plz_ort', array( '73760 Ostfildern' ) === $a['7'] );
 check( 'Großschreibung Vorname_Nachname', array( 'Erika Muster' ) === $a['8'] );
 check( 'E-Mail (Bindestrich, groß)', array( 'erika@example.com' ) === $a['9'] );
@@ -269,7 +269,7 @@ check( 'Ohne Keller: Kellerdecke = Stahlbeton, massiv', 'Kellerdecke aus Stahlbe
 
 echo "Heizenergie in Rechnungseinheit\n";
 $u = SPS_Answer_Transformer::apply( array( 'energietraeger' => 'Öl', 'waermeverbrauch' => 1, 'waermeverbrauch_eingabe' => 2000, 'waermeverbrauch_einheit' => 'Liter' ), $schema );
-check( 'Öl 2.000 Liter → 19.600 kWh', 19600 === $u['waermeverbrauch'] && '2.000 Liter' === $u['waermeverbrauch_original'] && 19600 === $u['waermeverbrauch_kwh'] );
+check( 'Öl 2.000 Liter → 20.000 kWh', 20000 === $u['waermeverbrauch'] && '2.000 Liter' === $u['waermeverbrauch_original'] && 20000 === $u['waermeverbrauch_kwh'] );
 check( 'Eingabefelder entfernt', ! isset( $u['waermeverbrauch_eingabe'] ) && ! isset( $u['waermeverbrauch_einheit'] ) );
 $u = SPS_Answer_Transformer::apply( array( 'energietraeger' => 'Gas', 'waermeverbrauch_eingabe' => 1800, 'waermeverbrauch_einheit' => 'm³' ), $schema );
 check( 'Gas 1.800 m³ → 18.180 kWh, Erdgas', 18180 === $u['waermeverbrauch'] && 'Erdgas' === $u['energietraeger'] );
@@ -277,6 +277,12 @@ $u = SPS_Answer_Transformer::apply( array( 'energietraeger' => 'Gas', 'waermever
 check( 'Gas in kWh 1:1', 21000 === $u['waermeverbrauch'] );
 $u = SPS_Answer_Transformer::apply( array( 'energietraeger' => 'Wärmepumpe', 'umrechnungsquote' => 4, 'waermeverbrauch_eingabe' => 4500, 'waermeverbrauch_einheit' => 'kWh Strom' ), $schema );
 check( 'Wärmepumpe 4.500 kWh Strom × JAZ 4 → 18.000 kWh', 18000 === $u['waermeverbrauch'] && '4.500 kWh Strom' === $u['waermeverbrauch_original'] );
+$u = SPS_Answer_Transformer::apply( array( 'energietraeger' => 'Biomasse', 'waermeverbrauch' => 1, 'waermeverbrauch_eingabe' => 2, 'waermeverbrauch_einheit' => 'Raummeter Scheitholz' ), $schema );
+check( 'Scheitholz 2 Rm → 4.000 kWh', 4000 === $u['waermeverbrauch'] );
+$u = SPS_Answer_Transformer::apply( array( 'energietraeger' => 'Gas', 'waermeverbrauch' => 1, 'waermeverbrauch_eingabe' => 3000, 'waermeverbrauch_einheit' => 'Liter Flüssiggas' ), $schema );
+check( 'Flüssiggas 3.000 Liter → 19.500 kWh', 19500 === $u['waermeverbrauch'] && 'Erdgas' === $u['energietraeger'] );
+$u = SPS_Answer_Transformer::apply( array( 'energietraeger' => 'Öl', 'waermekosten' => 11, 'waermekosten_eingabe' => 1.1, 'waermekosten_einheit' => '€/Liter', 'kosten' => 32, 'kosten_eingabe' => 1600, 'kosten_einheit' => '€ pro Jahr' ), $schema );
+check( 'Preis-Hilfsfelder werden nicht übertragen', 11 === $u['waermekosten'] && ! isset( $u['waermekosten_eingabe'], $u['waermekosten_einheit'], $u['kosten_eingabe'], $u['kosten_einheit'] ) );
 $u = SPS_Answer_Transformer::apply( array( 'energietraeger' => 'Öl', 'waermeverbrauch' => 15000, 'waermeverbrauch_eingabe' => 5, 'waermeverbrauch_einheit' => 'm³' ), $schema );
 check( 'Einheit passt nicht zum Energieträger → alter Weg', 15000 === $u['waermeverbrauch'] );
 

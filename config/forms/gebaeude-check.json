@@ -280,7 +280,11 @@
           "keller_sanierung",
           "baujahr_detail",
           "waermeverbrauch_eingabe",
-          "waermeverbrauch_einheit"
+          "waermeverbrauch_einheit",
+          "waermekosten_eingabe",
+          "waermekosten_einheit",
+          "kosten_eingabe",
+          "kosten_einheit"
         ]
       }
     ]
@@ -685,7 +689,7 @@
       "type": "slider",
       "dataType": "int",
       "label": "Was zahlen Sie für eine Kilowattstunde Strom?",
-      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Ihr Strompreis in <strong>Cent pro kWh</strong> (Haushaltsstrom)</li><li>Steht auf der Stromrechnung – oder: Gesamtkosten des Jahres ÷ verbrauchte kWh</li></ul>",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Ihr Strompreis in <strong>Cent pro kWh</strong> (Haushaltsstrom) – steht auf der Stromrechnung</li><li>Preis nicht zur Hand? Wählen Sie <strong>„€ pro Jahr“</strong> und geben Sie Ihre Stromkosten des Jahres ein</li></ul>",
       "reason": "Wird im Gebäudesteckbrief verwendet, um die zukünftigen Stromkosten und mögliche Einsparpotenziale zu berechnen.",
       "required": true,
       "min": 20,
@@ -693,7 +697,31 @@
       "step": 1,
       "value": 32,
       "suffix": " Cent/kWh",
-      "icon": "icon-slider-kosten"
+      "icon": "icon-slider-kosten",
+      "inputUnits": {
+        "resultFormat": "= {value} Cent pro kWh",
+        "default": [
+          {
+            "unit": "Cent/kWh",
+            "factor": 1,
+            "min": 20,
+            "max": 50,
+            "step": 1,
+            "value": 32
+          },
+          {
+            "unit": "€ pro Jahr",
+            "factor": 100,
+            "divisorField": "energieverbrauch",
+            "min": 300,
+            "max": 5000,
+            "step": 10,
+            "value": 1600,
+            "rule": "Jahreskosten ÷ {divisor} kWh Stromverbrauch",
+            "hint": "Gesamtkosten für Haushaltsstrom in einem Jahr laut Jahresabrechnung (inkl. Grundpreis)."
+          }
+        ]
+      }
     },
     {
       "id": "energietraeger",
@@ -782,7 +810,7 @@
           "Öl": [
             {
               "unit": "Liter",
-              "factor": 9.8,
+              "factor": 10,
               "min": 300,
               "max": 6000,
               "step": 50,
@@ -808,12 +836,21 @@
               "step": 500,
               "value": 18000,
               "hint": "Verbrauch in kWh laut Gasrechnung – dort bereits aus m³ umgerechnet."
+            },
+            {
+              "unit": "Liter Flüssiggas",
+              "factor": 6.5,
+              "min": 300,
+              "max": 8000,
+              "step": 50,
+              "value": 2500,
+              "hint": "Flüssiggas (Propan) aus dem eigenen Tank: getankte Liter pro Jahr laut Lieferrechnungen. 1 Liter ≈ 6,5 kWh."
             }
           ],
           "Holzpellets": [
             {
               "unit": "kg",
-              "factor": 4.8,
+              "factor": 5,
               "min": 1000,
               "max": 12000,
               "step": 100,
@@ -822,6 +859,16 @@
             }
           ],
           "Biomasse": [
+            {
+              "unit": "Raummeter Scheitholz",
+              "factor": 2000,
+              "min": 1,
+              "max": 40,
+              "step": 0.5,
+              "value": 8,
+              "decimals": 1,
+              "hint": "Scheitholz in Raummetern (Rm, geschichtetes Holz) pro Jahr. 1 Rm lufttrockenes Holz ≈ 2.000 kWh."
+            },
             {
               "unit": "kg",
               "factor": 4.0,
@@ -888,13 +935,15 @@
             "value": 15000,
             "hint": "Wärmeverbrauch in kWh laut Abrechnung."
           }
-        ]
+        ],
+        "perAreaField": "flaeche",
+        "perAreaFormat": "entspricht ca. {value} kWh pro m² Wohnfläche und Jahr (Energiekennzahl)"
       },
       "conversion": {
         "dependsOn": "energietraeger",
         "factors": {
           "Öl": {
-            "factor": 9.8,
+            "factor": 10,
             "unit": "Liter"
           },
           "Gas": {
@@ -902,7 +951,7 @@
             "unit": "m³"
           },
           "Holzpellets": {
-            "factor": 4.8,
+            "factor": 5,
             "unit": "kg"
           },
           "Biomasse": {
@@ -924,8 +973,8 @@
       "id": "waermekosten",
       "type": "slider",
       "dataType": "int",
-      "label": "Was kostet Sie eine Kilowattstunde Wärme?",
-      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Heizkosten in <strong>Cent pro kWh</strong>: Jahreskosten für Heizung und Warmwasser ÷ Heizenergieverbrauch in kWh</li><li>Bei Gas oder Fernwärme steht der Arbeitspreis pro kWh meist direkt auf der Rechnung</li></ul>",
+      "label": "Was kostet Sie Ihre Heizenergie?",
+      "desc": "<ul style='margin: 0; padding-left: 20px;'><li>Geben Sie den Preis so ein, wie Sie ihn kennen: <strong>pro Liter, Tonne, Raummeter, kWh</strong> – oder einfach Ihre <strong>Heizkosten pro Jahr in €</strong></li><li>Die Umrechnung in Cent pro kWh erledigt das Formular</li></ul>",
       "reason": "Dieser Wert wird im Gebäudesteckbrief zur Berechnung der Heizkosten, Einsparpotenziale und Wirtschaftlichkeit verwendet.",
       "required": true,
       "min": 5,
@@ -933,7 +982,233 @@
       "step": 1,
       "value": 11,
       "suffix": " Cent/kWh",
-      "icon": "icon-slider-waermekosten"
+      "icon": "icon-slider-waermekosten",
+      "inputUnits": {
+        "dependsOn": "energietraeger",
+        "resultFormat": "= {value} Cent pro kWh Wärme",
+        "options": {
+          "Öl": [
+            {
+              "unit": "€/Liter",
+              "factor": 10,
+              "min": 0.6,
+              "max": 2.0,
+              "step": 0.01,
+              "value": 1.05,
+              "decimals": 2,
+              "rule": "Literpreis ÷ 10 kWh pro Liter",
+              "hint": "Preis pro Liter Heizöl laut letzter Lieferrechnung (brutto)."
+            },
+            {
+              "unit": "€ pro Jahr",
+              "factor": 100,
+              "divisorField": "waermeverbrauch",
+              "min": 300,
+              "max": 8000,
+              "step": 50,
+              "value": 2000,
+              "rule": "Jahreskosten ÷ {divisor} kWh Heizenergieverbrauch",
+              "hint": "Ihre gesamten Kosten für Heizung und Warmwasser in einem Jahr (Brennstoff bzw. Wärme inkl. Grundpreis) laut Rechnung. Den Preis pro kWh rechnen wir daraus aus."
+            },
+            {
+              "unit": "Cent/kWh",
+              "factor": 1,
+              "min": 5,
+              "max": 40,
+              "step": 1,
+              "value": 10,
+              "hint": "Arbeitspreis pro kWh laut Rechnung."
+            }
+          ],
+          "Gas": [
+            {
+              "unit": "Cent/kWh",
+              "factor": 1,
+              "min": 5,
+              "max": 40,
+              "step": 1,
+              "value": 12,
+              "hint": "Arbeitspreis pro kWh laut Gasrechnung."
+            },
+            {
+              "unit": "€ pro Jahr",
+              "factor": 100,
+              "divisorField": "waermeverbrauch",
+              "min": 300,
+              "max": 8000,
+              "step": 50,
+              "value": 2000,
+              "rule": "Jahreskosten ÷ {divisor} kWh Heizenergieverbrauch",
+              "hint": "Ihre gesamten Kosten für Heizung und Warmwasser in einem Jahr (Brennstoff bzw. Wärme inkl. Grundpreis) laut Rechnung. Den Preis pro kWh rechnen wir daraus aus."
+            },
+            {
+              "unit": "€/Liter Flüssiggas",
+              "factor": 15.38,
+              "min": 0.4,
+              "max": 1.5,
+              "step": 0.01,
+              "value": 0.75,
+              "decimals": 2,
+              "rule": "Literpreis ÷ 6,5 kWh pro Liter",
+              "hint": "Flüssiggas: Preis pro Liter laut Lieferrechnung (brutto)."
+            }
+          ],
+          "Holzpellets": [
+            {
+              "unit": "€/Tonne",
+              "factor": 0.02,
+              "min": 200,
+              "max": 700,
+              "step": 5,
+              "value": 350,
+              "rule": "Tonnenpreis ÷ 5.000 kWh pro Tonne",
+              "hint": "Preis pro Tonne Pellets laut Lieferrechnung (brutto)."
+            },
+            {
+              "unit": "€ pro Jahr",
+              "factor": 100,
+              "divisorField": "waermeverbrauch",
+              "min": 300,
+              "max": 8000,
+              "step": 50,
+              "value": 2000,
+              "rule": "Jahreskosten ÷ {divisor} kWh Heizenergieverbrauch",
+              "hint": "Ihre gesamten Kosten für Heizung und Warmwasser in einem Jahr (Brennstoff bzw. Wärme inkl. Grundpreis) laut Rechnung. Den Preis pro kWh rechnen wir daraus aus."
+            },
+            {
+              "unit": "Cent/kWh",
+              "factor": 1,
+              "min": 5,
+              "max": 40,
+              "step": 1,
+              "value": 7,
+              "hint": "Arbeitspreis pro kWh laut Rechnung."
+            }
+          ],
+          "Biomasse": [
+            {
+              "unit": "€/Raummeter",
+              "factor": 0.05,
+              "min": 40,
+              "max": 250,
+              "step": 5,
+              "value": 110,
+              "rule": "Preis pro Raummeter ÷ 2.000 kWh",
+              "hint": "Scheitholz: Preis pro Raummeter (Rm) lufttrocken."
+            },
+            {
+              "unit": "€ pro Jahr",
+              "factor": 100,
+              "divisorField": "waermeverbrauch",
+              "min": 300,
+              "max": 8000,
+              "step": 50,
+              "value": 2000,
+              "rule": "Jahreskosten ÷ {divisor} kWh Heizenergieverbrauch",
+              "hint": "Ihre gesamten Kosten für Heizung und Warmwasser in einem Jahr (Brennstoff bzw. Wärme inkl. Grundpreis) laut Rechnung. Den Preis pro kWh rechnen wir daraus aus."
+            },
+            {
+              "unit": "Cent/kWh",
+              "factor": 1,
+              "min": 5,
+              "max": 40,
+              "step": 1,
+              "value": 7,
+              "hint": "Arbeitspreis pro kWh laut Rechnung."
+            }
+          ],
+          "Strom": [
+            {
+              "unit": "Cent/kWh",
+              "factor": 1,
+              "min": 15,
+              "max": 50,
+              "step": 1,
+              "value": 30,
+              "hint": "Arbeitspreis Ihres Heizstromtarifs pro kWh."
+            },
+            {
+              "unit": "€ pro Jahr",
+              "factor": 100,
+              "divisorField": "waermeverbrauch",
+              "min": 300,
+              "max": 8000,
+              "step": 50,
+              "value": 2000,
+              "rule": "Jahreskosten ÷ {divisor} kWh Heizenergieverbrauch",
+              "hint": "Ihre gesamten Kosten für Heizung und Warmwasser in einem Jahr (Brennstoff bzw. Wärme inkl. Grundpreis) laut Rechnung. Den Preis pro kWh rechnen wir daraus aus."
+            }
+          ],
+          "Wärmepumpe": [
+            {
+              "unit": "Cent/kWh Strom",
+              "factor": 1,
+              "divisorField": "umrechnungsquote",
+              "min": 15,
+              "max": 50,
+              "step": 1,
+              "value": 28,
+              "rule": "Strompreis ÷ Jahresarbeitszahl {divisor}",
+              "hint": "Arbeitspreis Ihres Wärmepumpen-Stromtarifs. Mit der Jahresarbeitszahl rechnen wir daraus den Preis pro kWh Wärme."
+            },
+            {
+              "unit": "€ pro Jahr",
+              "factor": 100,
+              "divisorField": "waermeverbrauch",
+              "min": 300,
+              "max": 8000,
+              "step": 50,
+              "value": 2000,
+              "rule": "Jahreskosten ÷ {divisor} kWh Heizenergieverbrauch",
+              "hint": "Ihre gesamten Kosten für Heizung und Warmwasser in einem Jahr (Brennstoff bzw. Wärme inkl. Grundpreis) laut Rechnung. Den Preis pro kWh rechnen wir daraus aus."
+            }
+          ],
+          "Fern-/Nahwärme": [
+            {
+              "unit": "Cent/kWh",
+              "factor": 1,
+              "min": 5,
+              "max": 40,
+              "step": 1,
+              "value": 14,
+              "hint": "Arbeitspreis pro kWh bzw. MWh ÷ 1.000 laut Fernwärmeabrechnung."
+            },
+            {
+              "unit": "€ pro Jahr",
+              "factor": 100,
+              "divisorField": "waermeverbrauch",
+              "min": 300,
+              "max": 8000,
+              "step": 50,
+              "value": 2000,
+              "rule": "Jahreskosten ÷ {divisor} kWh Heizenergieverbrauch",
+              "hint": "Ihre gesamten Kosten für Heizung und Warmwasser in einem Jahr (Brennstoff bzw. Wärme inkl. Grundpreis) laut Rechnung. Den Preis pro kWh rechnen wir daraus aus."
+            }
+          ]
+        },
+        "default": [
+          {
+            "unit": "Cent/kWh",
+            "factor": 1,
+            "min": 5,
+            "max": 40,
+            "step": 1,
+            "value": 11,
+            "hint": "Arbeitspreis pro kWh laut Rechnung."
+          },
+          {
+            "unit": "€ pro Jahr",
+            "factor": 100,
+            "divisorField": "waermeverbrauch",
+            "min": 300,
+            "max": 8000,
+            "step": 50,
+            "value": 2000,
+            "rule": "Jahreskosten ÷ {divisor} kWh Heizenergieverbrauch",
+            "hint": "Ihre gesamten Kosten für Heizung und Warmwasser in einem Jahr (Brennstoff bzw. Wärme inkl. Grundpreis) laut Rechnung. Den Preis pro kWh rechnen wir daraus aus."
+          }
+        ]
+      }
     },
     {
       "id": "aussenwand_typ",

@@ -154,6 +154,11 @@ window.SPS = window.SPS || {};
      *                   "options": { "Öl": [ { "unit": "Liter", "factor": 9.8, "min": …, "max": …, "step": …, "value": …, "hint": "…" } ], … },
      *                   "default": [ { "unit": "kWh", "factor": 1, … } ] }
      *   Faktor alternativ dynamisch: "factorField": "umrechnungsquote", "defaultFactor": 3.5
+     *   Teiler aus einem anderen Feld: "divisorField": "waermeverbrauch" (Ergebnis = Eingabe × Faktor ÷ Feldwert,
+     *   z. B. Jahreskosten in € → Cent/kWh). Einheiten mit Teiler erscheinen nur, wenn der Feldwert vorliegt.
+     *   Pro Einheit optional: "decimals" (Anzeige der Eingabe), "rule" (Erklärzeile, Platzhalter {factor} {divisor}).
+     *   Pro Schritt optional: "resultFormat" ("≈ {value} kWh Wärme pro Jahr"), "resultDecimals",
+     *   "perAreaField" + "perAreaFormat" (Kennwert pro m², z. B. Energiekennzahl).
      *
      * @param {Object}       step - Schritt.
      * @param {FormInstance} form - Formular.
@@ -1701,7 +1706,11 @@ window.SPS = window.SPS || {};
         getInputUnits(step) {
             const iu  = step.inputUnits || {};
             const dep = iu.dependsOn ? this.getAnswer(iu.dependsOn) : null;
-            const list = (dep && iu.options && Array.isArray(iu.options[dep])) ? iu.options[dep] : iu.default;
+            let list = (dep && iu.options && Array.isArray(iu.options[dep])) ? iu.options[dep] : iu.default;
+            // Einheiten mit Teiler (z. B. "€ pro Jahr" ÷ Verbrauch) nur anbieten, wenn der Teiler bekannt ist.
+            if (Array.isArray(list)) {
+                list = list.filter(u => !u.divisorField || this.getDivisor(u) > 0);
+            }
             return Array.isArray(list) && list.length ? list : [{ unit: 'kWh', factor: 1, min: step.min || 0, max: step.max || 100, step: step.step || 1, value: step.value || 0 }];
         }
 
@@ -1711,18 +1720,57 @@ window.SPS = window.SPS || {};
         getSelectedUnit(step) {
             const units = this.getInputUnits(step);
             const saved = this.getAnswer(step.id + '_einheit');
+            // Energieträger seit der letzten Eingabe gewechselt → erste (typische) Einheit vorwählen.
+            const seen = this._unitDep ? this._unitDep[step.id] : undefined;
+            if (seen !== undefined && seen !== this.getUnitDepValue(step)) {
+                return units[0];
+            }
             return units.find(u => u.unit === saved) || units[0];
+        }
+
+        /**
+         * Aktueller Wert des Felds, von dem die Einheiten abhängen ('' ohne Abhängigkeit).
+         */
+        getUnitDepValue(step) {
+            const dep = (step.inputUnits || {}).dependsOn;
+            const v = dep ? this.getAnswer(dep) : '';
+            return v === undefined || v === null ? '' : String(v);
         }
 
         /**
          * Umrechnungsfaktor der Einheit in kWh (statisch oder aus einem Antwortfeld, z. B. JAZ).
          */
         getUnitFactor(unitCfg) {
+            let f;
             if (unitCfg.factorField) {
                 const v = parseFloat(this.getAnswer(unitCfg.factorField));
-                return (!isNaN(v) && v > 0) ? v : (Number(unitCfg.defaultFactor) || 1);
+                f = (!isNaN(v) && v > 0) ? v : (Number(unitCfg.defaultFactor) || 1);
+            } else {
+                f = Number(unitCfg.factor) || 1;
             }
-            return Number(unitCfg.factor) || 1;
+            if (unitCfg.divisorField) {
+                const d = this.getDivisor(unitCfg);
+                return d > 0 ? f / d : 0;
+            }
+            return f;
+        }
+
+        /**
+         * Teiler einer Einheit aus einem anderen Antwortfeld (0, wenn unbekannt).
+         */
+        getDivisor(unitCfg) {
+            if (!unitCfg.divisorField) return 1;
+            const d = parseFloat(this.getAnswer(unitCfg.divisorField));
+            return (!isNaN(d) && d > 0) ? d : 0;
+        }
+
+        /**
+         * Ergebnis (Antwort step.id) auf die Nachkommastellen des Schritts runden.
+         */
+        roundUnitResult(step, n) {
+            const dec = Number((step.inputUnits || {}).resultDecimals) || 0;
+            const p = Math.pow(10, dec);
+            return Math.round(Number(n) * p) / p;
         }
 
         /**
@@ -1730,7 +1778,9 @@ window.SPS = window.SPS || {};
          */
         getUnitInputValue(step, unitCfg) {
             let v = parseFloat(this.getAnswer(step.id + '_eingabe'));
-            if (this.getAnswer(step.id + '_einheit') !== unitCfg.unit || isNaN(v)) {
+            const seen = this._unitDep ? this._unitDep[step.id] : undefined;
+            const depChanged = seen !== undefined && seen !== this.getUnitDepValue(step);
+            if (depChanged || this.getAnswer(step.id + '_einheit') !== unitCfg.unit || isNaN(v)) {
                 v = Number(unitCfg.value !== undefined ? unitCfg.value : unitCfg.min);
             }
             return Math.min(Number(unitCfg.max), Math.max(Number(unitCfg.min), v));
@@ -1740,7 +1790,9 @@ window.SPS = window.SPS || {};
          * Eingabe speichern und kWh (Antwort step.id) daraus berechnen.
          */
         setUnitInput(step, unitCfg, value, trigger) {
-            const kwh = Math.round(Number(value) * this.getUnitFactor(unitCfg));
+            const kwh = this.roundUnitResult(step, Number(value) * this.getUnitFactor(unitCfg));
+            this._unitDep = this._unitDep || {};
+            this._unitDep[step.id] = this.getUnitDepValue(step);
             this.setAnswer(step.id + '_eingabe', Number(value), false);
             this.setAnswer(step.id + '_einheit', unitCfg.unit, false);
             this.setAnswer(step.id, kwh, trigger !== false);
@@ -1752,7 +1804,7 @@ window.SPS = window.SPS || {};
          */
         formatUnitValue(value, unitCfg) {
             const Calc = SPS.Calculations;
-            const num  = Calc ? Calc.formatGermanNumber(value) : String(value);
+            const num  = Calc ? Calc.formatGermanNumber(value, Number(unitCfg.decimals) || 0) : String(value);
             return `${num} ${unitCfg.unit}`;
         }
 
@@ -1761,18 +1813,38 @@ window.SPS = window.SPS || {};
          */
         unitConversionHtml(step, unitCfg, value) {
             const Calc   = SPS.Calculations;
-            const fmt    = (n, d) => Calc ? Calc.formatGermanNumber(n, d) : String(n);
+            const fmtRaw = (n, d) => Calc ? Calc.formatGermanNumber(n, d) : String(n);
+            // Nachkommastelle nur, wenn nötig (10 statt 10,0; 3,5 bleibt 3,5)
+            const fmt    = (n, d) => fmtRaw(n, (d === 1 && Number.isInteger(Math.round(Number(n) * 10) / 10) && Math.round(Number(n) * 10) % 10 === 0) ? 0 : d);
+            const iu     = step.inputUnits || {};
             const factor = this.getUnitFactor(unitCfg);
-            const kwh    = Math.round(Number(value) * factor);
+            const kwh    = this.roundUnitResult(step, Number(value) * factor);
+            const resDec = Number(iu.resultDecimals) || 0;
+            const result = (iu.resultFormat || '≈ {value} kWh Wärme pro Jahr').replace('{value}', fmt(kwh, resDec));
             let rule;
-            if (unitCfg.factorField) {
+            if (unitCfg.rule) {
+                const base = unitCfg.factorField
+                    ? (parseFloat(this.getAnswer(unitCfg.factorField)) || Number(unitCfg.defaultFactor) || 1)
+                    : (Number(unitCfg.factor) || 1);
+                rule = SPS.escapeHtml(String(unitCfg.rule))
+                    .replace('{factor}', fmt(base, 1))
+                    .replace('{divisor}', fmt(this.getDivisor(unitCfg), 1))
+                    .replace('{value}', fmt(value, Number(unitCfg.decimals) || 0));
+            } else if (unitCfg.factorField) {
                 rule = `${fmt(value)} ${SPS.escapeHtml(unitCfg.unit)} × Jahresarbeitszahl ${fmt(factor, 1)}`;
             } else if (factor === 1) {
                 rule = '';
             } else {
                 rule = `1 ${SPS.escapeHtml(unitCfg.unit)} ≈ ${fmt(factor, 1)} kWh`;
             }
-            return `<strong>≈ ${fmt(kwh)} kWh Wärme pro Jahr</strong>${rule ? `<span class="sps-unit-rule">${rule}</span>` : ''}`;
+            let perArea = '';
+            if (iu.perAreaField) {
+                const area = parseFloat(this.getAnswer(iu.perAreaField));
+                if (!isNaN(area) && area > 0) {
+                    perArea = `<span class="sps-unit-rule">${SPS.escapeHtml(iu.perAreaFormat || 'entspricht ca. {value} kWh pro m² und Jahr').replace('{value}', fmt(kwh / area))}</span>`;
+                }
+            }
+            return `<strong>${SPS.escapeHtml(result)}</strong>${rule ? `<span class="sps-unit-rule">${rule}</span>` : ''}${perArea}`;
         }
 
         /**
@@ -1804,6 +1876,7 @@ window.SPS = window.SPS || {};
             let v = isNaN(kwh) ? Number(target.value) : kwh / this.getUnitFactor(target);
             const st = Number(target.step || 1);
             v = Math.round(v / st) * st;
+            v = Number(v.toFixed(Number(target.decimals) || 0));
             v = Math.min(Number(target.max), Math.max(Number(target.min), v));
             this.setUnitInput(step, target, v);
             this.rerenderStepBody(stepIndex);

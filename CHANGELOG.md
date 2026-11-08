@@ -5,6 +5,15 @@ Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokument
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
+## [0.6.15] - 2026-11-08
+
+### Geändert
+- **Gebäude-Check – Heizkosten ohne kWh-Preis:** Der Preis lässt sich so eingeben, wie er auf der Rechnung steht: €/Liter Heizöl, €/Liter Flüssiggas, €/Tonne Pellets, €/Raummeter Scheitholz, Cent/kWh Strom bei Wärmepumpe (÷ JAZ) – oder als Heizkosten pro Jahr in €. Das Formular rechnet in Cent/kWh um; an Nextcloud geht weiterhin nur `waermekosten`.
+- **Gebäude-Check – Strompreis:** alternativ Stromkosten pro Jahr in € (÷ Stromverbrauch).
+- **Umrechnungsfaktoren nach Tabelle „Berechnung der Energiekennzahl“:** Heizöl 10 kWh/l (vorher 9,8), Holzpellets 5 kWh/kg (vorher 4,8), neu Scheitholz 2.000 kWh/Rm und Flüssiggas 6,5 kWh/l (unter „Gas“).
+- **Energiekennzahl:** Beim Heizenergieverbrauch wird zusätzlich der Kennwert in kWh pro m² Wohnfläche und Jahr angezeigt.
+- **Engine `inputUnits`:** neue Optionen `divisorField`, `decimals`, `rule` (je Einheit) sowie `resultFormat`, `resultDecimals`, `perAreaField`/`perAreaFormat` (je Schritt). Nach einem Wechsel des Energieträgers wird die erste Einheit vorgewählt.
+
 ## [0.6.13] - 2026-11-02
 
 ### Geändert
