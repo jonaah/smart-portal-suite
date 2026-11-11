@@ -1,11 +1,24 @@
 {
-  "_info": "Steckbrief-Varianten (Layouts des PDF-Steckbriefs, den der Job auf dem Contabo-Server erzeugt). Die gewählte Nummer wird als Antwort auf die Nextcloud-Frage mit dem technischen Namen \"steckbrief_variante\" übertragen. Vorschaubild optional: \"preview\" (Pfad relativ zum Plugin oder URL) – sonst wird assets/img/steckbrief/variante-<id>.(webp|png|jpg|svg) verwendet, falls vorhanden.",
+  "_info": "Steckbrief-Varianten (Layouts des PDF-Steckbriefs, den der Job auf dem Contabo-Server erzeugt). Die gewählte Nummer wird als Antwort auf die Nextcloud-Frage mit dem technischen Namen \"steckbrief_variante\" übertragen. WICHTIG: Nummern sind fest und dürfen nie geändert oder neu vergeben werden – sonst bekommen bestehende Formulare ein anderes Layout. Neue Varianten nur mit neuer Nummer anhängen. Vorschaubild: assets/img/steckbrief/variante-<id>.(webp|png|jpg|svg) wird automatisch gefunden (Seite 1 mit Musterdaten, 420 × 595 px); \"preview\" nur für abweichenden Pfad oder URL. \"layout\" ist eine interne Notiz und wird nicht angezeigt.",
   "default": 1,
   "variants": [
     {
       "id": 1,
       "label": "Standard",
-      "description": "Aktuelles Layout des Gebäudesteckbriefs."
+      "layout": "Steckbrief",
+      "description": "Ausführlicher Steckbrief mit Karte, Kennwerten, Szenarien, Diagrammen und PV-Potenzial."
+    },
+    {
+      "id": 2,
+      "label": "Überblick",
+      "layout": "Überblick",
+      "description": "Kompakter Ergebnisbericht: Kennzahlen, Effizienzskala, Maßnahmen-Übersicht, Details auf Seite 2."
+    },
+    {
+      "id": 3,
+      "label": "Ergebnisbericht",
+      "layout": "Ergebnis (nah an der Koch-Lösung)",
+      "description": "Ergebnisbericht im Stil eines Energiesparrechners: Gebäuderaster, Maßnahmen-Kacheln, Ersparnis, Effizienzskala."
     }
   ]
 }

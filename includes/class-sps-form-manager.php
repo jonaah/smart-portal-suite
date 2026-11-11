@@ -645,7 +645,7 @@ class SPS_Form_Manager {
 						<?php
 						printf(
 							/* translators: %s: technical NC question name */
-							esc_html__( 'Legt fest, wie der PDF-Steckbrief aussieht. Die Nummer wird beim Absenden als Antwort auf die Nextcloud-Frage mit dem technischen Namen %s übertragen. Fehlt diese Frage im Nextcloud-Formular, wird nichts übertragen.', 'smart-portal-suite' ),
+							esc_html__( 'Legt fest, wie der PDF-Steckbrief aussieht. Die Nummer wird beim Absenden als Antwort auf die Nextcloud-Frage mit dem technischen Namen %s übertragen. Fehlt diese Frage im Nextcloud-Formular, wird nur die Variante nicht übertragen – alle übrigen Antworten schon.', 'smart-portal-suite' ),
 							'<code>' . esc_html( $field ) . '</code>'
 						);
 						?>

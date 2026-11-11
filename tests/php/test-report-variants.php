@@ -65,7 +65,9 @@ $schema = array(
 echo "Steckbrief-Variante\n";
 
 $variants = SPS_Report_Variants::get_variants();
-check( 'Konfiguration enthält Variante 1', isset( $variants[1] ) );
+check( 'Konfiguration enthält Varianten 1–3', isset( $variants[1], $variants[2], $variants[3] ) );
+check( 'Bezeichnungen aus der Konfiguration', 'Überblick' === $variants[2]['label'] && 'Ergebnisbericht' === $variants[3]['label'] );
+check( 'Vorschaubild variante-2.png automatisch gefunden', false !== strpos( $variants[2]['preview'], 'assets/img/steckbrief/variante-2.png' ) );
 check( 'Standard ist 1', 1 === SPS_Report_Variants::get_default() );
 check( 'ohne Einstellung → Standard', 1 === SPS_Report_Variants::get_for_form( 'gebaeude-check' ) );
 
@@ -76,11 +78,15 @@ $out = SPS_Answer_Transformer::apply( array( 'steckbrief_variante' => '99' ), $s
 check( 'Browser-Wert wird überschrieben', 1 === $out['steckbrief_variante'] );
 
 check( 'unbekannte Variante abgelehnt', is_wp_error( SPS_Report_Variants::set_for_form( 'gebaeude-check', 7 ) ) );
+check( 'Variante 3 speichern', true === SPS_Report_Variants::set_for_form( 'gebaeude-check', 3 ) );
+$out = SPS_Answer_Transformer::apply( array(), $schema );
+check( 'apply() überträgt 3', 3 === $out['steckbrief_variante'] );
+SPS_Report_Variants::set_for_form( 'gebaeude-check', 0 );
 
 // Weitere Varianten per Filter (wie später aus config/report-variants.json).
 $GLOBALS['sps_filters']['sps_report_variants'] = function ( $list ) {
-	$list[] = array( 'id' => 2, 'label' => 'Kompakt' );
-	$list[] = array( 'id' => 3 );
+	$list[] = array( 'id' => 8, 'label' => 'Kompakt' );
+	$list[] = array( 'id' => 9 );
 	return $list;
 };
 $ref = new ReflectionProperty( 'SPS_Report_Variants', 'config' );
@@ -88,13 +94,13 @@ $ref->setAccessible( true );
 $ref->setValue( null, null );
 
 $variants = SPS_Report_Variants::get_variants();
-check( 'Filter ergänzt Varianten 2 und 3', isset( $variants[2], $variants[3] ) );
-check( 'Variante ohne Label → "Variante 3"', 'Variante 3' === $variants[3]['label'] );
-check( 'ohne Bild → preview leer', '' === $variants[2]['preview'] );
+check( 'Filter ergänzt Varianten 8 und 9', isset( $variants[8], $variants[9] ) );
+check( 'Variante ohne Label → "Variante 9"', 'Variante 9' === $variants[9]['label'] );
+check( 'ohne Bild → preview leer', '' === $variants[8]['preview'] );
 
-check( 'Variante 2 speichern', true === SPS_Report_Variants::set_for_form( 'gebaeude-check', 2 ) );
+check( 'Variante 8 speichern', true === SPS_Report_Variants::set_for_form( 'gebaeude-check', 8 ) );
 $out = SPS_Answer_Transformer::apply( array(), $schema );
-check( 'apply() überträgt 2', 2 === $out['steckbrief_variante'] );
+check( 'apply() überträgt 8', 8 === $out['steckbrief_variante'] );
 check( 'anderes Formular bleibt Standard', 1 === SPS_Report_Variants::get_for_form( 'projekte-mit-mir' ) );
 
 SPS_Report_Variants::set_for_form( 'gebaeude-check', 0 );

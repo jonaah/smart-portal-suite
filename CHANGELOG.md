@@ -5,6 +5,11 @@ Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokument
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
+## [0.6.19] - 2026-11-11
+
+### Hinzugefügt
+- **Drei Steckbrief-Varianten** in `config/report-variants.json` mit Vorschaubildern (`assets/img/steckbrief/variante-1.png` bis `-3.png`, Seite 1 mit Musterdaten): 1 „Standard“ (ausführlicher Steckbrief mit Karte, Kennwerten, Szenarien, Diagrammen und PV-Potenzial, Standardvariante), 2 „Überblick“ (kompakter Ergebnisbericht mit Kennzahlen, Effizienzskala und Maßnahmen-Übersicht), 3 „Ergebnisbericht“ (im Stil eines Energiesparrechners mit Gebäuderaster, Maßnahmen-Kacheln, Ersparnis und Effizienzskala). Die Nummern sind fest und werden nie neu vergeben.
+
 ## [0.6.18] - 2026-11-11
 
 ### Hinzugefügt
