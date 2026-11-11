@@ -601,6 +601,14 @@ class SPS_Doctor {
 			}
 		}
 
+		// Steckbrief-Variante wird serverseitig ergänzt.
+		if ( class_exists( 'SPS_Report_Variants' ) ) {
+			$rv = SPS_Report_Variants::field_name( $schema );
+			if ( '' !== $rv ) {
+				$keys[] = $rv;
+			}
+		}
+
 		$keys = array_values( array_unique( $keys ) );
 		$set  = array();
 		foreach ( $rules as $rule ) {

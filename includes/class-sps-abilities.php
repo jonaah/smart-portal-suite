@@ -228,7 +228,7 @@ class SPS_Abilities {
 			),
 			'get-form-theme'         => array(
 				'label'       => 'Formular-Design lesen',
-				'description' => 'Aktuelle Farben, Radien und Formularhöhe eines Formulars, alle einstellbaren CSS-Variablen mit Beschreibung und Standardwert sowie die verfügbaren Vorlagen (Presets). Leere Werte bedeuten: automatisch aus den Grundfarben abgeleitet.',
+				'description' => 'Aktuelle Farben, Radien und Formularhöhe eines Formulars, alle einstellbaren CSS-Variablen mit Beschreibung und Standardwert, die verfügbaren Vorlagen (Presets) sowie die gewählte Steckbrief-Variante (report_variant) und alle verfügbaren Varianten (report_variants). Leere Werte bedeuten: automatisch aus den Grundfarben abgeleitet.',
 				'readonly'    => true,
 				'idempotent'  => true,
 				'input'       => $form_only,
@@ -236,7 +236,7 @@ class SPS_Abilities {
 			),
 			'update-form-theme'      => array(
 				'label'       => 'Formular-Design ändern',
-				'description' => 'Setzt Farben (#rgb, #rrggbb oder #rrggbbaa), Eckenrundungen (Pixel) und die Formularhöhe ("screen", "auto" oder 480–1100 px) eines Formulars. Schlüssel sind die CSS-Variablen aus get-form-theme, z. B. "--sps-accent". Leerer String oder null entfernt eine Überschreibung. Mit "preset" wird zuerst eine Vorlage angewendet, mit "reset" alles auf Standard gesetzt. Gibt ungültige Schlüssel/Werte in "rejected" zurück.',
+				'description' => 'Setzt Farben (#rgb, #rrggbb oder #rrggbbaa), Eckenrundungen (Pixel) und die Formularhöhe ("screen", "auto" oder 480–1100 px) eines Formulars. Schlüssel sind die CSS-Variablen aus get-form-theme, z. B. "--sps-accent". Leerer String oder null entfernt eine Überschreibung. Mit "preset" wird zuerst eine Vorlage angewendet, mit "reset" alles auf Standard gesetzt (die Steckbrief-Variante bleibt). "report_variant" wählt das Layout des PDF-Steckbriefs (Nummer aus get-form-theme, 0 = Standard). Gibt ungültige Schlüssel/Werte in "rejected" zurück.',
 				'readonly'    => false,
 				'idempotent'  => true,
 				'input'       => array(
@@ -255,6 +255,11 @@ class SPS_Abilities {
 						'reset'   => array(
 							'type'        => 'boolean',
 							'description' => 'Vorher alle Überschreibungen entfernen.',
+						),
+						'report_variant' => array(
+							'type'        => 'integer',
+							'minimum'     => 0,
+							'description' => 'Steckbrief-Variante (wird als Antwort auf die NC-Frage "steckbrief_variante" übertragen). 0 = Standard.',
 						),
 					),
 					'required'             => array( 'form_id' ),
@@ -701,10 +706,13 @@ class SPS_Abilities {
 		}
 
 		return array(
-			'form_id'   => $schema['form_id'],
-			'saved'     => (object) $saved,
-			'variables' => $variables,
-			'presets'   => $presets,
+			'form_id'         => $schema['form_id'],
+			'saved'           => (object) $saved,
+			'variables'       => $variables,
+			'presets'         => $presets,
+			'report_variant'  => SPS_Report_Variants::get_for_form( $schema['form_id'] ),
+			'report_variants' => array_values( SPS_Report_Variants::get_variants() ),
+			'report_field'    => SPS_Report_Variants::field_name( $schema ),
 			'note'      => 'Grundfarben (group "base") bestimmen die abgeleiteten Farben. Werte der Gruppen "fine" und "icons" nur setzen, wenn sie gezielt abweichen sollen.',
 		);
 	}
@@ -767,10 +775,18 @@ class SPS_Abilities {
 			SPS_Form_Manager::save_theme( $form_id, $theme );
 		}
 
+		if ( isset( $input['report_variant'] ) ) {
+			$rv = SPS_Report_Variants::set_for_form( $form_id, (int) $input['report_variant'] );
+			if ( is_wp_error( $rv ) ) {
+				$rejected['report_variant'] = $rv->get_error_message();
+			}
+		}
+
 		return array(
-			'form_id'  => $form_id,
-			'saved'    => (object) SPS_Form_Manager::get_theme( $form_id ),
-			'rejected' => (object) $rejected,
+			'form_id'        => $form_id,
+			'saved'          => (object) SPS_Form_Manager::get_theme( $form_id ),
+			'report_variant' => SPS_Report_Variants::get_for_form( $form_id ),
+			'rejected'       => (object) $rejected,
 			'note'     => 'Gespeichert. Seiten-Cache leeren, damit Besucher die Änderung sehen.',
 		);
 	}

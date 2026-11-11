@@ -98,6 +98,11 @@ class SPS_Answer_Transformer {
 			}
 		}
 
+		// Steckbrief-Variante (Einstellung im Styling-Editor) serverseitig setzen.
+		if ( class_exists( 'SPS_Report_Variants' ) ) {
+			$out = SPS_Report_Variants::inject( $out, $schema );
+		}
+
 		return $out;
 	}
 

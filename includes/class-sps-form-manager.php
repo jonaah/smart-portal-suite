@@ -582,6 +582,9 @@ class SPS_Form_Manager {
 						</div>
 					</div>
 
+					<!-- Steckbrief-Variante -->
+					<?php $this->render_report_variant_box( $canonical_id ); ?>
+
 					<!-- Save Button -->
 					<div class="sps-save-bar">
 						<button type="button" class="button button-primary button-hero sps-save-theme-btn">
@@ -609,6 +612,69 @@ class SPS_Form_Manager {
 						</div>
 					</div>
 				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	/* ═══════════════════════════════════════════════════════════════
+	   STECKBRIEF-VARIANTE
+	   ═══════════════════════════════════════════════════════════════ */
+
+	/**
+	 * Kasten "Steckbrief-Variante" im Formular-Editor.
+	 *
+	 * @param string $form_id Kanonische Formular-ID.
+	 */
+	private function render_report_variant_box( $form_id ) {
+		$variants = SPS_Report_Variants::get_variants();
+		$current  = SPS_Report_Variants::get_for_form( $form_id );
+		$default  = SPS_Report_Variants::get_default();
+		$schema   = SPS_Form_Renderer::get_instance()->load_schema( $form_id );
+		$field    = SPS_Report_Variants::field_name( $schema );
+		?>
+		<div class="postbox sps-report-variant-box">
+			<div class="postbox-header">
+				<h2><?php esc_html_e( 'Steckbrief-Variante', 'smart-portal-suite' ); ?></h2>
+			</div>
+			<div class="inside">
+				<?php if ( '' === $field ) : ?>
+					<p class="description"><?php esc_html_e( 'Für dieses Formular ist die Übertragung der Steckbrief-Variante im Schema abgeschaltet (submit.report_variant_field = "").', 'smart-portal-suite' ); ?></p>
+				<?php else : ?>
+					<p class="description">
+						<?php
+						printf(
+							/* translators: %s: technical NC question name */
+							esc_html__( 'Legt fest, wie der PDF-Steckbrief aussieht. Die Nummer wird beim Absenden als Antwort auf die Nextcloud-Frage mit dem technischen Namen %s übertragen. Fehlt diese Frage im Nextcloud-Formular, wird nichts übertragen.', 'smart-portal-suite' ),
+							'<code>' . esc_html( $field ) . '</code>'
+						);
+						?>
+					</p>
+					<div class="sps-variant-grid" role="radiogroup" aria-label="<?php esc_attr_e( 'Steckbrief-Variante', 'smart-portal-suite' ); ?>">
+						<?php foreach ( $variants as $v ) : ?>
+							<label class="sps-variant-card<?php echo (int) $v['id'] === (int) $current ? ' is-selected' : ''; ?>">
+								<input type="radio" name="sps_report_variant" class="sps-report-variant-input" value="<?php echo esc_attr( $v['id'] ); ?>" <?php checked( (int) $v['id'], (int) $current ); ?> />
+								<span class="sps-variant-thumb">
+									<?php if ( ! empty( $v['preview'] ) ) : ?>
+										<img src="<?php echo esc_url( $v['preview'] ); ?>" alt="<?php echo esc_attr( sprintf( __( 'Vorschau Variante %d', 'smart-portal-suite' ), $v['id'] ) ); ?>" loading="lazy" />
+									<?php else : ?>
+										<span class="sps-variant-number"><?php echo (int) $v['id']; ?></span>
+									<?php endif; ?>
+								</span>
+								<span class="sps-variant-meta">
+									<strong><?php echo esc_html( sprintf( '%d – %s', $v['id'], $v['label'] ) ); ?></strong>
+									<?php if ( (int) $v['id'] === (int) $default ) : ?>
+										<span class="sps-badge sps-badge-default"><?php esc_html_e( 'Standard', 'smart-portal-suite' ); ?></span>
+									<?php endif; ?>
+									<?php if ( '' !== $v['description'] ) : ?>
+										<span class="sps-variant-desc"><?php echo esc_html( $v['description'] ); ?></span>
+									<?php endif; ?>
+								</span>
+							</label>
+						<?php endforeach; ?>
+					</div>
+					<p class="description"><?php esc_html_e( 'Wird mit „Styling speichern“ übernommen. „Auf Standard zurücksetzen“ ändert die Variante nicht.', 'smart-portal-suite' ); ?></p>
+				<?php endif; ?>
 			</div>
 		</div>
 		<?php
@@ -924,9 +990,18 @@ class SPS_Form_Manager {
 			self::save_theme( $form_id, $sanitized );
 		}
 
+		// Steckbrief-Variante (eigene Option, unabhängig vom Theme).
+		if ( isset( $_POST['report_variant'] ) && '' !== $_POST['report_variant'] ) {
+			$saved = SPS_Report_Variants::set_for_form( $form_id, absint( $_POST['report_variant'] ) );
+			if ( is_wp_error( $saved ) ) {
+				wp_send_json_error( array( 'message' => $saved->get_error_message() ), 400 );
+			}
+		}
+
 		wp_send_json_success( array(
-			'message' => __( 'Styling erfolgreich gespeichert.', 'smart-portal-suite' ),
-			'form_id' => $form_id,
+			'message'        => __( 'Styling erfolgreich gespeichert.', 'smart-portal-suite' ),
+			'form_id'        => $form_id,
+			'report_variant' => SPS_Report_Variants::get_for_form( $form_id ),
 		) );
 	}
 

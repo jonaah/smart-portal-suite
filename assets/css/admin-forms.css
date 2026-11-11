@@ -694,3 +694,88 @@
 	flex-basis: 100%;
 	margin: 4px 0 0;
 }
+
+/* ── Steckbrief-Variante ── */
+.sps-variant-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	gap: 12px;
+	margin: 12px 0;
+}
+
+.sps-variant-card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	border: 2px solid #dcdcde;
+	border-radius: 6px;
+	background: #fff;
+	cursor: pointer;
+	overflow: hidden;
+	transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.sps-variant-card:hover {
+	border-color: #8c8f94;
+}
+
+.sps-variant-card.is-selected {
+	border-color: #2271b1;
+	box-shadow: 0 0 0 1px #2271b1;
+}
+
+.sps-variant-card input[type="radio"] {
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	margin: 0;
+	z-index: 1;
+}
+
+.sps-variant-card input[type="radio"]:focus-visible + .sps-variant-thumb {
+	outline: 2px solid #2271b1;
+	outline-offset: -2px;
+}
+
+.sps-variant-thumb {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	aspect-ratio: 210 / 297; /* A4 hoch */
+	max-height: 200px;
+	background: #f6f7f7;
+	border-bottom: 1px solid #dcdcde;
+}
+
+.sps-variant-thumb img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: top center;
+}
+
+.sps-variant-number {
+	font-size: 48px;
+	font-weight: 600;
+	line-height: 1;
+	color: #a7aaad;
+}
+
+.sps-variant-card.is-selected .sps-variant-number {
+	color: #2271b1;
+}
+
+.sps-variant-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px 6px;
+	padding: 8px 10px;
+	font-size: 13px;
+}
+
+.sps-variant-desc {
+	flex-basis: 100%;
+	color: #646970;
+	font-size: 12px;
+}

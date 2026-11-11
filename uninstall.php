@@ -15,6 +15,7 @@ global $wpdb;
 
 delete_option( 'sps_settings' );
 delete_option( 'sps_debug_log' );
+delete_option( 'sps_report_variants' );
 
 // Formular-Themes, importierte Formulare, Caches.
 $like_patterns = array( 'sps_form_theme_%', 'sps_custom_form_%', '_transient_sps_%', '_transient_timeout_sps_%' );

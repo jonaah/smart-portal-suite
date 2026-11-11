@@ -1,0 +1,11 @@
+{
+  "_info": "Steckbrief-Varianten (Layouts des PDF-Steckbriefs, den der Job auf dem Contabo-Server erzeugt). Die gewählte Nummer wird als Antwort auf die Nextcloud-Frage mit dem technischen Namen \"steckbrief_variante\" übertragen. Vorschaubild optional: \"preview\" (Pfad relativ zum Plugin oder URL) – sonst wird assets/img/steckbrief/variante-<id>.(webp|png|jpg|svg) verwendet, falls vorhanden.",
+  "default": 1,
+  "variants": [
+    {
+      "id": 1,
+      "label": "Standard",
+      "description": "Aktuelles Layout des Gebäudesteckbriefs."
+    }
+  ]
+}

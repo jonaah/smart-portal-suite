@@ -31,6 +31,7 @@
             initPresetButtons();
             initSaveButton();
             initAccessBox();
+            initReportVariants();
         }
 
         // Shortcode copy-to-clipboard
@@ -40,6 +41,20 @@
         initImportModal();
         initDeleteButtons();
     });
+
+    /* ═══════════════════════════════════════════════════════════════
+       STECKBRIEF-VARIANTE
+       ═══════════════════════════════════════════════════════════════ */
+
+    /**
+     * Auswahlkarten: markierte Karte hervorheben.
+     */
+    function initReportVariants() {
+        $grid.on('change', '.sps-report-variant-input', function() {
+            $grid.find('.sps-variant-card').removeClass('is-selected');
+            $(this).closest('.sps-variant-card').addClass('is-selected');
+        });
+    }
 
     /* ═══════════════════════════════════════════════════════════════
        COLOR PICKERS
@@ -232,13 +247,15 @@
             action:  'sps_save_form_theme',
             nonce:   config.nonce,
             form_id: formId,
-            theme:   JSON.stringify(theme)
+            theme:   JSON.stringify(theme),
+            report_variant: $grid.find('.sps-report-variant-input:checked').val() || ''
         })
         .done(function(response) {
             if (response.success) {
                 $status.text(config.i18n.saved || 'Gespeichert.').addClass('sps-status-success');
             } else {
-                $status.text(config.i18n.saveFailed || 'Fehler.').addClass('sps-status-error');
+                var msg = (response.data && response.data.message) ? response.data.message : (config.i18n.saveFailed || 'Fehler.');
+                $status.text(msg).addClass('sps-status-error');
             }
         })
         .fail(function() {

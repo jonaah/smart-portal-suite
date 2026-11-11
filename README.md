@@ -294,6 +294,12 @@ Im WordPress-Backend steht unter **Smart Portal > Formulare** ein visueller Form
    - **Schnell-Themes (Presets):** Ein-Klick-Anwendung von Design-Vorlagen (*Effizientes Heim Standard*, *Clean Modern Ocean Blue*, *Minimalist Light*) sowie Zurücksetzen auf Werkseinstellungen.
    - **Live-Vorschau:** Echtzeit-Vorschau des Formulars während der Anpassung im Admin-Panel.
    - Speicherung erfolgt updatesicher in `wp_options` unter `sps_form_theme_{form_id}` und wird per Inline-CSS-Filter (`sps_form_container_styles`) ins Frontend injiziert.
+3. **Steckbrief-Variante (im Styling-Editor):**
+   - Auswahl, wie der PDF-Steckbrief aussieht, den der Job auf dem Contabo-Server aus der Nextcloud-Antwort erzeugt.
+   - Die gewählte Nummer wird beim Absenden **serverseitig** als Antwort auf die Nextcloud-Frage mit dem technischen Namen `steckbrief_variante` übertragen. Dafür im Nextcloud-Formular eine (nicht verpflichtende) Kurztext- oder Auswahlfrage mit diesem technischen Namen anlegen. Fehlt sie, wird nichts übertragen.
+   - Varianten stehen in `config/report-variants.json` (`id`, `label`, `description`, optional `preview`) und lassen sich per Filter `sps_report_variants` erweitern. Vorschaubilder: `assets/img/steckbrief/variante-<id>.png` (oder `.webp`/`.jpg`/`.svg`).
+   - Abweichender Fragename oder Abschalten je Formular über `"submit": { "report_variant_field": "…" }` (leer = aus).
+   - Speicherung in `wp_options` unter `sps_report_variants` (`form_id => Nummer`), per MCP über `get-form-theme` / `update-form-theme` (`report_variant`).
 
 ---
 

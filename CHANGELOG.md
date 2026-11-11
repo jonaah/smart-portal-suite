@@ -5,6 +5,14 @@ Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokument
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
+## [0.6.18] - 2026-11-11
+
+### Hinzugefügt
+- **Steckbrief-Variante je Formular:** Im Styling-Editor (Smart Portal → Formulare → Styling) wählt der Energieberater unter „Steckbrief-Variante“, wie der PDF-Steckbrief aussehen soll. Die Nummer wird beim Absenden serverseitig als Antwort auf die Nextcloud-Frage mit dem technischen Namen `steckbrief_variante` übertragen (Werte aus dem Browser werden überschrieben); der Job auf dem Contabo-Server wählt damit das Layout. Fehlt die Frage im Nextcloud-Formular, wird nichts übertragen. Gespeichert mit „Styling speichern“ in der Option `sps_report_variants`; „Auf Standard zurücksetzen“ lässt die Variante unverändert.
+- **Varianten-Registry `config/report-variants.json`** (Nummer, Bezeichnung, Beschreibung, optional Vorschaubild) sowie Filter `sps_report_variants`. Vorschaubilder werden automatisch aus `assets/img/steckbrief/variante-<Nummer>.(webp|png|jpg|svg)` geladen; ohne Bild zeigt die Auswahlkarte die Nummer. Aktuell gibt es nur Variante 1 („Standard“).
+- **Schema-Option `submit.report_variant_field`:** anderer Fragename oder `""` zum Abschalten für ein Formular (Filter `sps_report_variant_field`).
+- **MCP:** `get-form-theme` liefert `report_variant`, `report_variants` und `report_field`; `update-form-theme` nimmt `report_variant` entgegen. Die Zuordnungsprüfung kennt den Schlüssel `steckbrief_variante`.
+
 ## [0.6.17] - 2026-11-08
 
 ### Behoben
