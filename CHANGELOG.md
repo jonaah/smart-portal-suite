@@ -5,6 +5,12 @@ Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokument
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
+## [0.6.20] - 2026-11-11
+
+### Behoben
+- **Nach dem Magic-Login landeten Kunden auf der Website statt in der Nextcloud:** WordPress lässt mit `wp_safe_redirect()` nur Weiterleitungen auf die eigene Domain zu. Der Host der konfigurierten Nextcloud-URL wird jetzt über den Filter `allowed_redirect_hosts` freigegeben, damit „Weiterleitung nach dem Login“ (`login_redirect_url`) auch auf die Nextcloud zeigen kann (z. B. `https://nc.<domain>/apps/sociallogin/custom_oauth2/<Anbieter>`).
+- **Registrierung ohne Rücksprungziel:** `[sps_register]` übergibt jetzt wie `[sps_login]` ein `redirect_to` an `[magic_login_registration_form]` (Reihenfolge: `?redirect_to=`, Cookie `sps_redirect`/`qc_redirect`, Einstellung). Cookie-Werte werden dabei ebenfalls mit `wp_validate_redirect()` geprüft.
+
 ## [0.6.19] - 2026-11-11
 
 ### Hinzugefügt
