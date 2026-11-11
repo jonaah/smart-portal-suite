@@ -40,6 +40,10 @@ class SPS_Auth_Shortcodes {
 		// Magic Login Pro leitet nach der Registrierung auf die Startseite um.
 		add_action( 'template_redirect', array( $this, 'redirect_registration_success' ) );
 
+		// Nextcloud-Host als sicheres Weiterleitungsziel zulassen (wp_safe_redirect),
+		// damit Login und Registrierung direkt in die Nextcloud zurückführen können.
+		add_filter( 'allowed_redirect_hosts', array( $this, 'allow_nextcloud_redirect_host' ) );
+
 		// Shortcodes registrieren
 		add_shortcode( 'sps_auth_buttons', array( $this, 'render_auth_buttons' ) );
 		add_shortcode( 'sps_login', array( $this, 'render_login_form' ) );
@@ -193,28 +197,49 @@ class SPS_Auth_Shortcodes {
 	 * @param array $atts Shortcode-Attribute.
 	 * @return string HTML-Ausgabe.
 	 */
-	public function render_login_form( $atts ) {
-		$this->enqueue_auth_assets();
+	/**
+	 * Host der konfigurierten Nextcloud zu den erlaubten Weiterleitungszielen hinzufügen.
+	 *
+	 * @param array $hosts Erlaubte Hosts.
+	 * @return array
+	 */
+	public function allow_nextcloud_redirect_host( $hosts ) {
+		$nc_host = wp_parse_url( (string) SPS_Settings::get_setting( 'nextcloud_url', '' ), PHP_URL_HOST );
+		if ( ! empty( $nc_host ) && ! in_array( $nc_host, $hosts, true ) ) {
+			$hosts[] = $nc_host;
+		}
+		return $hosts;
+	}
 
-		$default_redirect = SPS_Settings::get_setting( 'login_redirect_url', home_url( '/' ) );
-		$default_register = SPS_Settings::get_setting( 'auth_register_url', '/registrierung/' );
+	/**
+	 * Rücksprungziel nach dem Login ermitteln: ?redirect_to= vor Cookie vor Einstellung.
+	 *
+	 * @return string
+	 */
+	protected function get_redirect_target() {
+		$target = SPS_Settings::get_setting( 'login_redirect_url', home_url( '/' ) );
 
-		// Rücksprung: ?redirect_to= (z. B. vom Login-Hinweis eines Formulars) vor Cookie.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$get_redirect = isset( $_GET['redirect_to'] ) ? wp_validate_redirect( esc_url_raw( wp_unslash( $_GET['redirect_to'] ) ), '' ) : '';
 		if ( '' !== $get_redirect ) {
-			$default_redirect = $get_redirect;
-		} elseif ( ! empty( $_COOKIE['sps_redirect'] ) ) {
-			$cookie_url = esc_url_raw( wp_unslash( $_COOKIE['sps_redirect'] ) );
-			if ( ! empty( $cookie_url ) ) {
-				$default_redirect = $cookie_url;
-			}
-		} elseif ( ! empty( $_COOKIE['qc_redirect'] ) ) {
-			$cookie_url = esc_url_raw( wp_unslash( $_COOKIE['qc_redirect'] ) );
-			if ( ! empty( $cookie_url ) ) {
-				$default_redirect = $cookie_url;
+			return $get_redirect;
+		}
+		foreach ( array( 'sps_redirect', 'qc_redirect' ) as $cookie ) {
+			if ( ! empty( $_COOKIE[ $cookie ] ) ) {
+				$cookie_url = wp_validate_redirect( esc_url_raw( wp_unslash( $_COOKIE[ $cookie ] ) ), '' );
+				if ( '' !== $cookie_url ) {
+					return $cookie_url;
+				}
 			}
 		}
+		return $target;
+	}
+
+	public function render_login_form( $atts ) {
+		$this->enqueue_auth_assets();
+
+		$default_redirect = $this->get_redirect_target();
+		$default_register = SPS_Settings::get_setting( 'auth_register_url', '/registrierung/' );
 
 		$args = shortcode_atts(
 			array(
@@ -329,10 +354,11 @@ class SPS_Auth_Shortcodes {
 						$terms_token = 'SPSCONSENTTEXTTOKEN';
 
 						$shortcode_str = sprintf(
-							'[magic_login_registration_form show_name="true" require_name="true" show_terms="true" require_terms="true" registration_terms="%s" button_text="%s" info_message="" success_message="%s"]',
+							'[magic_login_registration_form show_name="true" require_name="true" show_terms="true" require_terms="true" registration_terms="%s" button_text="%s" info_message="" success_message="%s" redirect_to="%s"]',
 							$terms_token,
 							esc_attr( $args['button_text'] ),
-							esc_attr( $args['success_message'] )
+							esc_attr( $args['success_message'] ),
+							esc_url( $this->get_redirect_target() )
 						);
 
 						echo str_replace( $terms_token, $terms_html, do_shortcode( $shortcode_str ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Shortcode-Ausgabe, Text per wp_kses bereinigt.
