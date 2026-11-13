@@ -264,7 +264,11 @@ update_user_meta( 7, 'nextcloud_username', 'wordpress-7' );
 update_user_meta( 7, 'sps_exchange_objects', array( $name ) );
 $r = SPS_NC_Exchange::ensure( 7 );
 check( 'Service-Modus', ! is_wp_error( $r ) && 'service' === $r['mode'] );
-check( 'Kunde (15) + Berater (31)', array( 'wordpress-7' => 15, 'berater' => 31 ) === SPS_NC_Client::$shares[ '/' . $path ] );
+check( 'Objektordner nur für Kunde (15)', array( 'wordpress-7' => 15 ) === SPS_NC_Client::$shares[ '/' . $path ] );
+check( 'Projekte einmal für Berater (31)', array( 'berater' => 31 ) === SPS_NC_Client::$shares['/Projekte'] );
+update_user_meta( 7, 'sps_exchange_objects', array( $name, 'max.muster@example.org_12345_Musterstadt_Zweitweg_2' ) );
+$r = SPS_NC_Exchange::ensure( 7 );
+check( 'Zweites Objekt: keine weitere Berater-Freigabe', array( 'berater' => 31 ) === SPS_NC_Client::$shares['/Projekte'] && ! isset( SPS_NC_Client::$shares['/Projekte/max.muster@example.org_12345_Musterstadt_Zweitweg_2']['berater'] ) );
 
 // 5. Berater = Service-Account → nur Kunde
 reset_nc();

@@ -16,9 +16,10 @@
  * werden wiederverwendet. Der Kunde bekommt nur seinen Objektordner freigegeben
  * (lesen, hochladen, ändern, löschen; nicht weiterteilen).
  *
- * Ohne diese Freigabe (oder wenn der Berater selbst der Service-Account ist) liegt
- * „Projekte“ im Home des Service-Accounts; dann wird jeder Objektordner zusätzlich
- * mit dem Berater geteilt. `wp sps doctor` meldet, welcher Fall vorliegt.
+ * Ohne diese Freigabe legt das Plugin „Projekte“ im Home des Service-Accounts an und
+ * teilt den Ordner einmal als Ganzes mit dem Berater (alle Rechte) – auch dann sieht
+ * der Berater alle Projektordner unter „Projekte“, ohne Einrichtung. Ist der Berater
+ * selbst der Service-Account, entfällt die Freigabe. `wp sps doctor` meldet den Fall.
  *
  * Berater = Nextcloud-Konto zur „Admin Benachrichtigungs-E-Mail“ oder fest über
  * „Berater-Konto“ (`exchange_advisor_user`).
@@ -276,6 +277,26 @@ class SPS_NC_Exchange {
 	}
 
 	/**
+	 * Wie der Berater den Basisordner sieht, wenn der Service-Account ihn mit ihm teilt.
+	 *
+	 * @param SPS_NC_Client $service Service-Account.
+	 * @param string        $advisor Berater.
+	 * @return string Zielpfad beim Berater ('' = nicht geteilt), z. B. "/Projekte" oder "/Projekte (2)".
+	 */
+	public static function base_share_target( SPS_NC_Client $service, $advisor ) {
+		$res = SPS_NC_Client::parse_ocs( $service->request( 'ocs/v2.php/apps/files_sharing/api/v1/shares?format=json&path=' . rawurlencode( '/' . self::base_dir() ) ) );
+		if ( is_wp_error( $res ) ) {
+			return '';
+		}
+		foreach ( (array) $res as $share ) {
+			if ( 0 === (int) ( isset( $share['share_type'] ) ? $share['share_type'] : -1 ) && strtolower( (string) $share['share_with'] ) === strtolower( $advisor ) ) {
+				return (string) ( isset( $share['file_target'] ) ? $share['file_target'] : '' );
+			}
+		}
+		return '';
+	}
+
+	/**
 	 * Vorhandenen Projektordner suchen: gleicher Name oder Name + "_Zusatz"
 	 * (z. B. _Maßnahme_Programm aus der Projektanlage). Groß/klein egal.
 	 *
@@ -357,6 +378,24 @@ class SPS_NC_Exchange {
 				}
 			}
 		}
+		// Basisordner gehört dem Service-Account: einmal als Ganzes mit dem Berater teilen,
+		// dann sieht er alle Projektordner unter „Projekte“ (keine Einzelfreigaben je Objekt).
+		if ( 'service' === $result['mode'] ) {
+			$base_shares = $info['exists'] ? self::list_shares( $service, $base ) : array();
+			if ( is_wp_error( $base_shares ) ) {
+				return self::fail( $user_id, $base_shares->get_error_message(), $dry_run );
+			}
+			if ( ! in_array( strtolower( $advisor ), $base_shares, true ) ) {
+				$result['actions'][] = 'Basisordner ' . $base . ' für Berater ' . $advisor . ' freigeben';
+				if ( ! $dry_run ) {
+					$ok = self::create_share( $service, $base, $advisor, self::PERM_ADVISOR );
+					if ( is_wp_error( $ok ) ) {
+						return self::fail( $user_id, sprintf( 'Freigabe %s für %s: %s', $base, $advisor, $ok->get_error_message() ), $dry_run );
+					}
+				}
+			}
+		}
+
 		$existing = $info['exists'] ? $webdav->list_dir( $base ) : array();
 		if ( is_wp_error( $existing ) ) {
 			return self::fail( $user_id, $existing->get_error_message(), $dry_run );
@@ -391,9 +430,6 @@ class SPS_NC_Exchange {
 			}
 
 			$targets = array( $customer => self::PERM_CUSTOMER );
-			if ( 'service' === $result['mode'] ) {
-				$targets[ $advisor ] = self::PERM_ADVISOR;
-			}
 			foreach ( $targets as $uid => $perm ) {
 				$low = strtolower( $uid );
 				if ( in_array( $low, $shares, true ) || $low === strtolower( $service->get_uid() ) || $low === strtolower( $service->get_username() ) || ( $info['owner'] && $low === strtolower( $info['owner'] ) ) ) {
