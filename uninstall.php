@@ -31,6 +31,13 @@ delete_metadata( 'user', 0, 'nextcloud_password_enc', '', true );
 
 wp_clear_scheduled_hook( 'sps_retry_fallback_leads' );
 wp_clear_scheduled_hook( 'sps_cleanup_staging' );
+wp_clear_scheduled_hook( 'sps_exchange_maintenance' );
+wp_clear_scheduled_hook( 'sps_exchange_ensure' );
+
+// Status der Austauschordner (die Ordner selbst bleiben in Nextcloud).
+foreach ( array( 'sps_exchange_objects', 'sps_exchange_folders', 'sps_exchange_status', 'sps_exchange_message', 'sps_exchange_checked_at' ) as $sps_meta ) {
+	delete_metadata( 'user', 0, $sps_meta, '', true );
+}
 
 // Upload-Staging leeren.
 $sps_staging_dirs = array( trailingslashit( wp_upload_dir( null, false )['basedir'] ) . 'sps-staging/' );

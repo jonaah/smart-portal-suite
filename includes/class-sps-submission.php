@@ -114,6 +114,7 @@ class SPS_Submission {
 
 		if ( ! is_wp_error( $result ) ) {
 			SPS_Diagnostics::log( sprintf( 'Formular "%s" an Nextcloud Forms übertragen (NC-Formular %d, als %s).', $form_id, $result['nc_form_id'], $result['as'] ), 'info', array( 'warnings' => $result['warnings'] ) );
+			self::completed( $form_id, $user_id, 'forms', $schema, $prepared );
 			return array(
 				'status'     => 'forms',
 				'nc_form_id' => $result['nc_form_id'],
@@ -151,11 +152,30 @@ class SPS_Submission {
 
 		SPS_Diagnostics::log( sprintf( 'Lead "%s" per WebDAV gespeichert: %s', $form_id, $stored ), 'info' );
 		self::notify_admin( $form_id, $reason, '', null, array(), $stored );
+		self::completed( $form_id, $user_id, 'fallback', $schema, $prepared );
 
 		return array(
 			'status' => 'fallback',
 			'path'   => $stored,
 		);
+	}
+
+	/**
+	 * Erfolgreich gespeichert (Forms oder WebDAV-Fallback): Folgeaktionen auslösen,
+	 * z. B. den Austauschordner (SPS_NC_Exchange). Fehler dort ändern das Ergebnis nicht.
+	 *
+	 * @param string $form_id Formular.
+	 * @param int    $user_id WP-Benutzer (0 = Besucher).
+	 * @param string $status  forms|fallback.
+	 * @param array  $schema  Schema.
+	 * @param array  $answers Aufbereitete Antworten.
+	 */
+	protected static function completed( $form_id, $user_id, $status, array $schema, array $answers = array() ) {
+		try {
+			do_action( 'sps_submission_completed', $form_id, (int) $user_id, $status, $schema, $answers );
+		} catch ( \Throwable $e ) {
+			SPS_Diagnostics::log( 'Folgeaktion nach Übermittlung fehlgeschlagen: ' . $e->getMessage(), 'error' );
+		}
 	}
 
 	/**

@@ -68,7 +68,7 @@ class SPS_NC_WebDAV {
 	protected function dav_path( $relative ) {
 		$segments = array_filter( explode( '/', trim( $relative, '/' ) ), 'strlen' );
 		$encoded  = array_map( 'rawurlencode', $segments );
-		return 'remote.php/dav/files/' . rawurlencode( $this->client->get_username() ) . '/' . implode( '/', $encoded );
+		return 'remote.php/dav/files/' . rawurlencode( $this->client->get_uid() ) . '/' . implode( '/', $encoded );
 	}
 
 	/**

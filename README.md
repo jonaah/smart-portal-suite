@@ -410,6 +410,37 @@ Die Suite synchronisiert WordPress-Benutzer nahtlos mit Nextcloud (`SPS_NC_User_
 
 ---
 
+## 9a. Austauschordner Kunde ↔ Energieberater (Projektordner)
+
+Nach einem Gebäude-Check legt `SPS_NC_Exchange` je Objekt einen Projektordner nach der Namenskonvention der Projekte an (gleiches Schema wie die Deck-Boards, vgl. `parseProjectName` in der Sanierungs-App):
+
+```
+Projekte/<E-Mail>_<PLZ>_<Ort>_<Straße>_<Hausnr>
+z. B. Projekte/max.muster@example.org_12345_Musterstadt_Musterweg_1
+```
+
+Teile werden durch `_` getrennt (ein `_` in Eingaben wird zu einem Leerzeichen), Groß-/Kleinschreibung, Leerzeichen und Umlaute bleiben erhalten. Ohne vollständige Adresse: nur die E-Mail.
+
+**Einmalige Einrichtung je Energieberater:** Der Berater teilt seinen Ordner **Projekte** mit dem Service-Account (z. B. `sps_service_bot`, Rechte *Bearbeiten* und *Teilen*). Hat der Service-Account bereits einen eigenen Ordner „Projekte“, diesen vorher umbenennen. Dann gilt:
+
+- Projektordner entstehen direkt im „Projekte“-Ordner des Beraters (Eigentümer: Berater).
+- Ein vorhandener Projektordner mit gleichem Namen oder mit Zusatz (`…_Hausnr_Maßnahme_Programm`) wird wiederverwendet, es entsteht kein zweiter.
+- Der Kunde (Nextcloud-Konto aus `nextcloud_username`) bekommt nur seinen Projektordner freigegeben: lesen, hochladen, ändern, löschen, nicht weiterteilen.
+
+**Ohne diese Freigabe** (oder wenn der Berater selbst der Service-Account ist) liegt „Projekte“ im Home des Service-Accounts, und jeder Projektordner wird zusätzlich mit dem Berater geteilt (alle Rechte). Er erscheint beim Berater dann einzeln statt unter „Projekte“. `wp sps doctor` meldet unter „Austauschordner“, welcher Fall vorliegt.
+
+- **Berater:** Nextcloud-Konto zur *Admin Benachrichtigungs-E-Mail* (Suche über die Benutzerverwaltung, danach über die Freigabe-Suche – funktioniert auch, wenn der Service-Account nur Gruppenadmin ist) oder fest über *Berater-Konto* (`exchange_advisor_user`).
+- **Auslöser:** Hook `sps_submission_completed` (`$form_id, $user_id, $status, $schema, $answers`) nach Forms-Übertragung oder WebDAV-Fallback, bei Formularen mit `"submit": { "exchange_folder": true }`. Importierte Schemas ohne die Option: Gebäude-Check an, alle anderen aus (Filter `sps_exchange_default_forms`).
+- **Asynchron und selbstheilend:** Anlage per WP-Cron ~30 s nach dem Absenden; stündlich werden offene/fehlerhafte Ordner nachgeholt und je 20 bestehende geprüft (fehlende Ordner oder Freigaben neu, nichts wird gelöscht).
+- **Status** im User-Meta: `sps_exchange_objects`, `sps_exchange_folders`, `sps_exchange_status` (`ok` | `pending` | `error`), `sps_exchange_message`, `sps_exchange_checked_at`.
+- **Einstellungen:** Smart Portal → Einstellungen → *Austauschordner* (`exchange_enabled`, `exchange_base_dir` = Standard `Projekte`, `exchange_advisor_user`); ebenso `wp sps configure --exchange=0|1 --exchange-dir=… --exchange-advisor=…` und MCP (`update-settings`).
+- **WP-CLI:** `wp sps exchange <benutzer|e-mail> [--dry-run]`, `wp sps exchange --pending`.
+- **Filter:** `sps_exchange_enabled`, `sps_exchange_folder_name`, `sps_exchange_subfolders`.
+- **energy_check** legt den fertigen Bericht in `<Projektordner>/Gebäudecheck/` (gleiche Namensregel).
+- **Neue Berater-Nextcloud:** Plugin mit Service-Account konfigurieren, Berater teilt „Projekte“ mit dem Service-Account, `wp sps doctor` prüfen. Bei der Nextcloud-Einstellung „Teilen nur mit Gruppenmitgliedern“ muss der Service-Account in der Kundengruppe (z. B. `Hauseigner`) sein.
+
+---
+
 ## 10. Account-Sync & Status Admin-Dashboard
 
 Unter **Smart Portal > Account-Sync** steht ein Administrations-Panel bereit:

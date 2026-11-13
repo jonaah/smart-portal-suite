@@ -16,6 +16,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 class SPS_NC_Client {
 
 	/**
+	 * Gecachte UID (siehe get_uid()).
+	 *
+	 * @var string
+	 */
+	protected $uid = '';
+
+
+	/**
 	 * Nextcloud base URL (ohne abschließenden Slash).
 	 *
 	 * @var string
@@ -188,6 +196,36 @@ class SPS_NC_Client {
 	 */
 	public function get_username() {
 		return $this->username;
+	}
+
+	/**
+	 * Interne Nextcloud-Kennung (UID) des angemeldeten Kontos.
+	 *
+	 * Login-Name und UID können abweichen (z. B. Anmeldung per E-Mail, UID
+	 * "nextcloud_administrator"). WebDAV-Pfade (remote.php/dav/files/<uid>) und
+	 * Vergleiche mit Freigabe-Empfängern brauchen die UID. Ergebnis wird 12 h gecacht;
+	 * ist Nextcloud nicht erreichbar, wird der Login-Name verwendet.
+	 *
+	 * @return string
+	 */
+	public function get_uid() {
+		if ( '' === $this->username ) {
+			return '';
+		}
+		if ( isset( $this->uid ) && '' !== $this->uid ) {
+			return $this->uid;
+		}
+		$key = 'sps_nc_uid_' . md5( $this->base_url . '|' . $this->username );
+		$uid = get_transient( $key );
+		if ( ! is_string( $uid ) || '' === $uid ) {
+			$data = self::parse_ocs( $this->request( 'ocs/v2.php/cloud/user?format=json' ) );
+			$uid  = ( ! is_wp_error( $data ) && ! empty( $data['id'] ) ) ? (string) $data['id'] : '';
+			if ( '' !== $uid ) {
+				set_transient( $key, $uid, 12 * HOUR_IN_SECONDS );
+			}
+		}
+		$this->uid = '' !== $uid ? $uid : $this->username;
+		return $this->uid;
 	}
 
 	/**

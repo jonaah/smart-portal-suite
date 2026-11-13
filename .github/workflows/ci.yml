@@ -51,6 +51,9 @@ jobs:
       - name: Offline-Tests (Antwort-Aufbereitung & Forms-Zuordnung)
         run: php tests/php/test-mapping.php
 
+      - name: Offline-Tests (Austauschordner)
+        run: php tests/php/test-exchange.php
+
   json-validation:
     name: Validate JSON Schemas
     runs-on: ubuntu-latest
