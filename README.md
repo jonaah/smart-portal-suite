@@ -46,7 +46,7 @@ smart-portal-suite/
 ├── smart-portal-suite.php          # Bootstrap, Plugin-Header, require_once-Loader
 ├── scripts/                        # Automatisierungs-Skripte
 │   └── bump-version.sh             # SemVer Version-Bumping-Tool
-├── docs/                           # Vollständige modulare technische 
+├── docs/                           # Vollständige modulare technische Dokumentation (lokal)
 ├── config/
 │   └── forms/                      # Formular-Schemata als JSON
 │       ├── gebaeude-check.json
