@@ -5,9 +5,10 @@
   "nc_form_title": "Gebaeudedaten",
   "requires_login": true,
   "submit": {
+    "exchange_folder": true,
     "success": {
       "title": "Vielen Dank, wir haben Ihre Angaben erhalten!",
-      "message": "Ihre Auswertung wird jetzt erstellt. Das dauert in der Regel etwa 10 Minuten, danach finden Sie sie in Ihrem persönlichen Ordner in der Nextcloud.",
+      "message": "Ihre Auswertung wird jetzt erstellt. Das dauert in der Regel etwa 10 Minuten, danach finden Sie sie in der Nextcloud in Ihrem Projektordner unter „Gebäudecheck“. Dort können Sie auch Unterlagen für Ihren Energieberater hochladen.",
       "note": "Melden Sie sich dort mit Ihrem Konto dieser Website an, um Ihre Daten einzusehen.",
       "link_label": "Zur Nextcloud"
     },

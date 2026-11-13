@@ -42,6 +42,9 @@ class SPS_CLI {
 		'file-mode'          => 'nc_file_mode',
 		'upload-dir'         => 'webdav_upload_dir',
 		'debug'              => 'debug_mode',
+		'exchange'           => 'exchange_enabled',
+		'exchange-dir'       => 'exchange_base_dir',
+		'exchange-advisor'   => 'exchange_advisor_user',
 	);
 
 	/**
@@ -122,6 +125,15 @@ class SPS_CLI {
 	 *
 	 * [--debug=<0|1>]
 	 * : Debug-Log aktivieren.
+	 *
+	 * [--exchange=<0|1>]
+	 * : Austauschordner Kunde ↔ Energieberater anlegen.
+	 *
+	 * [--exchange-dir=<ordner>]
+	 * : Basisordner der Projektordner (Standard: Projekte).
+	 *
+	 * [--exchange-advisor=<nc-benutzer>]
+	 * : Nextcloud-Konto des Energieberaters (leer = Konto zur Admin-Benachrichtigungs-E-Mail).
 	 *
 	 * ## EXAMPLES
 	 *
@@ -480,6 +492,71 @@ class SPS_CLI {
 			if ( 'fehler' === $r['status'] ) {
 				WP_CLI::halt( 1 );
 			}
+		}
+	}
+
+	/**
+	 * Austauschordner Kunde ↔ Energieberater anlegen bzw. prüfen.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [<benutzer>]
+	 * : WP-Benutzer (ID oder E-Mail).
+	 *
+	 * [--pending]
+	 * : Alle offenen bzw. fehlerhaften Ordner nachholen.
+	 *
+	 * [--dry-run]
+	 * : Nur anzeigen, was passieren würde.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp sps exchange kunde@example.org --dry-run
+	 *     wp sps exchange --pending
+	 *
+	 * @param array $args       Positionsargumente.
+	 * @param array $assoc_args Optionen.
+	 */
+	public function exchange( $args, $assoc_args ) {
+		$dry = ! empty( $assoc_args['dry-run'] );
+		$ids = array();
+		if ( ! empty( $args[0] ) ) {
+			$user = is_numeric( $args[0] ) ? get_userdata( (int) $args[0] ) : get_user_by( 'email', $args[0] );
+			if ( ! $user ) {
+				WP_CLI::error( 'Benutzer nicht gefunden.' );
+			}
+			$ids[] = $user->ID;
+		} elseif ( ! empty( $assoc_args['pending'] ) ) {
+			$ids = SPS_NC_Exchange::users_by_status( array( 'pending', 'error' ), 500 );
+		} else {
+			WP_CLI::error( 'Benutzer angeben oder --pending.' );
+		}
+		if ( empty( $ids ) ) {
+			WP_CLI::success( 'Nichts zu tun.' );
+			return;
+		}
+
+		$rows   = array();
+		$failed = false;
+		foreach ( $ids as $id ) {
+			$res = SPS_NC_Exchange::ensure( $id, $dry );
+			$u   = get_userdata( $id );
+			if ( is_wp_error( $res ) ) {
+				$failed = true;
+				$rows[] = array( 'benutzer' => $u ? $u->user_email : $id, 'ordner' => '', 'berater' => '', 'ablage' => '', 'ergebnis' => 'FEHLER: ' . $res->get_error_message() );
+				continue;
+			}
+			$rows[] = array(
+				'benutzer' => $u ? $u->user_email : $id,
+				'ordner'   => implode( ', ', $res['folders'] ),
+				'berater'  => $res['advisor'],
+				'ablage'   => 'berater' === $res['mode'] ? 'Projekte des Beraters' : 'Service-Account + Freigabe',
+				'ergebnis' => empty( $res['actions'] ) ? 'ok' : ( $dry ? 'würde: ' : '' ) . implode( ', ', $res['actions'] ),
+			);
+		}
+		WP_CLI\Utils\format_items( 'table', $rows, array( 'benutzer', 'ordner', 'berater', 'ablage', 'ergebnis' ) );
+		if ( $failed ) {
+			WP_CLI::halt( 1 );
 		}
 	}
 

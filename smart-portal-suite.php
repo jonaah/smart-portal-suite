@@ -3,7 +3,7 @@
  * Plugin Name:       Smart Portal Suite
  * Plugin URI:        https://effizientes-heim.de/
  * Description:       Multi-Step Formulare für Gebäude-Check und Projektanfragen mit Nextcloud-Anbindung.
- * Version:           0.6.20
+ * Version:           0.7.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Jonah Kleimann
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin-Konstanten definieren
-define( 'SPS_VERSION', '0.6.20' );
+define( 'SPS_VERSION', '0.7.0' );
 define( 'SPS_PLUGIN_FILE', __FILE__ );
 define( 'SPS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SPS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -49,6 +49,7 @@ require_once SPS_PLUGIN_DIR . 'includes/class-sps-abilities.php';
 require_once SPS_PLUGIN_DIR . 'modules/nextcloud/class-sps-nc-client.php';
 require_once SPS_PLUGIN_DIR . 'modules/nextcloud/class-sps-nc-forms.php';
 require_once SPS_PLUGIN_DIR . 'modules/nextcloud/class-sps-nc-webdav.php';
+require_once SPS_PLUGIN_DIR . 'modules/nextcloud/class-sps-nc-exchange.php';
 
 /**
  * Authentication & User Sync Module laden.
@@ -57,7 +58,7 @@ require_once SPS_PLUGIN_DIR . 'modules/auth/class-sps-nc-user-sync.php';
 require_once SPS_PLUGIN_DIR . 'modules/auth/class-sps-auth-shortcodes.php';
 
 /**
- * WP-CLI: wp sps configure | doctor | mapping | test-submit | sync-user | retry-leads
+ * WP-CLI: wp sps configure | doctor | mapping | test-submit | sync-user | retry-leads | exchange
  */
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	require_once SPS_PLUGIN_DIR . 'includes/class-sps-cli.php';
@@ -77,6 +78,7 @@ function sps_init() {
 	SPS_NC_User_Sync::get_instance();
 	SPS_Auth_Shortcodes::get_instance();
 	SPS_Submission::init();
+	SPS_NC_Exchange::init();
 	SPS_Upload_Staging::init();
 
 	// MCP: Funktionen als WordPress-Abilities (ab WP 6.9) bereitstellen.

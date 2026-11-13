@@ -5,6 +5,18 @@ Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokument
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
+## [0.7.0] - 2026-11-13
+
+### Hinzugefügt
+- **Austauschordner Kunde ↔ Energieberater (`SPS_NC_Exchange`):** Nach einem Gebäude-Check entsteht je Objekt ein Projektordner nach der Projekt-Konvention `Projekte/<E-Mail>_<PLZ>_<Ort>_<Straße>_<Hausnr>`. Hat der Energieberater seinen Ordner „Projekte“ mit dem Service-Account geteilt, liegt der Ordner direkt bei ihm (vorhandene Projektordner, auch mit Zusatz `_Maßnahme_Programm`, werden wiederverwendet); der Kunde bekommt nur seinen Ordner freigegeben. Sonst liegt der Ordner beim Service-Account und wird zusätzlich mit dem Berater geteilt. Berater über die „Admin Benachrichtigungs-E-Mail“ oder die Einstellung „Berater-Konto“. Anlage asynchron per WP-Cron, stündliche Nachholung und Prüfung.
+- **Hook `sps_submission_completed`** (`$form_id, $user_id, $status, $schema, $answers`) nach jeder erfolgreichen Speicherung (Forms oder WebDAV-Fallback).
+- **Schema-Option `submit.exchange_folder`** (in `gebaeude-check.json` aktiv); Einstellungen `exchange_enabled`, `exchange_base_dir` (Standard `Projekte`), `exchange_advisor_user` (Admin, `wp sps configure`, MCP).
+- **WP-CLI `wp sps exchange`** (einzelner Kunde, `--pending`, `--dry-run`) und Offline-Test `tests/php/test-exchange.php` (in CI).
+- **`wp sps doctor`: Prüfung „Austauschordner“** – Berater-Konto, Freigabe von „Projekte“ durch den Berater, offene Ordner; damit neue Berater-Nextclouds ohne Zusatzschritte geprüft werden können.
+
+### Geändert
+- Hinweistext nach dem Gebäude-Check: Bericht liegt im Projektordner unter „Gebäudecheck“, dort können auch Unterlagen hochgeladen werden.
+
 ## [0.6.20] - 2026-11-11
 
 ### Behoben

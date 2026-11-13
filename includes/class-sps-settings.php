@@ -363,6 +363,38 @@ class SPS_Settings {
 			'sps_section_fallback'
 		);
 
+		// Sektion 3a: Austauschordner Kunde ↔ Energieberater
+		add_settings_section(
+			'sps_section_exchange',
+			__( 'Austauschordner Kunde ↔ Energieberater', 'smart-portal-suite' ),
+			array( $this, 'render_section_exchange_desc' ),
+			'smart-portal-suite'
+		);
+
+		add_settings_field(
+			'exchange_enabled',
+			__( 'Austauschordner anlegen', 'smart-portal-suite' ),
+			array( $this, 'render_field_exchange_enabled' ),
+			'smart-portal-suite',
+			'sps_section_exchange'
+		);
+
+		add_settings_field(
+			'exchange_base_dir',
+			__( 'Basisordner', 'smart-portal-suite' ),
+			array( $this, 'render_field_exchange_base_dir' ),
+			'smart-portal-suite',
+			'sps_section_exchange'
+		);
+
+		add_settings_field(
+			'exchange_advisor_user',
+			__( 'Berater-Konto (optional)', 'smart-portal-suite' ),
+			array( $this, 'render_field_exchange_advisor_user' ),
+			'smart-portal-suite',
+			'sps_section_exchange'
+		);
+
 		// Sektion 4: Wartung & Debugging
 		add_settings_section(
 			'sps_section_debug',
@@ -659,6 +691,37 @@ class SPS_Settings {
 		<?php
 	}
 
+	public function render_section_exchange_desc() {
+		echo '<p class="description">' . esc_html__( 'Nach einem Gebäude-Check legt das Plugin je Objekt einen Projektordner <E-Mail>_<PLZ>_<Ort>_<Straße>_<Hausnr> an und teilt ihn mit dem Kunden. Einmalig einrichten: Der Energieberater teilt seinen Ordner „Projekte“ mit dem Service-Account (Bearbeiten + Teilen) – dann liegen die Ordner direkt in seinen Projekten. Fehlende Ordner und Freigaben werden stündlich nachgeholt.', 'smart-portal-suite' ) . '</p>';
+	}
+
+	public function render_field_exchange_enabled() {
+		$value = (int) self::get_setting( 'exchange_enabled', 1 );
+		?>
+		<input type="hidden" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[exchange_enabled]" value="0" />
+		<label>
+			<input type="checkbox" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[exchange_enabled]" value="1" <?php checked( 1, $value ); ?> />
+			<?php esc_html_e( 'Für jeden Kunden einen gemeinsamen Dokumentenordner anlegen.', 'smart-portal-suite' ); ?>
+		</label>
+		<?php
+	}
+
+	public function render_field_exchange_base_dir() {
+		$value = self::get_setting( 'exchange_base_dir', 'Projekte' );
+		?>
+		<input type="text" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[exchange_base_dir]" value="<?php echo esc_attr( $value ); ?>" class="regular-text" placeholder="Projekte" />
+		<p class="description"><?php esc_html_e( 'Name des vom Energieberater geteilten Ordners (im Home des Service-Accounts). Fehlt die Freigabe, legt das Plugin den Ordner beim Service-Account an und teilt jeden Projektordner zusätzlich mit dem Berater.', 'smart-portal-suite' ); ?></p>
+		<?php
+	}
+
+	public function render_field_exchange_advisor_user() {
+		$value = self::get_setting( 'exchange_advisor_user', '' );
+		?>
+		<input type="text" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[exchange_advisor_user]" value="<?php echo esc_attr( $value ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'leer = Konto zur Admin-Benachrichtigungs-E-Mail', 'smart-portal-suite' ); ?>" />
+		<p class="description"><?php esc_html_e( 'Nextcloud-Benutzername des Energieberaters. Leer: das Konto, dessen E-Mail der Admin-Benachrichtigungs-E-Mail entspricht.', 'smart-portal-suite' ); ?></p>
+		<?php
+	}
+
 	public function render_field_debug_mode() {
 		$value = self::get_setting( 'debug_mode', 0 );
 		?>
@@ -850,6 +913,13 @@ class SPS_Settings {
 
 		// Debug Modus
 		$sanitized['debug_mode'] = ! empty( $input['debug_mode'] ) ? 1 : 0;
+
+		// Austauschordner (Checkbox mit verstecktem 0-Feld; fehlt der Wert ganz, z. B. bei
+		// MCP/CLI, bleibt der bisherige Wert bzw. der Standard "an").
+		$sanitized['exchange_enabled']      = isset( $input['exchange_enabled'] ) ? ( ! empty( $input['exchange_enabled'] ) ? 1 : 0 ) : (int) self::get_setting( 'exchange_enabled', 1 );
+		$exchange_dir                       = isset( $input['exchange_base_dir'] ) ? trim( sanitize_text_field( $input['exchange_base_dir'] ), '/' ) : (string) self::get_setting( 'exchange_base_dir', 'Projekte' );
+		$sanitized['exchange_base_dir']     = '' !== $exchange_dir ? $exchange_dir : 'Projekte';
+		$sanitized['exchange_advisor_user'] = isset( $input['exchange_advisor_user'] ) ? trim( sanitize_text_field( $input['exchange_advisor_user'] ) ) : (string) self::get_setting( 'exchange_advisor_user', '' );
 
 		// Nextcloud-Formular-IDs (Textarea "form=id" oder Array)
 		$sanitized['nc_form_ids'] = self::parse_form_id_map( isset( $input['nc_form_ids'] ) ? $input['nc_form_ids'] : array() );

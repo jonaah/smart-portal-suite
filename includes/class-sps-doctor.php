@@ -274,6 +274,7 @@ class SPS_Doctor {
 
 		$this->check_forms( $auto_groups );
 		$this->check_webdav( $client );
+		$this->check_exchange( $client );
 		$this->check_social_db();
 	}
 
@@ -452,6 +453,57 @@ class SPS_Doctor {
 			$this->add( 'webdav', 'WebDAV-Fallback', 'warn', sprintf( '%d Lead(s) warten auf Übertragung (wp sps retry-leads).', count( $pending ) ) );
 		} else {
 			$this->add( 'webdav', 'WebDAV-Fallback', 'ok', 'Ordner ' . $dir . ' vorhanden, keine offenen Leads' );
+		}
+	}
+
+	/**
+	 * Austauschordner: Berater-Konto auflösbar und Freigabe möglich?
+	 * Wichtig für neue Berater-Nextclouds (Service-Account als Gruppenadmin,
+	 * Freigabe-Einschränkungen auf Gruppen).
+	 *
+	 * @param SPS_NC_Client $client Service-Account.
+	 */
+	protected function check_exchange( SPS_NC_Client $client ) {
+		if ( ! SPS_NC_Exchange::is_enabled() ) {
+			$this->add( 'exchange', 'Austauschordner', 'ok', 'Abgeschaltet.' );
+			return;
+		}
+		$advisor = SPS_NC_Exchange::resolve_advisor( $client );
+		if ( is_wp_error( $advisor ) ) {
+			$this->add( 'exchange', 'Austauschordner', 'error', $advisor->get_error_message() );
+			return;
+		}
+		$cfg = SPS_NC_Client::parse_ocs( $client->request( 'ocs/v2.php/cloud/capabilities?format=json' ) );
+		if ( ! is_wp_error( $cfg ) && isset( $cfg['capabilities']['files_sharing']['api_enabled'] ) && ! $cfg['capabilities']['files_sharing']['api_enabled'] ) {
+			$this->add( 'exchange', 'Austauschordner', 'error', 'Freigaben sind in dieser Nextcloud abgeschaltet (Einstellungen → Teilen).' );
+			return;
+		}
+
+		$base = SPS_NC_Exchange::base_dir();
+		$info = SPS_NC_Exchange::base_info( $client, $advisor );
+		$open = count( SPS_NC_Exchange::users_by_status( array( 'pending', 'error' ), 500 ) );
+		$tail = $open ? sprintf( ' – %d Kunde(n) offen/fehlerhaft (wp sps exchange --pending). Scheitern Freigaben: „Teilen nur mit Gruppenmitgliedern“ prüfen oder den Service-Account in die Kundengruppe aufnehmen.', $open ) : '';
+		$self = in_array( strtolower( $advisor ), array( strtolower( $client->get_uid() ), strtolower( $client->get_username() ) ), true );
+
+		if ( is_wp_error( $info ) ) {
+			$this->add( 'exchange', 'Austauschordner', 'error', $info->get_error_message() );
+		} elseif ( $self ) {
+			$this->add( 'exchange', 'Austauschordner', $open ? 'warn' : 'ok', sprintf( 'Berater ist der Service-Account; Projektordner unter %s.', $base ) . $tail );
+		} elseif ( $info['advisor_owns'] ) {
+			$this->add( 'exchange', 'Austauschordner', $open ? 'warn' : 'ok', sprintf( 'Projektordner direkt im Ordner „%s“ von %s.', $base, $advisor ) . $tail );
+		} else {
+			$this->add(
+				'exchange',
+				'Austauschordner',
+				'warn',
+				sprintf(
+					'„%1$s“ ist nicht vom Berater %2$s geteilt (%3$s). Die Projektordner liegen dann beim Service-Account und erscheinen beim Berater einzeln statt unter „%1$s“. Einrichten: %2$s teilt seinen Ordner „%1$s“ mit %4$s (Bearbeiten + Teilen); hat %4$s bereits einen eigenen Ordner „%1$s“, diesen vorher umbenennen.',
+					$base,
+					$advisor,
+					$info['exists'] ? 'Eigentümer: ' . ( $info['owner'] ? $info['owner'] : 'unbekannt' ) : 'Ordner fehlt',
+					$client->get_uid()
+				) . $tail
+			);
 		}
 	}
 
