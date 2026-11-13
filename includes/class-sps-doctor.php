@@ -492,18 +492,14 @@ class SPS_Doctor {
 		} elseif ( $info['advisor_owns'] ) {
 			$this->add( 'exchange', 'Austauschordner', $open ? 'warn' : 'ok', sprintf( 'Projektordner direkt im Ordner „%s“ von %s.', $base, $advisor ) . $tail );
 		} else {
-			$this->add(
-				'exchange',
-				'Austauschordner',
-				'warn',
-				sprintf(
-					'„%1$s“ ist nicht vom Berater %2$s geteilt (%3$s). Die Projektordner liegen dann beim Service-Account und erscheinen beim Berater einzeln statt unter „%1$s“. Einrichten: %2$s teilt seinen Ordner „%1$s“ mit %4$s (Bearbeiten + Teilen); hat %4$s bereits einen eigenen Ordner „%1$s“, diesen vorher umbenennen.',
-					$base,
-					$advisor,
-					$info['exists'] ? 'Eigentümer: ' . ( $info['owner'] ? $info['owner'] : 'unbekannt' ) : 'Ordner fehlt',
-					$client->get_uid()
-				) . $tail
-			);
+			$target = SPS_NC_Exchange::base_share_target( $client, $advisor );
+			if ( '' === $target ) {
+				$this->add( 'exchange', 'Austauschordner', $open ? 'warn' : 'ok', sprintf( '„%1$s“ liegt beim Service-Account und wird beim ersten Gebäude-Check mit %2$s geteilt.', $base, $advisor ) . $tail );
+			} elseif ( '/' . $base !== $target ) {
+				$this->add( 'exchange', 'Austauschordner', 'warn', sprintf( '„%1$s“ des Service-Accounts erscheint bei %2$s als „%3$s“ (er hat schon einen eigenen Ordner „%1$s“). Abhilfe: %2$s benennt die Freigabe um oder teilt seinen eigenen Ordner „%1$s“ mit %4$s (Bearbeiten + Teilen) – nach Umbenennen des Ordners beim Service-Account.', $base, $advisor, ltrim( $target, '/' ), $client->get_uid() ) . $tail );
+			} else {
+				$this->add( 'exchange', 'Austauschordner', $open ? 'warn' : 'ok', sprintf( 'Projektordner beim Service-Account, „%1$s“ ist mit %2$s geteilt.', $base, $advisor ) . $tail );
+			}
 		}
 	}
 

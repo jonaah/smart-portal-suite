@@ -5,6 +5,12 @@ Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokument
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
+## [0.7.1] - 2026-11-13
+
+### Geändert
+- **Austauschordner ohne Einrichtung beim Berater:** Hat der Berater seinen Ordner „Projekte“ nicht mit dem Service-Account geteilt, legt das Plugin „Projekte“ beim Service-Account an und teilt ihn **einmal als Ganzes** mit dem Berater (alle Rechte). Die Projektordner darin werden nur noch mit dem jeweiligen Kunden geteilt – keine Einzelfreigabe je Objekt an den Berater mehr; der Berater sieht alles unter „Projekte“.
+- `wp sps doctor`: meldet, ob „Projekte“ mit dem Berater geteilt ist und warnt, wenn die Freigabe bei ihm als „Projekte (2)“ erscheint (eigener Ordner gleichen Namens).
+
 ## [0.7.0] - 2026-11-13
 
 ### Hinzugefügt

@@ -421,13 +421,13 @@ z. B. Projekte/max.muster@example.org_12345_Musterstadt_Musterweg_1
 
 Teile werden durch `_` getrennt (ein `_` in Eingaben wird zu einem Leerzeichen), Groß-/Kleinschreibung, Leerzeichen und Umlaute bleiben erhalten. Ohne vollständige Adresse: nur die E-Mail.
 
-**Einmalige Einrichtung je Energieberater:** Der Berater teilt seinen Ordner **Projekte** mit dem Service-Account (z. B. `sps_service_bot`, Rechte *Bearbeiten* und *Teilen*). Hat der Service-Account bereits einen eigenen Ordner „Projekte“, diesen vorher umbenennen. Dann gilt:
+**Optional (Ordner direkt im eigenen Konto des Beraters):** Der Berater teilt seinen Ordner **Projekte** mit dem Service-Account (z. B. `sps_service_bot`, Rechte *Bearbeiten* und *Teilen*). Hat der Service-Account bereits einen eigenen Ordner „Projekte“, diesen vorher umbenennen. Dann gilt:
 
 - Projektordner entstehen direkt im „Projekte“-Ordner des Beraters (Eigentümer: Berater).
 - Ein vorhandener Projektordner mit gleichem Namen oder mit Zusatz (`…_Hausnr_Maßnahme_Programm`) wird wiederverwendet, es entsteht kein zweiter.
 - Der Kunde (Nextcloud-Konto aus `nextcloud_username`) bekommt nur seinen Projektordner freigegeben: lesen, hochladen, ändern, löschen, nicht weiterteilen.
 
-**Ohne diese Freigabe** (oder wenn der Berater selbst der Service-Account ist) liegt „Projekte“ im Home des Service-Accounts, und jeder Projektordner wird zusätzlich mit dem Berater geteilt (alle Rechte). Er erscheint beim Berater dann einzeln statt unter „Projekte“. `wp sps doctor` meldet unter „Austauschordner“, welcher Fall vorliegt.
+**Ohne diese Freigabe** legt das Plugin „Projekte“ im Home des Service-Accounts an und teilt den Ordner **einmal als Ganzes** mit dem Berater (alle Rechte). Auch dann sieht der Berater alle Projektordner unter „Projekte“ – es ist keine Einrichtung nötig. Hat der Berater schon einen eigenen Ordner „Projekte“, erscheint die Freigabe bei ihm als „Projekte (2)“; `wp sps doctor` warnt dann. Ist der Berater selbst der Service-Account, entfällt die Freigabe.
 
 - **Berater:** Nextcloud-Konto zur *Admin Benachrichtigungs-E-Mail* (Suche über die Benutzerverwaltung, danach über die Freigabe-Suche – funktioniert auch, wenn der Service-Account nur Gruppenadmin ist) oder fest über *Berater-Konto* (`exchange_advisor_user`).
 - **Auslöser:** Hook `sps_submission_completed` (`$form_id, $user_id, $status, $schema, $answers`) nach Forms-Übertragung oder WebDAV-Fallback, bei Formularen mit `"submit": { "exchange_folder": true }`. Importierte Schemas ohne die Option: Gebäude-Check an, alle anderen aus (Filter `sps_exchange_default_forms`).
