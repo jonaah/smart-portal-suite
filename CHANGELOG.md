@@ -5,6 +5,13 @@ Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokument
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
+## [0.7.2] - 2026-11-14
+
+### Geändert
+- **Kunde bekommt den Projektordner erst, wenn der Steckbrief darin liegt – und nur lesend:** Das Plugin legt den Projektordner nach dem Gebäude-Check weiterhin an, gibt ihn aber nicht mehr selbst für den Kunden frei. Die Freigabe übernimmt energy_check direkt nach dem Ablegen der PDFs, mit Rechten 1 (nur lesen). Bisher kam die Nextcloud-Mail „… hat mit dir geteilt“ bis zu 15 Minuten vor dem Steckbrief, und der Kunde konnte ihn mit den Rechten 15 ändern oder löschen. Weitere Rechte (z. B. Hochladen) vergibt der Energieberater gezielt von Hand.
+- `PERM_CUSTOMER` = 1. Mit dem Filter `sps_exchange_share_customer` (true) gibt das Plugin wieder selbst sofort frei – dann ebenfalls nur lesend.
+- **Voraussetzung:** energy_check mit der zugehörigen Änderung in `exchange_folder.py` (Freigabe nach dem Upload, nur lesend).
+
 ## [0.7.1] - 2026-11-13
 
 ### Geändert
