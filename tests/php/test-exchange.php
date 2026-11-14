@@ -40,6 +40,9 @@ function is_email( $e ) {
 	return false !== filter_var( $e, FILTER_VALIDATE_EMAIL );
 }
 function apply_filters( $tag, $value ) {
+	if ( 'sps_exchange_share_customer' === $tag ) {
+		return ! empty( $GLOBALS['sps_test_share_customer'] );
+	}
 	return $value;
 }
 function add_action() {}
@@ -245,7 +248,7 @@ $r    = SPS_NC_Exchange::ensure( 7 );
 $path = 'Projekte/' . $name;
 check( 'Berater-Modus', ! is_wp_error( $r ) && 'berater' === $r['mode'] );
 check( 'Ordner im Projekte des Beraters', in_array( $path, SPS_NC_Client::$dirs, true ) );
-check( 'Nur Kunde freigegeben (15)', array( 'wordpress-7' => 15 ) === SPS_NC_Client::$shares[ '/' . $path ] );
+check( 'Keine Kundenfreigabe durch das Plugin', ! isset( SPS_NC_Client::$shares[ '/' . $path ] ) );
 check( 'Idempotent', empty( SPS_NC_Exchange::ensure( 7 )['actions'] ) );
 
 // 3. Vorhandener Projektordner (mit Zusatz) wird wiederverwendet
@@ -264,7 +267,7 @@ update_user_meta( 7, 'nextcloud_username', 'wordpress-7' );
 update_user_meta( 7, 'sps_exchange_objects', array( $name ) );
 $r = SPS_NC_Exchange::ensure( 7 );
 check( 'Service-Modus', ! is_wp_error( $r ) && 'service' === $r['mode'] );
-check( 'Objektordner nur für Kunde (15)', array( 'wordpress-7' => 15 ) === SPS_NC_Client::$shares[ '/' . $path ] );
+check( 'Objektordner ohne Kundenfreigabe', ! isset( SPS_NC_Client::$shares[ '/' . $path ] ) );
 check( 'Projekte einmal für Berater (31)', array( 'berater' => 31 ) === SPS_NC_Client::$shares['/Projekte'] );
 update_user_meta( 7, 'sps_exchange_objects', array( $name, 'max.muster@example.org_12345_Musterstadt_Zweitweg_2' ) );
 $r = SPS_NC_Exchange::ensure( 7 );
@@ -276,7 +279,16 @@ update_user_meta( 7, 'nextcloud_username', 'wordpress-7' );
 update_user_meta( 7, 'sps_exchange_objects', array( $name ) );
 SPS_Settings::$s['admin_email'] = 'service@example.org';
 $r = SPS_NC_Exchange::ensure( 7 );
-check( 'Berater = Service-Account: nur Kunde', ! is_wp_error( $r ) && array( 'wordpress-7' => 15 ) === SPS_NC_Client::$shares[ '/' . $path ] );
+check( 'Berater = Service-Account: keine Freigaben', ! is_wp_error( $r ) && ! isset( SPS_NC_Client::$shares[ '/' . $path ] ) );
+
+// 5b. Filter: Plugin gibt selbst frei – nur lesend
+$GLOBALS['sps_test_share_customer'] = true;
+reset_nc();
+update_user_meta( 7, 'nextcloud_username', 'wordpress-7' );
+update_user_meta( 7, 'sps_exchange_objects', array( $name ) );
+$r = SPS_NC_Exchange::ensure( 7 );
+check( 'Filter an: Kunde nur lesend (1)', ! is_wp_error( $r ) && array( 'wordpress-7' => 1 ) === SPS_NC_Client::$shares[ '/' . $path ] );
+$GLOBALS['sps_test_share_customer'] = false;
 
 // 6. Unbekannte Berater-Mail → Fehler mit Hinweis
 $GLOBALS['transients'] = array();
@@ -294,7 +306,7 @@ reset_nc();
 update_user_meta( 7, 'nextcloud_username', 'wordpress-7' );
 update_user_meta( 7, 'sps_exchange_objects', array( $name ) );
 $r = SPS_NC_Exchange::ensure( 7, true );
-check( 'Dry-run: Aktionen gemeldet', 4 === count( $r['actions'] ) );
+check( 'Dry-run: Aktionen gemeldet', 3 === count( $r['actions'] ) );
 check( 'Dry-run: nichts angelegt', empty( SPS_NC_Client::$dirs ) && empty( SPS_NC_Client::$shares ) );
 
 // 9. Formular-Auswahl
