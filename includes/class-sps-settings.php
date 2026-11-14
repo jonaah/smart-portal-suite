@@ -692,7 +692,7 @@ class SPS_Settings {
 	}
 
 	public function render_section_exchange_desc() {
-		echo '<p class="description">' . esc_html__( 'Nach einem Gebäude-Check legt das Plugin je Objekt einen Projektordner <E-Mail>_<PLZ>_<Ort>_<Straße>_<Hausnr> an und teilt ihn mit dem Kunden. Einmalig einrichten: Der Energieberater teilt seinen Ordner „Projekte“ mit dem Service-Account (Bearbeiten + Teilen) – dann liegen die Ordner direkt in seinen Projekten. Fehlende Ordner und Freigaben werden stündlich nachgeholt.', 'smart-portal-suite' ) . '</p>';
+		echo '<p class="description">' . esc_html__( 'Nach einem Gebäude-Check legt das Plugin je Objekt einen Projektordner <E-Mail>_<PLZ>_<Ort>_<Straße>_<Hausnr> an. Die Freigabe für den Kunden (nur lesen) legt energy_check an, sobald der Steckbrief im Ordner liegt; weitere Rechte vergibt der Energieberater von Hand. Einmalig einrichten: Der Energieberater teilt seinen Ordner „Projekte“ mit dem Service-Account (Bearbeiten + Teilen) – dann liegen die Ordner direkt in seinen Projekten. Fehlende Ordner und Freigaben werden stündlich nachgeholt.', 'smart-portal-suite' ) . '</p>';
 	}
 
 	public function render_field_exchange_enabled() {
