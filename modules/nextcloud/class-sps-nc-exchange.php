@@ -13,8 +13,9 @@
  * Ordner „Projekte“ mit dem Service-Account (Bearbeiten + Teilen). Dann legt das
  * Plugin die Objektordner direkt im „Projekte“-Ordner des Beraters an – Eigentümer
  * ist der Berater, vorhandene Projektordner (auch mit Zusatz _Maßnahme_Programm)
- * werden wiederverwendet. Der Kunde bekommt nur seinen Objektordner freigegeben
- * (lesen, hochladen, ändern, löschen; nicht weiterteilen).
+ * werden wiederverwendet. Freigegeben wird der Objektordner für den Kunden erst,
+ * wenn der Steckbrief darin liegt – durch energy_check, nur lesend (Filter
+ * sps_exchange_share_customer: Plugin gibt selbst frei). Mehr Rechte vergibt der Berater.
  *
  * Ohne diese Freigabe legt das Plugin „Projekte“ im Home des Service-Accounts an und
  * teilt den Ordner einmal als Ganzes mit dem Berater (alle Rechte) – auch dann sieht
@@ -45,8 +46,12 @@ class SPS_NC_Exchange {
 
 	/**
 	 * Freigaberechte: 1 lesen + 2 ändern + 4 anlegen + 8 löschen (+ 16 teilen).
+	 *
+	 * Kunde: nur lesen. Den Projektordner gibt energy_check frei, sobald der Steckbrief
+	 * darin liegt (sonst kommt die Freigabe-Mail zu einem leeren Ordner). Weitere Rechte
+	 * vergibt der Energieberater gezielt von Hand.
 	 */
-	const PERM_CUSTOMER = 15;
+	const PERM_CUSTOMER = 1;
 	const PERM_ADVISOR  = 31;
 
 	const VERIFY_BATCH = 20;
@@ -429,7 +434,9 @@ class SPS_NC_Exchange {
 				return self::fail( $user_id, $shares->get_error_message(), $dry_run );
 			}
 
-			$targets = array( $customer => self::PERM_CUSTOMER );
+			// Kundenfreigabe übernimmt energy_check nach dem Ablegen des Steckbriefs.
+			// Mit dem Filter sps_exchange_share_customer (true) gibt das Plugin selbst sofort frei.
+			$targets = self::share_customer( $user ) ? array( $customer => self::PERM_CUSTOMER ) : array();
 			foreach ( $targets as $uid => $perm ) {
 				$low = strtolower( $uid );
 				if ( in_array( $low, $shares, true ) || $low === strtolower( $service->get_uid() ) || $low === strtolower( $service->get_username() ) || ( $info['owner'] && $low === strtolower( $info['owner'] ) ) ) {
@@ -559,6 +566,18 @@ class SPS_NC_Exchange {
 			}
 		}
 		return $out;
+	}
+
+	/**
+	 * Soll das Plugin den Projektordner selbst für den Kunden freigeben?
+	 *
+	 * Standard: nein – energy_check gibt ihn nach dem Ablegen des Steckbriefs nur lesend frei.
+	 *
+	 * @param WP_User $user Kunde.
+	 * @return bool
+	 */
+	public static function share_customer( $user ) {
+		return (bool) apply_filters( 'sps_exchange_share_customer', false, $user );
 	}
 
 	protected static function create_share( SPS_NC_Client $service, $folder, $uid, $perm ) {
