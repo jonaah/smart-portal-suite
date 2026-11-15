@@ -54,6 +54,9 @@ jobs:
       - name: Offline-Tests (Austauschordner)
         run: php tests/php/test-exchange.php
 
+      - name: Offline-Tests (Bestätigung – Knopf in Nextcloud oder App)
+        run: php tests/php/test-success-link.php
+
   json-validation:
     name: Validate JSON Schemas
     runs-on: ubuntu-latest
