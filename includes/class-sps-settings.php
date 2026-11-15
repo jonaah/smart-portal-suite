@@ -284,6 +284,14 @@ class SPS_Settings {
 		);
 
 		add_settings_field(
+			'customer_app_url',
+			__( 'App für Kunden (URL)', 'smart-portal-suite' ),
+			array( $this, 'render_field_customer_app_url' ),
+			'smart-portal-suite',
+			'sps_section_auth'
+		);
+
+		add_settings_field(
 			'auth_login_url',
 			__( 'Login-Seiten URL', 'smart-portal-suite' ),
 			array( $this, 'render_field_auth_login_url' ),
@@ -589,6 +597,14 @@ class SPS_Settings {
 		<?php
 	}
 
+	public function render_field_customer_app_url() {
+		$value = self::get_setting( 'customer_app_url', '' );
+		?>
+		<input type="url" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[customer_app_url]" value="<?php echo esc_attr( $value ); ?>" class="regular-text" placeholder="https://app.effizientes-heim.de" />
+		<p class="description"><?php esc_html_e( 'Kunden arbeiten in dieser App statt in der Nextcloud: Der Knopf nach dem Absenden eines Formulars führt hierhin, mit ?nc=<Nextcloud-URL> (die App belegt damit die Adresse vor). Texte kommen aus submit.success.*_app des Formulars. Leer = Knopf führt in die Nextcloud.', 'smart-portal-suite' ); ?></p>
+		<?php
+	}
+
 	public function render_field_auth_login_url() {
 		$value = self::get_setting( 'auth_login_url', home_url( '/login/' ) );
 		?>
@@ -883,6 +899,7 @@ class SPS_Settings {
 
 		// Authentifizierung & Weiterleitung
 		$sanitized['login_redirect_url'] = isset( $input['login_redirect_url'] ) ? esc_url_raw( trim( $input['login_redirect_url'] ) ) : home_url( '/' );
+		$sanitized['customer_app_url']   = isset( $input['customer_app_url'] ) ? esc_url_raw( trim( $input['customer_app_url'] ), array( 'https' ) ) : '';
 		$sanitized['auth_login_url']     = isset( $input['auth_login_url'] ) ? sanitize_text_field( trim( $input['auth_login_url'] ) ) : '/login/';
 		$sanitized['auth_register_url']  = isset( $input['auth_register_url'] ) ? sanitize_text_field( trim( $input['auth_register_url'] ) ) : '/registrierung/';
 		$sanitized['nc_sync_auto_groups'] = isset( $input['nc_sync_auto_groups'] ) ? sanitize_text_field( trim( $input['nc_sync_auto_groups'] ) ) : 'Hauseigner';
