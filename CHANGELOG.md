@@ -5,6 +5,11 @@ Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokument
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/) und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
+## [Unreleased]
+
+### Hinzugefügt
+- **App für Kunden** (`customer_app_url`, Einstellungen → Authentifizierung, WP-CLI `--customer-app-url`): Kunden arbeiten in einer App statt in der Nextcloud. Der Knopf in der Bestätigung nach dem Absenden führt dann in die App, mit `?nc=<Nextcloud-URL>`; die App belegt damit die Adresse vor. Texte kommen aus `submit.success.*_app` des Formulars (`message_app`, `note_app`, `link_label_app`, sonst „Zur App“). Ist nichts gesetzt, bleibt es beim Knopf in die Nextcloud. Gebäude-Check bringt die App-Texte mit. Offline-Test `tests/php/test-success-link.php` (in CI).
+
 ## [0.7.2] - 2026-11-14
 
 ### Geändert
