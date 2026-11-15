@@ -35,6 +35,7 @@ class SPS_CLI {
 		'privacy-url'        => 'privacy_url',
 		'admin-email'        => 'admin_email',
 		'login-redirect-url' => 'login_redirect_url',
+		'customer-app-url'   => 'customer_app_url',
 		'login-url'          => 'auth_login_url',
 		'register-url'       => 'auth_register_url',
 		'primary-color'      => 'primary_color',
@@ -104,6 +105,8 @@ class SPS_CLI {
 	 *
 	 * [--login-redirect-url=<url>]
 	 * : Ziel nach dem Login.
+	 * [--customer-app-url=<url>]
+	 * : App für Kunden (https). Knopf nach dem Absenden führt dorthin statt in die Nextcloud. Leer = Nextcloud.
 	 *
 	 * [--login-url=<path>]
 	 * : Pfad der Login-Seite.
