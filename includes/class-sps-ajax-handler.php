@@ -166,21 +166,11 @@ class SPS_Ajax_Handler {
 
 		// Optionaler Bestätigungstext aus dem Schema (submit.success).
 		if ( ! empty( $schema['submit']['success'] ) && is_array( $schema['submit']['success'] ) ) {
-			$cfg     = $schema['submit']['success'];
-			$success = array();
-			foreach ( array( 'title', 'message', 'note', 'link_label' ) as $key ) {
-				if ( isset( $cfg[ $key ] ) && is_string( $cfg[ $key ] ) && '' !== $cfg[ $key ] ) {
-					$success[ $key ] = sanitize_text_field( $cfg[ $key ] );
-				}
-			}
-			if ( ! empty( $success['link_label'] ) ) {
-				$nc_url = esc_url_raw( (string) SPS_Settings::get_setting( 'nextcloud_url', '' ) );
-				if ( '' !== $nc_url ) {
-					$success['link_url'] = $nc_url;
-				} else {
-					unset( $success['link_label'] );
-				}
-			}
+			$success = self::success_payload(
+				$schema['submit']['success'],
+				esc_url_raw( (string) SPS_Settings::get_setting( 'nextcloud_url', '' ) ),
+				esc_url_raw( (string) SPS_Settings::get_setting( 'customer_app_url', '' ), array( 'https' ) )
+			);
 			if ( ! empty( $success ) ) {
 				$response['success'] = $success;
 			}
@@ -301,5 +291,42 @@ class SPS_Ajax_Handler {
 		}
 
 		return $processed;
+	}
+
+	/**
+	 * Bestätigung nach dem Absenden (submit.success des Schemas).
+	 *
+	 * Ohne App: Knopf führt in die Nextcloud. Mit App für Kunden (customer_app_url):
+	 * Texte mit Endung _app (falls vorhanden) und Knopf in die App, mit ?nc=<Nextcloud>.
+	 *
+	 * @param array  $cfg     submit.success aus dem Schema.
+	 * @param string $nc_url  Nextcloud-URL ('' = keine).
+	 * @param string $app_url App für Kunden ('' = keine).
+	 * @return array title, message, note, link_label, link_url (nur gesetzte Felder).
+	 */
+	public static function success_payload( array $cfg, $nc_url, $app_url ) {
+		$success = array();
+		$suffix  = '' !== $app_url ? '_app' : '';
+		foreach ( array( 'title', 'message', 'note', 'link_label' ) as $key ) {
+			foreach ( array( $key . $suffix, $key ) as $src ) {
+				if ( isset( $cfg[ $src ] ) && is_string( $cfg[ $src ] ) && '' !== $cfg[ $src ] ) {
+					$success[ $key ] = sanitize_text_field( $cfg[ $src ] );
+					break;
+				}
+			}
+		}
+		if ( '' !== $app_url ) {
+			$success['link_label'] = ! empty( $cfg['link_label_app'] ) ? sanitize_text_field( $cfg['link_label_app'] ) : __( 'Zur App', 'smart-portal-suite' );
+			$success['link_url'] = '' === $nc_url ? $app_url
+				: ( false === strpos( $app_url, '?' ) ? untrailingslashit( $app_url ) . '/?' : $app_url . '&' )
+					. 'nc=' . rawurlencode( untrailingslashit( $nc_url ) );
+		} elseif ( ! empty( $success['link_label'] ) ) {
+			if ( '' !== $nc_url ) {
+				$success['link_url'] = $nc_url;
+			} else {
+				unset( $success['link_label'] );
+			}
+		}
+		return $success;
 	}
 }
