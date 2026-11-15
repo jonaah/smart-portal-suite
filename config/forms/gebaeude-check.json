@@ -10,7 +10,10 @@
       "title": "Vielen Dank, wir haben Ihre Angaben erhalten!",
       "message": "Ihre Auswertung wird jetzt erstellt. Das dauert in der Regel etwa 10 Minuten, danach finden Sie sie in der Nextcloud in Ihrem Projektordner unter „Gebäudecheck“. Dort können Sie auch Unterlagen für Ihren Energieberater hochladen.",
       "note": "Melden Sie sich dort mit Ihrem Konto dieser Website an, um Ihre Daten einzusehen.",
-      "link_label": "Zur Nextcloud"
+      "link_label": "Zur Nextcloud",
+      "message_app": "Ihre Auswertung wird jetzt erstellt. Das dauert in der Regel etwa 10 Minuten, danach finden Sie sie in der App unter „Dokumente“ im Ordner Ihres Projekts. Dort sehen Sie auch den Stand Ihres Projekts und die nächsten Termine.",
+      "note_app": "Melden Sie sich in der App mit Ihrem Konto dieser Website an – ein Passwort brauchen Sie nicht.",
+      "link_label_app": "Zur App"
     },
     "rules": [
       {
